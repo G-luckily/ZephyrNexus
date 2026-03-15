@@ -1,0 +1,63 @@
+# 环境与 secrets
+.env
+.env.*
+!infra/env-templates/
+infra/env-templates/.env.example
+infra/env-templates/env.*.example
+
+# 运行态目录
+runtime/
+logs/
+log/
+data/
+tmp/
+.cache/
+dist/
+build/
+node_modules/
+coverage/
+
+# PID / socket / lock
+*.pid
+*.pid.lock
+*.sock
+*.lock
+
+# 系统与编辑器文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# OS-specific
+ehthumbs.db
+Icon?
+.Spotlight-V100
+.Trashes
+
+# Python / virtualenv（若未来有）
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+
+# Misc
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+

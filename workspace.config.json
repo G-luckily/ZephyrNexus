@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "description": "AetherStack control-plane workspace configuration",
+  "repoInventory": {
+    "AetherStack": {
+      "type": "control-plane",
+      "remoteUrl": "git@github.com:your-org/AetherStack.git"
+    },
+    "paperclip": {
+      "type": "application",
+      "remoteUrl": "git@github.com:your-org/paperclip.git"
+    },
+    "openclaw": {
+      "type": "agent-runtime",
+      "remoteUrl": "git@github.com:your-org/openclaw.git"
+    },
+    "browser-use": {
+      "type": "auxiliary",
+      "remoteUrl": "git@github.com:your-org/browser-use.git"
+    }
+  },
+  "services": {
+    "paperclip": {
+      "repo": "paperclip",
+      "enabled": true,
+      "port": 3000,
+      "start": {
+        "command": "pnpm install --silent && pnpm dev"
+      }
+    },
+    "openclaw": {
+      "repo": "openclaw",
+      "enabled": false,
+      "port": 4000,
+      "start": {
+        "command": "pnpm install --silent && pnpm dev"
+      }
+    },
+    "browser-use": {
+      "repo": "browser-use",
+      "enabled": false,
+      "port": 5000,
+      "start": {
+        "command": "pnpm install --silent && pnpm dev"
+      }
+    }
+  },
+  "environmentProfiles": {
+    "wsl": {
+      "description": "WSL Linux 开发环境",
+      "pathMappings": {
+        "AetherStack": "~/AetherStack",
+        "paperclip": "${PAPERCLIP_PATH}",
+        "openclaw": "${OPENCLAW_WORKSPACE_PATH}",
+        "browser-use": "${BROWSER_USE_PATH}"
+      }
+    },
+    "ssh": {
+      "description": "SSH Linux 运行环境",
+      "pathMappings": {
+        "AetherStack": "~/AetherStack",
+        "paperclip": "/opt/workspace/paperclip",
+        "openclaw": "/opt/workspace/openclaw",
+        "browser-use": "/opt/workspace/browser-use"
+      }
+    },
+    "windows": {
+      "description": "Windows 编辑环境（主要用于编辑、提交 PR）",
+      "pathMappings": {
+        "AetherStack": "C:/dev/AetherStack",
+        "paperclip": "C:/dev/paperclip",
+        "openclaw": "C:/dev/openclaw",
+        "browser-use": "C:/dev/browser-use"
+      }
+    }
+  }
+}
+
