@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import type { Db } from "@paperclipai/db";
-import { createAssetImageMetadataSchema } from "@paperclipai/shared";
+import type { Db } from "@zephyr-nexus/db";
+import { createAssetImageMetadataSchema } from "@zephyr-nexus/shared";
 import type { StorageService } from "../storage/types.js";
 import { assetService, logActivity } from "../services/index.js";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";

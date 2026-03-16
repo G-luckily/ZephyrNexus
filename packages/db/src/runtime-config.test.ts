@@ -66,7 +66,7 @@ describe("resolveDatabaseTarget", () => {
   it("uses config postgres connection string when configured", () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "paperclip-db-runtime-"));
     const configPath = path.join(tempDir, "instance", "config.json");
-    process.env.PAPERCLIP_CONFIG = configPath;
+    process.env.ZEPHYR_CONFIG = configPath;
     writeJson(configPath, {
       database: {
         mode: "postgres",
@@ -86,7 +86,7 @@ describe("resolveDatabaseTarget", () => {
   it("falls back to embedded postgres settings from config", () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "paperclip-db-runtime-"));
     const configPath = path.join(tempDir, "instance", "config.json");
-    process.env.PAPERCLIP_CONFIG = configPath;
+    process.env.ZEPHYR_CONFIG = configPath;
     writeJson(configPath, {
       database: {
         mode: "embedded-postgres",

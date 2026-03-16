@@ -1,7 +1,7 @@
-# Project Brief: Paperclip
+# Project Brief: Zephyr Nexus (风之灵枢)
 
 ## Core Objective
-Paperclip is a control plane for AI-agent companies. It manages the lifecycle, orchestration, and monitoring of autonomous agents in a collaborative environment.
+Zephyr Nexus is a control plane for AI-agent companies. It manages the lifecycle, orchestration, and monitoring of autonomous agents in a collaborative environment.
 
 ## Architecture
 - **Server**: Express.js REST API.

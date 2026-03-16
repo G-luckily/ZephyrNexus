@@ -10,13 +10,13 @@ import { fileURLToPath } from "node:url";
 import { Router } from "express";
 import type { Request } from "express";
 import { and, eq, isNull, desc } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@zephyr-nexus/db";
 import {
   agentApiKeys,
   authUsers,
   invites,
   joinRequests
-} from "@paperclipai/db";
+} from "@zephyr-nexus/db";
 import {
   acceptInviteSchema,
   claimJoinRequestApiKeySchema,
@@ -26,8 +26,8 @@ import {
   updateMemberPermissionsSchema,
   updateUserCompanyAccessSchema,
   PERMISSION_KEYS
-} from "@paperclipai/shared";
-import type { DeploymentExposure, DeploymentMode } from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
+import type { DeploymentExposure, DeploymentMode } from "@zephyr-nexus/shared";
 import {
   forbidden,
   conflict,
@@ -931,7 +931,7 @@ function buildInviteOnboardingManifest(
     invite: toInviteSummaryResponse(req, token, invite),
     onboarding: {
       instructions:
-        "Join as an OpenClaw Gateway agent, save your one-time claim secret, wait for board approval, then claim your API key. In OpenClaw sandboxes, save the claim response token to /workspace/.openclaw/workspace/paperclip-claimed-api-key.json. Outside the sandbox, ~/.openclaw/workspace/paperclip-claimed-api-key.json is the legacy fallback path. Load PAPERCLIP_API_KEY from the saved file before starting heartbeat loops. You MUST submit adapterType='openclaw_gateway', set agentDefaultsPayload.url to your ws:// or wss:// OpenClaw gateway endpoint, and include agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth).",
+        "Join as an OpenClaw Gateway agent, save your one-time claim secret, wait for board approval, then claim your API key. In OpenClaw sandboxes, save the claim response token to /workspace/.openclaw/workspace/paperclip-claimed-api-key.json. Outside the sandbox, ~/.openclaw/workspace/paperclip-claimed-api-key.json is the legacy fallback path. Load ZEPHYR_API_KEY from the saved file before starting heartbeat loops. You MUST submit adapterType='openclaw_gateway', set agentDefaultsPayload.url to your ws:// or wss:// OpenClaw gateway endpoint, and include agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth).",
       inviteMessage: extractInviteMessage(invite),
       recommendedAdapterType: "openclaw_gateway",
       requiredFields: {
@@ -1138,19 +1138,19 @@ export function buildInviteOnboardingTextDocument(
     - ~/.openclaw/workspace/paperclip-claimed-api-key.json (legacy fallback outside the sandbox)
     chmod 600 /workspace/.openclaw/workspace/paperclip-claimed-api-key.json
 
-    And set the PAPERCLIP_API_KEY and PAPERCLIP_API_URL in your environment variables as specified here:
+    And set the ZEPHYR_API_KEY and ZEPHYR_API_URL in your environment variables as specified here:
     https://docs.openclaw.ai/help/environment
 
     e.g. 
 
     {
       env: {
-        PAPERCLIP_API_KEY: "...",
-        PAPERCLIP_API_URL: "...",
+        ZEPHYR_API_KEY: "...",
+        ZEPHYR_API_URL: "...",
       },
     }
 
-    Then set PAPERCLIP_API_KEY and PAPERCLIP_API_URL from the saved token field for every heartbeat run.
+    Then set ZEPHYR_API_KEY and ZEPHYR_API_URL from the saved token field for every heartbeat run.
 
     Important:
     - claim secrets expire
@@ -1161,7 +1161,7 @@ export function buildInviteOnboardingTextDocument(
     GET ${onboarding.skill.url}
     Install path: ${onboarding.skill.installPath}
 
-    Be sure to prepend your PAPERCLIP_API_URL to the top of your skill and note the path to your PAPERCLIP_API_URL
+    Be sure to prepend your ZEPHYR_API_URL to the top of your skill and note the path to your ZEPHYR_API_URL
 
     ## Text onboarding URL
     ${onboarding.textInstructions.url}

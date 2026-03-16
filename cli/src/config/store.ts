@@ -13,9 +13,14 @@ function findConfigFileFromAncestors(startDir: string): string | null {
   let currentDir = absoluteStartDir;
 
   while (true) {
-    const candidate = path.resolve(currentDir, ".paperclip", DEFAULT_CONFIG_BASENAME);
-    if (fs.existsSync(candidate)) {
-      return candidate;
+    const modernCandidate = path.resolve(currentDir, ".zephyr-nexus", DEFAULT_CONFIG_BASENAME);
+    if (fs.existsSync(modernCandidate)) {
+      return modernCandidate;
+    }
+
+    const legacyCandidate = path.resolve(currentDir, ".paperclip", DEFAULT_CONFIG_BASENAME);
+    if (fs.existsSync(legacyCandidate)) {
+      return legacyCandidate;
     }
 
     const nextDir = path.resolve(currentDir, "..");
@@ -28,7 +33,7 @@ function findConfigFileFromAncestors(startDir: string): string | null {
 
 export function resolveConfigPath(overridePath?: string): string {
   if (overridePath) return path.resolve(overridePath);
-  if (process.env.PAPERCLIP_CONFIG) return path.resolve(process.env.PAPERCLIP_CONFIG);
+  if (process.env.ZEPHYR_CONFIG) return path.resolve(process.env.ZEPHYR_CONFIG);
   return findConfigFileFromAncestors(process.cwd()) ?? resolveDefaultConfigPath(resolvePaperclipInstanceId());
 }
 

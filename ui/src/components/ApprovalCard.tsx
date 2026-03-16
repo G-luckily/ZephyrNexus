@@ -9,7 +9,7 @@ import {
   ApprovalPayloadRenderer,
 } from "./ApprovalPayload";
 import { timeAgo } from "../lib/timeAgo";
-import type { Approval, Agent } from "@paperclipai/shared";
+import type { Approval, Agent } from "@zephyr-nexus/shared";
 
 function statusIcon(status: string) {
   if (status === "approved")

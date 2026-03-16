@@ -1,4 +1,5 @@
-import { defineConfig } from "@playwright/test";
+/// <reference types="node" />
+import { defineConfig, devices } from "@playwright/test";
 
 const PORT = Number(process.env.PAPERCLIP_E2E_PORT ?? 3100);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -20,10 +21,10 @@ export default defineConfig({
       use: { browserName: "chromium" },
     },
   ],
-  // The webServer directive starts `paperclipai run` before tests.
-  // Expects `pnpm paperclipai` to be runnable from repo root.
+  // The webServer directive starts `zephyr run` before tests.
+  // Expects `pnpm zephyr` to be runnable from repo root.
   webServer: {
-    command: `pnpm paperclipai run --yes`,
+    command: `pnpm zephyr run --yes`,
     url: `${BASE_URL}/api/health`,
     reuseExistingServer: !!process.env.CI,
     timeout: 120_000,

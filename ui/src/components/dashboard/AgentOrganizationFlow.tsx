@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "@/lib/router";
-import type { Agent } from "@paperclipai/shared";
+import type { Agent } from "@zephyr-nexus/shared";
 
 interface AgentOrganizationFlowProps {
   agents: Agent[];

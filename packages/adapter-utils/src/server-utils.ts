@@ -111,15 +111,15 @@ export function buildPaperclipEnv(agent: { id: string; companyId: string }): Rec
     return host;
   };
   const vars: Record<string, string> = {
-    PAPERCLIP_AGENT_ID: agent.id,
-    PAPERCLIP_COMPANY_ID: agent.companyId,
+    ZEPHYR_AGENT_ID: agent.id,
+    ZEPHYR_COMPANY_ID: agent.companyId,
   };
   const runtimeHost = resolveHostForUrl(
-    process.env.PAPERCLIP_LISTEN_HOST ?? process.env.HOST ?? "localhost",
+    process.env.ZEPHYR_LISTEN_HOST ?? process.env.HOST ?? "localhost",
   );
-  const runtimePort = process.env.PAPERCLIP_LISTEN_PORT ?? process.env.PORT ?? "3100";
-  const apiUrl = process.env.PAPERCLIP_API_URL ?? `http://${runtimeHost}:${runtimePort}`;
-  vars.PAPERCLIP_API_URL = apiUrl;
+  const runtimePort = process.env.ZEPHYR_LISTEN_PORT ?? process.env.PORT ?? "3100";
+  const apiUrl = process.env.ZEPHYR_API_URL ?? `http://${runtimeHost}:${runtimePort}`;
+  vars.ZEPHYR_API_URL = apiUrl;
   return vars;
 }
 

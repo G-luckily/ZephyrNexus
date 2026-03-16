@@ -5,7 +5,7 @@ import {
   issues,
   costEvents,
   heartbeatRuns,
-} from "@paperclipai/db";
+} from "@zephyr-nexus/db";
 import { costService } from "../server/src/services/costs.js";
 
 interface ParsedArgs {

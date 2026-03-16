@@ -6,7 +6,7 @@ import ReactFlow, {
   type Edge,
   type Node,
 } from "reactflow";
-import type { Issue } from "@paperclipai/shared";
+import type { Issue } from "@zephyr-nexus/shared";
 
 interface TaskFlowBoardProps {
   task: Issue | null;

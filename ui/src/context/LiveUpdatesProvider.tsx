@@ -5,7 +5,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import type { Agent, Issue, LiveEvent } from "@paperclipai/shared";
+import type { Agent, Issue, LiveEvent } from "@zephyr-nexus/shared";
 import { authApi } from "../api/auth";
 import { useCompany } from "./CompanyContext";
 import type { ToastInput } from "./ToastContext";

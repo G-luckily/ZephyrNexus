@@ -7,7 +7,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { Link, useLocation } from "react-router-dom";
-import type { IssueComment, Agent } from "@paperclipai/shared";
+import type { IssueComment, Agent } from "@zephyr-nexus/shared";
 import { Button } from "@/components/ui/button";
 import { Check, Copy, Paperclip } from "lucide-react";
 import { Identity } from "./Identity";

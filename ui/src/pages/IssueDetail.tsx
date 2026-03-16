@@ -66,7 +66,7 @@ import {
   type IssueAttachment,
   type IssueBudgetSummary,
   type BlockedRunSummary
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 
 type CommentReassignment = {
   assigneeAgentId: string | null;

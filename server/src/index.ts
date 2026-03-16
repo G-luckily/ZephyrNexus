@@ -19,7 +19,7 @@ import {
   companies,
   companyMemberships,
   instanceUserRoles,
-} from "@paperclipai/db";
+} from "@zephyr-nexus/db";
 import detectPort from "detect-port";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
@@ -68,14 +68,14 @@ export interface StartedServer {
 
 export async function startServer(): Promise<StartedServer> {
   const config = loadConfig();
-  if (process.env.PAPERCLIP_SECRETS_PROVIDER === undefined) {
-    process.env.PAPERCLIP_SECRETS_PROVIDER = config.secretsProvider;
+  if (process.env.ZEPHYR_SECRETS_PROVIDER === undefined) {
+    process.env.ZEPHYR_SECRETS_PROVIDER = config.secretsProvider;
   }
-  if (process.env.PAPERCLIP_SECRETS_STRICT_MODE === undefined) {
-    process.env.PAPERCLIP_SECRETS_STRICT_MODE = config.secretsStrictMode ? "true" : "false";
+  if (process.env.ZEPHYR_SECRETS_STRICT_MODE === undefined) {
+    process.env.ZEPHYR_SECRETS_STRICT_MODE = config.secretsStrictMode ? "true" : "false";
   }
-  if (process.env.PAPERCLIP_SECRETS_MASTER_KEY_FILE === undefined) {
-    process.env.PAPERCLIP_SECRETS_MASTER_KEY_FILE = config.secretsMasterKeyFilePath;
+  if (process.env.ZEPHYR_SECRETS_MASTER_KEY_FILE === undefined) {
+    process.env.ZEPHYR_SECRETS_MASTER_KEY_FILE = config.secretsMasterKeyFilePath;
   }
   
   type MigrationSummary =
@@ -93,8 +93,8 @@ export async function startServer(): Promise<StartedServer> {
   }
   
   async function promptApplyMigrations(migrations: string[]): Promise<boolean> {
-    if (process.env.PAPERCLIP_MIGRATION_PROMPT === "never") return false;
-    if (process.env.PAPERCLIP_MIGRATION_AUTO_APPLY === "true") return true;
+    if (process.env.ZEPHYR_MIGRATION_PROMPT === "never") return false;
+    if (process.env.ZEPHYR_MIGRATION_AUTO_APPLY === "true") return true;
     if (!stdin.isTTY || !stdout.isTTY) return true;
   
     const prompt = createInterface({ input: stdin, output: stdout });
@@ -170,7 +170,7 @@ export async function startServer(): Promise<StartedServer> {
   }
   
   const LOCAL_BOARD_USER_ID = "local-board";
-  const LOCAL_BOARD_USER_EMAIL = "local@paperclip.local";
+  const LOCAL_BOARD_USER_EMAIL = "local@zephyr-nexus.local";
   const LOCAL_BOARD_USER_NAME = "Board";
   
   async function ensureLocalTrustedBoardPrincipal(db: any): Promise<void> {
@@ -261,7 +261,7 @@ export async function startServer(): Promise<StartedServer> {
     let port = configuredPort;
     const embeddedPostgresLogBuffer: string[] = [];
     const EMBEDDED_POSTGRES_LOG_BUFFER_LIMIT = 120;
-    const verboseEmbeddedPostgresLogs = process.env.PAPERCLIP_EMBEDDED_POSTGRES_VERBOSE === "true";
+    const verboseEmbeddedPostgresLogs = process.env.ZEPHYR_EMBEDDED_POSTGRES_VERBOSE === "true";
     const appendEmbeddedPostgresLog = (message: unknown) => {
       const text = typeof message === "string" ? message : message instanceof Error ? message.message : String(message ?? "");
       for (const lineRaw of text.split(/\r?\n/)) {
@@ -362,13 +362,39 @@ export async function startServer(): Promise<StartedServer> {
       embeddedPostgresStartedByThisProcess = true;
     }
   
-    const embeddedAdminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`;
-    const dbStatus = await ensurePostgresDatabase(embeddedAdminConnectionString, "paperclip");
+    const embeddedAdminConnectionString = `postgres://zephyr:zephyr_nexus@127.0.0.1:${port}/postgres`;
+    let dbStatus: "created" | "exists";
+    try {
+      dbStatus = await ensurePostgresDatabase(embeddedAdminConnectionString, "zephyr_nexus");
+    } catch (err: any) {
+      // If role zephyr doesn't exist, try to create it using legacy paperclip credentials
+      if (err?.message?.includes('role "zephyr" does not exist')) {
+        logger.info("Database role 'zephyr' does not exist; attempting to create it using legacy credentials...");
+        const legacyAdminUrl = `postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`;
+        const { default: postgres } = await import("postgres");
+        const sql = postgres(legacyAdminUrl);
+        try {
+          // Attempt to create the new role
+          await sql.unsafe("CREATE ROLE zephyr WITH LOGIN SUPERUSER PASSWORD 'zephyr_nexus'");
+          logger.info("Successfully created 'zephyr' role using legacy credentials");
+          // Retry ensuring the database
+          dbStatus = await ensurePostgresDatabase(embeddedAdminConnectionString, "zephyr_nexus");
+        } catch (createErr: any) {
+          logger.error({ err: createErr }, "Failed to create 'zephyr' role using legacy credentials");
+          throw err; // Throw the original "zephyr doesn't exist" error
+        } finally {
+          await sql.end();
+        }
+      } else {
+        throw err;
+      }
+    }
+
     if (dbStatus === "created") {
-      logger.info("Created embedded PostgreSQL database: paperclip");
+      logger.info("Created embedded PostgreSQL database: zephyr_nexus");
     }
   
-    const embeddedConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${port}/paperclip`;
+    const embeddedConnectionString = `postgres://zephyr:zephyr_nexus@127.0.0.1:${port}/zephyr_nexus`;
     const shouldAutoApplyFirstRunMigrations = !clusterAlreadyInitialized || dbStatus === "created";
     if (shouldAutoApplyFirstRunMigrations) {
       logger.info("Detected first-run embedded PostgreSQL setup; applying pending migrations automatically");
@@ -428,10 +454,10 @@ export async function startServer(): Promise<StartedServer> {
       resolveBetterAuthSessionFromHeaders,
     } = await import("./auth/better-auth.js");
     const betterAuthSecret =
-      process.env.BETTER_AUTH_SECRET?.trim() ?? process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim();
+      process.env.BETTER_AUTH_SECRET?.trim() ?? process.env.ZEPHYR_AGENT_JWT_SECRET?.trim();
     if (!betterAuthSecret) {
       throw new Error(
-        "authenticated mode requires BETTER_AUTH_SECRET (or PAPERCLIP_AGENT_JWT_SECRET) to be set",
+        "authenticated mode requires BETTER_AUTH_SECRET (or ZEPHYR_AGENT_JWT_SECRET) to be set",
       );
     }
     const derivedTrustedOrigins = deriveAuthTrustedOrigins(config);
@@ -487,9 +513,9 @@ export async function startServer(): Promise<StartedServer> {
     runtimeListenHost === "0.0.0.0" || runtimeListenHost === "::"
       ? "localhost"
       : runtimeListenHost;
-  process.env.PAPERCLIP_LISTEN_HOST = runtimeListenHost;
-  process.env.PAPERCLIP_LISTEN_PORT = String(listenPort);
-  process.env.PAPERCLIP_API_URL = `http://${runtimeApiHost}:${listenPort}`;
+  process.env.ZEPHYR_LISTEN_HOST = runtimeListenHost;
+  process.env.ZEPHYR_LISTEN_PORT = String(listenPort);
+  process.env.ZEPHYR_API_URL = `http://${runtimeApiHost}:${listenPort}`;
   
   setupLiveEventsWebSocketServer(server, db as any, {
     deploymentMode: config.deploymentMode,
@@ -554,7 +580,7 @@ export async function startServer(): Promise<StartedServer> {
           connectionString: activeDatabaseConnectionString,
           backupDir: config.databaseBackupDir,
           retentionDays: config.databaseBackupRetentionDays,
-          filenamePrefix: "paperclip",
+          filenamePrefix: "zephyr-nexus",
         });
         logger.info(
           {
@@ -596,7 +622,7 @@ export async function startServer(): Promise<StartedServer> {
     server.listen(listenPort, config.host, () => {
       server.off("error", onError);
       logger.info(`Server listening on ${config.host}:${listenPort}`);
-      if (process.env.PAPERCLIP_OPEN_ON_LISTEN === "true") {
+      if (process.env.ZEPHYR_OPEN_ON_LISTEN === "true") {
         const openHost = config.host === "0.0.0.0" || config.host === "::" ? "127.0.0.1" : config.host;
         const url = `http://${openHost}:${listenPort}`;
         void import("open")
@@ -633,11 +659,11 @@ export async function startServer(): Promise<StartedServer> {
         const reset = "\x1b[0m";
         console.log(
           [
-            `${red}  BOARD CLAIM REQUIRED  ${reset}`,
-            `${yellow}This instance was previously local_trusted and still has local-board as the only admin.${reset}`,
-            `${yellow}Sign in with a real user and open this one-time URL to claim ownership:${reset}`,
+            `${red}  OWNERSHIP CLAIM REQUIRED  ${reset}`,
+            `${yellow}This instance was previously in local-trusted mode and still has the default local principal as the only admin.${reset}`,
+            `${yellow}Sign in with a real user and open this one-time URL to claim ownership of this Zephyr Nexus instance:${reset}`,
             `${yellow}${boardClaimUrl}${reset}`,
-            `${yellow}If you are connecting over Tailscale, replace the host in this URL with your Tailscale IP/MagicDNS name.${reset}`,
+            `${yellow}If you are connecting over a private network (e.g. Tailscale), ensure the URL host matches your network identity.${reset}`,
           ].join("\n"),
         );
       }
@@ -670,7 +696,7 @@ export async function startServer(): Promise<StartedServer> {
     server,
     host: config.host,
     listenPort,
-    apiUrl: process.env.PAPERCLIP_API_URL ?? `http://${runtimeApiHost}:${listenPort}`,
+    apiUrl: process.env.ZEPHYR_API_URL ?? `http://${runtimeApiHost}:${listenPort}`,
     databaseUrl: activeDatabaseConnectionString,
   };
 }
@@ -687,7 +713,7 @@ function isMainModule(metaUrl: string): boolean {
 
 if (isMainModule(import.meta.url)) {
   void startServer().catch((err) => {
-    logger.error({ err }, "Paperclip server failed to start");
+    logger.error({ err }, "Zephyr Nexus server failed to start");
     process.exit(1);
   });
 }

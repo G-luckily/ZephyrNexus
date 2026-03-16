@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolvePaperclipConfigPath, resolvePaperclipEnvPath } from "./paths.js";
-import type { DeploymentExposure, DeploymentMode } from "@paperclipai/shared";
+import type { DeploymentExposure, DeploymentMode } from "@zephyr-nexus/shared";
 
 import { parse as parseEnvFileContents } from "dotenv";
 
@@ -39,11 +39,14 @@ const ansi = {
   reset: "\x1b[0m",
   bold: "\x1b[1m",
   dim: "\x1b[2m",
-  cyan: "\x1b[36m",
+  sky: "\x1b[38;5;111m",
+  purple: "\x1b[38;5;141m",
+  silver: "\x1b[38;5;153m",
+  gray: "\x1b[38;5;248m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
+  cyan: "\x1b[1;36m",
   magenta: "\x1b[35m",
-  blue: "\x1b[34m",
 };
 
 function color(text: string, c: keyof typeof ansi): string {
@@ -51,7 +54,7 @@ function color(text: string, c: keyof typeof ansi): string {
 }
 
 function row(label: string, value: string): string {
-  return `${color(label.padEnd(16), "dim")} ${value}`;
+  return `  ${color(label.padEnd(16), "gray")} ${value}`;
 }
 
 function redactConnectionString(raw: string): string {
@@ -71,7 +74,7 @@ function resolveAgentJwtSecretStatus(
   status: "pass" | "warn";
   message: string;
 } {
-  const envValue = process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim();
+  const envValue = process.env.ZEPHYR_AGENT_JWT_SECRET?.trim();
   if (envValue) {
     return {
       status: "pass",
@@ -81,7 +84,7 @@ function resolveAgentJwtSecretStatus(
 
   if (existsSync(envFilePath)) {
     const parsed = parseEnvFileContents(readFileSync(envFilePath, "utf-8"));
-    const fileValue = typeof parsed.PAPERCLIP_AGENT_JWT_SECRET === "string" ? parsed.PAPERCLIP_AGENT_JWT_SECRET.trim() : "";
+    const fileValue = typeof parsed.ZEPHYR_AGENT_JWT_SECRET === "string" ? parsed.ZEPHYR_AGENT_JWT_SECRET.trim() : "";
     if (fileValue) {
       return {
         status: "warn",
@@ -92,7 +95,7 @@ function resolveAgentJwtSecretStatus(
 
   return {
     status: "warn",
-    message: "missing (run `pnpm paperclipai onboard`)",
+    message: "missing (run `zephyr onboard`)",
   };
 }
 
@@ -109,17 +112,24 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
     opts.db.mode === "embedded-postgres"
       ? color("embedded-postgres", "green")
       : color("external-postgres", "yellow");
-  const uiMode =
+  const uiModeDescription =
     opts.uiMode === "vite-dev"
-      ? color("vite-dev-middleware", "cyan")
+      ? "vite-dev-middleware"
       : opts.uiMode === "static"
-        ? color("static-ui", "magenta")
-        : color("headless-api", "yellow");
+        ? "static-ui"
+        : "headless-api";
 
   const portValue =
     opts.requestedPort === opts.listenPort
       ? `${opts.listenPort}`
       : `${opts.listenPort} ${color(`(requested ${opts.requestedPort})`, "dim")}`;
+
+  const uiMode =
+    opts.uiMode === "vite-dev"
+      ? color(uiModeDescription, "cyan")
+      : opts.uiMode === "static"
+        ? color(uiModeDescription, "magenta")
+        : color(uiModeDescription, "yellow");
 
   const dbDetails =
     opts.db.mode === "embedded-postgres"
@@ -134,18 +144,21 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
     : color("disabled", "yellow");
 
   const art = [
-    color("██████╗  █████╗ ██████╗ ███████╗██████╗  ██████╗██╗     ██╗██████╗ ", "cyan"),
-    color("██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝██║     ██║██╔══██╗", "cyan"),
-    color("██████╔╝███████║██████╔╝█████╗  ██████╔╝██║     ██║     ██║██████╔╝", "cyan"),
-    color("██╔═══╝ ██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗██║     ██║     ██║██╔═══╝ ", "cyan"),
-    color("██║     ██║  ██║██║     ███████╗██║  ██║╚██████╗███████╗██║██║     ", "cyan"),
-    color("╚═╝     ╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚═╝╚═╝     ", "cyan"),
+    color("  ███████╗███████╗██████╗ ██╗  ██╗██╗   ██╗██████╗ ", "sky"),
+    color("  ╚══███╔╝██╔════╝██╔══██╗██║  ██║╚██╗ ██╔╝██╔══██╗", "sky"),
+    color("    ███╔╝ █████╗  ██████╔╝███████║ ╚████╔╝ ██████╔╝", "sky"),
+    color("   ███╔╝  ██╔══╝  ██╔═══╝ ██╔══██║  ╚██╔╝  ██╔══██╗", "sky"),
+    color("  ███████╗███████╗██║     ██║  ██║   ██║   ██║  ██║", "sky"),
+    color("  ╚══════╝╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝", "sky"),
+    color("                                           N E X U S", "purple"),
   ];
+
+  const separator = color("  ───────────────────────────────────────────────────────", "silver");
 
   const lines = [
     "",
     ...art,
-    color("  ───────────────────────────────────────────────────────", "blue"),
+    separator,
     row("Mode", `${dbMode}  |  ${uiMode}`),
     row("Deploy", `${opts.deploymentMode} (${opts.deploymentExposure})`),
     row("Auth", opts.authReady ? color("ready", "green") : color("not-ready", "yellow")),
@@ -167,7 +180,7 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
     agentJwtSecret.status === "warn"
       ? color("  ───────────────────────────────────────────────────────", "yellow")
       : null,
-    color("  ───────────────────────────────────────────────────────", "blue"),
+    separator,
     "",
   ];
 

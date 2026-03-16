@@ -1,5 +1,5 @@
 {
-  "name": "@paperclipai/adapter-pi-local",
+  "name": "@zephyr-nexus/adapter-pi-local",
   "version": "0.3.0",
   "type": "module",
   "exports": {
@@ -40,7 +40,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@paperclipai/adapter-utils": "workspace:*",
+    "@zephyr-nexus/adapter-utils": "workspace:*",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {

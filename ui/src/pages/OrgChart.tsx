@@ -14,7 +14,7 @@ import { tStatus } from "../lib/i18n";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { AgentIcon } from "../components/AgentIconPicker";
 import { Network } from "lucide-react";
-import { AGENT_ROLE_LABELS, type Agent } from "@paperclipai/shared";
+import { AGENT_ROLE_LABELS, type Agent } from "@zephyr-nexus/shared";
 
 const CARD_W = 220;
 const CARD_H = 110;

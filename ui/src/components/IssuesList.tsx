@@ -42,7 +42,7 @@ import {
   Search,
 } from "lucide-react";
 import { KanbanBoard } from "./KanbanBoard";
-import type { Issue } from "@paperclipai/shared";
+import type { Issue } from "@zephyr-nexus/shared";
 
 /* ── Helpers ── */
 

@@ -11,7 +11,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { EmptyState } from "../components/EmptyState";
 import { IssuesList } from "../components/IssuesList";
 import { CircleDot } from "lucide-react";
-import type { Agent } from "@paperclipai/shared";
+import type { Agent } from "@zephyr-nexus/shared";
 
 function roleDepartment(role: Agent["role"]): string {
   switch (role) {

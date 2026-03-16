@@ -8,8 +8,8 @@ import type {
   Approval,
   AgentConfigRevision,
   AgentBudgetSummary,
-} from "@paperclipai/shared";
-import { isUuidLike, normalizeAgentUrlKey } from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
+import { isUuidLike, normalizeAgentUrlKey } from "@zephyr-nexus/shared";
 import { ApiError, api } from "./client";
 
 export interface AgentKey {

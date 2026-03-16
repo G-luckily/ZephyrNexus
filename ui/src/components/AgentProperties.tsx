@@ -4,7 +4,7 @@ import {
   AGENT_ROLE_LABELS,
   type Agent,
   type AgentRuntimeState,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { agentsApi } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
 import { queryKeys } from "../lib/queryKeys";

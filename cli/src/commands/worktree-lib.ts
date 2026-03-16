@@ -198,11 +198,11 @@ export function buildWorktreeConfig(input: {
 
 export function buildWorktreeEnvEntries(paths: WorktreeLocalPaths): Record<string, string> {
   return {
-    PAPERCLIP_HOME: paths.homeDir,
-    PAPERCLIP_INSTANCE_ID: paths.instanceId,
-    PAPERCLIP_CONFIG: paths.configPath,
-    PAPERCLIP_CONTEXT: paths.contextPath,
-    PAPERCLIP_IN_WORKTREE: "true",
+    ZEPHYR_HOME: paths.homeDir,
+    ZEPHYR_INSTANCE_ID: paths.instanceId,
+    ZEPHYR_CONFIG: paths.configPath,
+    ZEPHYR_CONTEXT: paths.contextPath,
+    ZEPHYR_IN_WORKTREE: "true",
   };
 }
 

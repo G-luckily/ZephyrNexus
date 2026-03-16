@@ -1,5 +1,5 @@
 /**
- * @paperclipai/context-extractor — Extract module + git context and write to store.
+ * @zephyr-nexus/context-extractor — Extract module + git context and write to store.
  */
 
 export { extractModules } from "./extract-modules.js";

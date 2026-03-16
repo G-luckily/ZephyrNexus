@@ -2,7 +2,7 @@ import type {
   CompanySecret,
   SecretProviderDescriptor,
   SecretProvider,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { api } from "./client";
 
 export const secretsApi = {

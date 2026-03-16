@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
-import { buildExecutionTelemetry } from "@paperclipai/shared";
-import type { Db } from "@paperclipai/db";
+import { buildExecutionTelemetry } from "@zephyr-nexus/shared";
+import type { Db } from "@zephyr-nexus/db";
 import { validate } from "../middleware/validate.js";
 import { activityService } from "../services/activity.js";
 import { assertBoard, assertCompanyAccess } from "./authz.js";

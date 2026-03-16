@@ -24,7 +24,7 @@ import {
   Github,
   GitBranch,
 } from "lucide-react";
-import { PROJECT_COLORS } from "@paperclipai/shared";
+import { PROJECT_COLORS } from "@zephyr-nexus/shared";
 import { cn } from "../lib/utils";
 import { MarkdownEditor, type MarkdownEditorRef } from "./MarkdownEditor";
 import { StatusBadge } from "./StatusBadge";

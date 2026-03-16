@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Link } from "@/lib/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { LiveEvent } from "@paperclipai/shared";
+import type { LiveEvent } from "@zephyr-nexus/shared";
 import { heartbeatsApi, type LiveRunForIssue } from "../api/heartbeats";
 import { getUIAdapter } from "../adapters";
 import type { TranscriptEntry } from "../adapters";

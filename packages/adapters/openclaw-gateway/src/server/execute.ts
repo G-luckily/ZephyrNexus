@@ -2,8 +2,8 @@ import type {
   AdapterExecutionContext,
   AdapterExecutionResult,
   AdapterRuntimeServiceReport,
-} from "@paperclipai/adapter-utils";
-import { asNumber, asString, buildPaperclipEnv, parseObject } from "@paperclipai/adapter-utils/server-utils";
+} from "@zephyr-nexus/adapter-utils";
+import { asNumber, asString, buildPaperclipEnv, parseObject } from "@zephyr-nexus/adapter-utils/server-utils";
 import crypto, { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -355,19 +355,19 @@ function buildPaperclipEnvForWake(ctx: AdapterExecutionContext, wakePayload: Wak
   const paperclipApiUrlOverride = resolvePaperclipApiUrlOverride(ctx.config.paperclipApiUrl);
   const paperclipEnv: Record<string, string> = {
     ...buildPaperclipEnv(ctx.agent),
-    PAPERCLIP_RUN_ID: ctx.runId,
+    ZEPHYR_RUN_ID: ctx.runId,
   };
 
   if (paperclipApiUrlOverride) {
-    paperclipEnv.PAPERCLIP_API_URL = paperclipApiUrlOverride;
+    paperclipEnv.ZEPHYR_API_URL = paperclipApiUrlOverride;
   }
-  if (wakePayload.taskId) paperclipEnv.PAPERCLIP_TASK_ID = wakePayload.taskId;
-  if (wakePayload.wakeReason) paperclipEnv.PAPERCLIP_WAKE_REASON = wakePayload.wakeReason;
-  if (wakePayload.wakeCommentId) paperclipEnv.PAPERCLIP_WAKE_COMMENT_ID = wakePayload.wakeCommentId;
-  if (wakePayload.approvalId) paperclipEnv.PAPERCLIP_APPROVAL_ID = wakePayload.approvalId;
-  if (wakePayload.approvalStatus) paperclipEnv.PAPERCLIP_APPROVAL_STATUS = wakePayload.approvalStatus;
+  if (wakePayload.taskId) paperclipEnv.ZEPHYR_TASK_ID = wakePayload.taskId;
+  if (wakePayload.wakeReason) paperclipEnv.ZEPHYR_WAKE_REASON = wakePayload.wakeReason;
+  if (wakePayload.wakeCommentId) paperclipEnv.ZEPHYR_WAKE_COMMENT_ID = wakePayload.wakeCommentId;
+  if (wakePayload.approvalId) paperclipEnv.ZEPHYR_APPROVAL_ID = wakePayload.approvalId;
+  if (wakePayload.approvalStatus) paperclipEnv.ZEPHYR_APPROVAL_STATUS = wakePayload.approvalStatus;
   if (wakePayload.issueIds.length > 0) {
-    paperclipEnv.PAPERCLIP_LINKED_ISSUE_IDS = wakePayload.issueIds.join(",");
+    paperclipEnv.ZEPHYR_LINKED_ISSUE_IDS = wakePayload.issueIds.join(",");
   }
 
   return paperclipEnv;
@@ -377,16 +377,16 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
   const claimedApiKeyPath = "/workspace/.openclaw/workspace/paperclip-claimed-api-key.json";
   const legacyClaimedApiKeyPath = "~/.openclaw/workspace/paperclip-claimed-api-key.json";
   const orderedKeys = [
-    "PAPERCLIP_RUN_ID",
-    "PAPERCLIP_AGENT_ID",
-    "PAPERCLIP_COMPANY_ID",
-    "PAPERCLIP_API_URL",
-    "PAPERCLIP_TASK_ID",
-    "PAPERCLIP_WAKE_REASON",
-    "PAPERCLIP_WAKE_COMMENT_ID",
-    "PAPERCLIP_APPROVAL_ID",
-    "PAPERCLIP_APPROVAL_STATUS",
-    "PAPERCLIP_LINKED_ISSUE_IDS",
+    "ZEPHYR_RUN_ID",
+    "ZEPHYR_AGENT_ID",
+    "ZEPHYR_COMPANY_ID",
+    "ZEPHYR_API_URL",
+    "ZEPHYR_TASK_ID",
+    "ZEPHYR_WAKE_REASON",
+    "ZEPHYR_WAKE_COMMENT_ID",
+    "ZEPHYR_APPROVAL_ID",
+    "ZEPHYR_APPROVAL_STATUS",
+    "ZEPHYR_LINKED_ISSUE_IDS",
   ];
 
   const envLines: string[] = [];
@@ -397,7 +397,7 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
   }
 
   const issueIdHint = payload.taskId ?? payload.issueId ?? "";
-  const apiBaseHint = paperclipEnv.PAPERCLIP_API_URL ?? "<set PAPERCLIP_API_URL>";
+  const apiBaseHint = paperclipEnv.ZEPHYR_API_URL ?? "<set ZEPHYR_API_URL>";
 
   const lines = [
     "Paperclip wake event for a cloud adapter.",
@@ -406,9 +406,9 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
     "",
     "Set these values in your run context:",
     ...envLines,
-    `PAPERCLIP_API_KEY=<token from ${claimedApiKeyPath}>`,
+    `ZEPHYR_API_KEY=<token from ${claimedApiKeyPath}>`,
     "",
-    `Load PAPERCLIP_API_KEY from ${claimedApiKeyPath} (preferred in OpenClaw sandboxes).`,
+    `Load ZEPHYR_API_KEY from ${claimedApiKeyPath} (preferred in OpenClaw sandboxes).`,
     `If that path is unavailable outside the sandbox, fall back to ${legacyClaimedApiKeyPath}.`,
     "",
     `api_base=${apiBaseHint}`,
@@ -421,19 +421,19 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
     `linked_issue_ids=${payload.issueIds.join(",")}`,
     "",
     "HTTP rules:",
-    "- Use Authorization: Bearer $PAPERCLIP_API_KEY on every API call.",
-    "- Use X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID on every mutating API call.",
+    "- Use Authorization: Bearer $ZEPHYR_API_KEY on every API call.",
+    "- Use X-Paperclip-Run-Id: $ZEPHYR_RUN_ID on every mutating API call.",
     "- Use only /api endpoints listed below.",
     "- Do NOT call guessed endpoints like /api/cloud-adapter/*, /api/cloud-adapters/*, /api/adapters/cloud/*, or /api/heartbeat.",
     "",
     "Workflow:",
     "1) GET /api/agents/me",
-    `2) Determine issueId: PAPERCLIP_TASK_ID if present, otherwise issue_id (${issueIdHint}).`,
+    `2) Determine issueId: ZEPHYR_TASK_ID if present, otherwise issue_id (${issueIdHint}).`,
     "3) If issueId exists:",
-    "   - POST /api/issues/{issueId}/checkout with {\"agentId\":\"$PAPERCLIP_AGENT_ID\",\"expectedStatuses\":[\"todo\",\"backlog\",\"blocked\"]}",
+    "   - POST /api/issues/{issueId}/checkout with {\"agentId\":\"$ZEPHYR_AGENT_ID\",\"expectedStatuses\":[\"todo\",\"backlog\",\"blocked\"]}",
     "   - GET /api/issues/{issueId}",
     "   - GET /api/issues/{issueId}/comments",
-    "   - If the issue instructions include a manager/delegation block (for example [PAPERCLIP_MANAGER_TASK], director_hint, staff_candidates, or ceo_to_director_to_staff), treat the current issue as an orchestration issue.",
+    "   - If the issue instructions include a manager/delegation block (for example [ZEPHYR_MANAGER_TASK], director_hint, staff_candidates, or ceo_to_director_to_staff), treat the current issue as an orchestration issue.",
     "   - For orchestration issues, do NOT checkout or mutate work as another agent and do NOT impersonate a director or staff assignee.",
     "   - Instead create real child issues with POST /api/companies/{companyId}/issues using the current issue as parentId and the real target agent as assigneeAgentId.",
     "   - Use one child issue per delegated workstream, preserve the original projectId/goalId when present, and set status to todo so the assigned agent is woken automatically.",
@@ -443,7 +443,7 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
     "   - If instructions require a comment, POST /api/issues/{issueId}/comments with {\"body\":\"...\"}.",
     "   - PATCH /api/issues/{issueId} with {\"status\":\"done\",\"comment\":\"what changed and why\"}.",
     "4) If issueId does not exist:",
-    "   - GET /api/companies/$PAPERCLIP_COMPANY_ID/issues?assigneeAgentId=$PAPERCLIP_AGENT_ID&status=todo,in_progress,blocked",
+    "   - GET /api/companies/$ZEPHYR_COMPANY_ID/issues?assigneeAgentId=$ZEPHYR_AGENT_ID&status=todo,in_progress,blocked",
     "   - Pick in_progress first, then todo, then blocked, then execute step 3.",
     "",
     "Useful endpoints for issue work:",
@@ -514,7 +514,7 @@ function buildStandardPaperclipPayload(
     wakeCommentId: wakePayload.wakeCommentId,
     approvalId: wakePayload.approvalId,
     approvalStatus: wakePayload.approvalStatus,
-    apiUrl: paperclipEnv.PAPERCLIP_API_URL ?? null,
+    apiUrl: paperclipEnv.ZEPHYR_API_URL ?? null,
   };
 
   if (workspace) {
@@ -651,24 +651,24 @@ function buildOfficeDispatchMessage(input: {
     const paperclipTaskText = eccCommandBlock ? [taskText, "", eccCommandBlock].join("\n") : taskText;
     if (!allowRealIssueDelegation || !hasIssueScopedTaskContext) {
       return [
-        "[PAPERCLIP_BUSINESS_TASK]",
+        "[ZEPHYR_BUSINESS_TASK]",
         paperclipTaskText,
-        "[/PAPERCLIP_BUSINESS_TASK]",
+        "[/ZEPHYR_BUSINESS_TASK]",
         "",
         input.wakeText,
       ].join("\n");
     }
     return [
-      "[PAPERCLIP_BUSINESS_TASK]",
+      "[ZEPHYR_BUSINESS_TASK]",
       paperclipTaskText,
-      "[/PAPERCLIP_BUSINESS_TASK]",
+      "[/ZEPHYR_BUSINESS_TASK]",
       "",
-      "[PAPERCLIP_EXECUTION_MODE]",
+      "[ZEPHYR_EXECUTION_MODE]",
       "mode: real_issue_delegation",
       "require_real_api_mutation: true",
       "delegate_with_child_issues: true",
       "do_not_finish_with_report_only: true",
-      "[/PAPERCLIP_EXECUTION_MODE]",
+      "[/ZEPHYR_EXECUTION_MODE]",
       "",
       input.wakeText,
     ].join("\n");
@@ -1485,7 +1485,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       scriptPath: officeDispatchScriptPath,
       env: {
         ...paperclipEnv,
-        ...(ctx.authToken ? { PAPERCLIP_API_KEY: ctx.authToken } : {}),
+        ...(ctx.authToken ? { ZEPHYR_API_KEY: ctx.authToken } : {}),
       },
     });
 

@@ -4,7 +4,7 @@
 
 import { execSync } from "node:child_process";
 import { join } from "node:path";
-import type { GitChangeRow } from "@paperclipai/context-manager";
+import type { GitChangeRow } from "@zephyr-nexus/context-manager";
 
 export interface ExtractGitOptions {
   /** Repo root (must be a git repo). */

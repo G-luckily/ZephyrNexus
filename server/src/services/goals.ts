@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
-import { goals } from "@paperclipai/db";
+import type { Db } from "@zephyr-nexus/db";
+import { goals } from "@zephyr-nexus/db";
 
 export function goalService(db: Db) {
   return {

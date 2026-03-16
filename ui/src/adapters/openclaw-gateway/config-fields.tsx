@@ -200,7 +200,7 @@ export function OpenClawGatewayConfigFields({
             />
           </Field>
 
-          <Field label="Paperclip API URL override">
+          <Field label="Zephyr Nexus API URL override">
             <DraftInput
               value={eff(
                 "adapterConfig",
@@ -212,7 +212,7 @@ export function OpenClawGatewayConfigFields({
               }
               immediate
               className={inputClass}
-              placeholder="https://paperclip.example"
+              placeholder="https://zephyr.example"
             />
           </Field>
 
@@ -236,14 +236,14 @@ export function OpenClawGatewayConfigFields({
                 value={eff(
                   "adapterConfig",
                   "sessionKey",
-                  String(config.sessionKey ?? "paperclip")
+                  String(config.sessionKey ?? "zephyr_nexus")
                 )}
                 onCommit={(v) =>
                   mark("adapterConfig", "sessionKey", v || undefined)
                 }
                 immediate
                 className={inputClass}
-                placeholder="paperclip"
+                placeholder="zephyr_nexus"
               />
             </Field>
           )}
@@ -316,7 +316,7 @@ export function OpenClawGatewayConfigFields({
 
           <Field label="Device auth">
             <div className="text-xs text-muted-foreground leading-relaxed">
-              Always enabled for gateway agents. Paperclip persists a device key
+              Always enabled for gateway agents. Zephyr Nexus persists a device key
               during onboarding so pairing approvals remain stable across runs.
             </div>
           </Field>

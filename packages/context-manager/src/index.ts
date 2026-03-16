@@ -1,5 +1,5 @@
 /**
- * @paperclipai/context-manager — Context store abstraction, builder, and snapshot write-back.
+ * @zephyr-nexus/context-manager — Context store abstraction, builder, and snapshot write-back.
  */
 
 export type {

@@ -1,4 +1,4 @@
-# Developing
+# Developing Zephyr Nexus
 
 This project can run fully in local dev without setting up PostgreSQL manually.
 
@@ -76,8 +76,8 @@ docker build -t paperclip-local .
 docker run --name paperclip \
   -p 3100:3100 \
   -e HOST=0.0.0.0 \
-  -e PAPERCLIP_HOME=/paperclip \
-  -v "$(pwd)/data/docker-paperclip:/paperclip" \
+  -e PAPERCLIP_HOME=/zephyr-nexus \
+  -v "$(pwd)/data/docker-zephyr-nexus:/zephyr-nexus" \
   paperclip-local
 ```
 
@@ -94,12 +94,12 @@ See `doc/DOCKER.md` for API key wiring (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) 
 For local development, leave `DATABASE_URL` unset.
 The server will automatically use embedded PostgreSQL and persist data at:
 
-- `~/.paperclip/instances/default/db`
+- `~/.zephyr-nexus/instances/default/db`
 
 Override home and instance:
 
 ```sh
-PAPERCLIP_HOME=/custom/path PAPERCLIP_INSTANCE_ID=dev pnpm paperclipai run
+PAPERCLIP_HOME=/custom/path PAPERCLIP_INSTANCE_ID=dev pnpm zephyr run
 ```
 
 No Docker or external database is required for this mode.
@@ -108,19 +108,19 @@ No Docker or external database is required for this mode.
 
 For local development, the default storage provider is `local_disk`, which persists uploaded images/attachments at:
 
-- `~/.paperclip/instances/default/data/storage`
+- `~/.zephyr-nexus/instances/default/data/storage`
 
 Configure storage provider/settings:
 
 ```sh
-pnpm paperclipai configure --section storage
+pnpm zephyr configure --section storage
 ```
 
 ## Default Agent Workspaces
 
-When a local agent run has no resolved project/session workspace, Paperclip falls back to an agent home workspace under the instance root:
+When a local agent run has no resolved project/session workspace, Zephyr Nexus falls back to an agent home workspace under the instance root:
 
-- `~/.paperclip/instances/default/workspaces/<agent-id>`
+- `~/.zephyr-nexus/instances/default/workspaces/<agent-id>`
 
 This path honors `PAPERCLIP_HOME` and `PAPERCLIP_INSTANCE_ID` in non-default setups.
 
@@ -138,8 +138,8 @@ pnpm paperclipai worktree:make paperclip-pr-432
 
 This command:
 
-- writes repo-local files at `.paperclip/config.json` and `.paperclip/.env`
-- creates an isolated instance under `~/.paperclip-worktrees/instances/<worktree-id>/`
+- writes repo-local files at `.zephyr-nexus/config.json` and `.zephyr-nexus/.env`
+- creates an isolated instance under `~/.zephyr-nexus-worktrees/instances/<worktree-id>/`
 - when run inside a linked git worktree, mirrors the effective git hooks into that worktree's private git dir
 - picks a free app port and embedded PostgreSQL port
 - by default seeds the isolated DB in `minimal` mode from your main instance via a logical SQL snapshot

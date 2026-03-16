@@ -1,8 +1,8 @@
 import { Router, type Request } from "express";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import path from "node:path";
-import type { Db } from "@paperclipai/db";
-import { agents as agentsTable, companies, costEvents, heartbeatRuns } from "@paperclipai/db";
+import type { Db } from "@zephyr-nexus/db";
+import { agents as agentsTable, companies, costEvents, heartbeatRuns } from "@zephyr-nexus/db";
 import { and, desc, eq, inArray, not, sql } from "drizzle-orm";
 import {
   createAgentKeySchema,
@@ -16,7 +16,7 @@ import {
   wakeAgentSchema,
   updateAgentSchema,
   buildExecutionTelemetry,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { validate } from "../middleware/validate.js";
 import {
   agentService,
@@ -33,13 +33,13 @@ import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { findServerAdapter, listAdapterModels } from "../adapters/index.js";
 import { redactEventPayload } from "../redaction.js";
-import { runClaudeLogin } from "@paperclipai/adapter-claude-local/server";
+import { runClaudeLogin } from "@zephyr-nexus/adapter-claude-local/server";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
-} from "@paperclipai/adapter-codex-local";
-import { DEFAULT_CURSOR_LOCAL_MODEL } from "@paperclipai/adapter-cursor-local";
-import { ensureOpenCodeModelConfiguredAndAvailable } from "@paperclipai/adapter-opencode-local/server";
+} from "@zephyr-nexus/adapter-codex-local";
+import { DEFAULT_CURSOR_LOCAL_MODEL } from "@zephyr-nexus/adapter-cursor-local";
+import { ensureOpenCodeModelConfiguredAndAvailable } from "@zephyr-nexus/adapter-opencode-local/server";
 
 export function agentRoutes(db: Db) {
   const DEFAULT_INSTRUCTIONS_PATH_KEYS: Record<string, string> = {
@@ -57,7 +57,7 @@ export function agentRoutes(db: Db) {
   const heartbeat = heartbeatService(db);
   const issueApprovalsSvc = issueApprovalService(db);
   const secretsSvc = secretService(db);
-  const strictSecretsMode = process.env.PAPERCLIP_SECRETS_STRICT_MODE === "true";
+  const strictSecretsMode = process.env.ZEPHYR_SECRETS_STRICT_MODE === "true";
 
   function canCreateAgents(agent: { role: string; permissions: Record<string, unknown> | null | undefined }) {
     if (!agent.permissions || typeof agent.permissions !== "object") return false;

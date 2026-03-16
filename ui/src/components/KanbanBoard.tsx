@@ -21,7 +21,7 @@ import { StatusIcon } from "./StatusIcon";
 import { tStatus } from "../lib/i18n";
 import { PriorityIcon } from "./PriorityIcon";
 import { Identity } from "./Identity";
-import type { Issue } from "@paperclipai/shared";
+import type { Issue } from "@zephyr-nexus/shared";
 
 const boardStatuses = [
   "backlog",

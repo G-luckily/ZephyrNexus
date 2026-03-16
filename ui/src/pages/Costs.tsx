@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, AlertTriangle, ArrowRight } from "lucide-react";
 import { Link } from "@/lib/router";
 import { Badge } from "@/components/ui/badge";
-import { type IssueBudgetSummary, type CostByAgent, type BlockedRunSummary } from "@paperclipai/shared";
+import { type IssueBudgetSummary, type CostByAgent, type BlockedRunSummary } from "@zephyr-nexus/shared";
 
 type DatePreset = "mtd" | "7d" | "30d" | "ytd" | "all" | "custom";
 

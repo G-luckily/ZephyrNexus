@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn, formatCents, relativeTime } from "../lib/utils";
 import { Activity, AlertCircle, Ban, History } from "lucide-react";
-import type { BudgetStatus, RecentCostEvent, BlockedRunSummary } from "@paperclipai/shared";
+import type { BudgetStatus, RecentCostEvent, BlockedRunSummary } from "@zephyr-nexus/shared";
 
 interface BudgetSummaryCardProps {
   scope: "issue" | "agent";

@@ -30,7 +30,7 @@ import {
 import {
   buildProjectMentionHref,
   parseProjectMentionHref,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { cn } from "../lib/utils";
 
 /* ---- Mention types ---- */

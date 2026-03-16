@@ -1,4 +1,4 @@
-import type { Agent, Project } from "@paperclipai/shared";
+import type { Agent, Project } from "@zephyr-nexus/shared";
 import { agentUrl, projectRouteRef } from "./utils";
 
 export interface OrgUnitItem {

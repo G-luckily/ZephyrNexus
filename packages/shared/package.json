@@ -1,5 +1,5 @@
 {
-  "name": "@paperclipai/shared",
+  "name": "@zephyr-nexus/shared",
   "version": "0.3.0",
   "type": "module",
   "exports": {

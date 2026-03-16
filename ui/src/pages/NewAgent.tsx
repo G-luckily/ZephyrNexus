@@ -5,7 +5,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { agentsApi } from "../api/agents";
 import { queryKeys } from "../lib/queryKeys";
-import { AGENT_ROLES } from "@paperclipai/shared";
+import { AGENT_ROLES } from "@zephyr-nexus/shared";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -25,8 +25,8 @@ import { AgentIcon } from "../components/AgentIconPicker";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
-} from "@paperclipai/adapter-codex-local";
-import { DEFAULT_CURSOR_LOCAL_MODEL } from "@paperclipai/adapter-cursor-local";
+} from "@zephyr-nexus/adapter-codex-local";
+import { DEFAULT_CURSOR_LOCAL_MODEL } from "@zephyr-nexus/adapter-cursor-local";
 
 const SUPPORTED_ADVANCED_ADAPTER_TYPES = new Set<
   CreateConfigValues["adapterType"]

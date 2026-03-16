@@ -21,6 +21,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { cn, relativeTime, agentUrl } from "../lib/utils";
 import { tStatus } from "../lib/i18n";
 import { buildOrgUnits } from "../lib/company-scope";
+import { OrchestrationVisual } from "../components/dashboard/OrchestrationVisual";
 import {
   Activity,
   AlertTriangle,
@@ -57,7 +58,7 @@ import type {
   Agent,
   HeartbeatRun,
   Issue,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 
 type LogWindow = "15m" | "1h" | "24h";
 type SuccessWindow = "24h" | "7d" | "30d";
@@ -453,7 +454,7 @@ function MetricCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "premium-panel hover-lift glow-effect group relative h-[140px] overflow-hidden rounded-[24px] px-6 py-6 text-left transition-all duration-300",
+        "premium-panel glass-surface hover-lift group relative h-[140px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300",
         kind === "accent" && "border-primary/20",
         kind === "warning" && "border-warning/30"
       )}
@@ -514,7 +515,7 @@ function SuccessRateCard({
     <button
       type="button"
       onClick={onClick}
-      className="premium-panel hover-lift glow-effect group relative h-[140px] overflow-hidden rounded-[24px] px-6 py-6 text-left transition-all duration-300"
+      className="premium-panel glass-surface hover-lift group relative h-[140px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300"
     >
       <div className="relative flex h-full flex-col justify-between z-10">
         <div className="flex items-center justify-between">
@@ -1103,7 +1104,7 @@ export function Dashboard() {
   const recentEvents = useMemo(() => (activity ?? []).slice(0, 5), [activity]);
 
   const OrgRuntimePanel = () => (
-    <div className="premium-panel hover-lift relative overflow-hidden rounded-[30px] border border-slate-200 dark:border-white/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+    <div className="premium-panel glass-surface hover-lift relative overflow-hidden rounded-[var(--radius-panel)] p-6 lg:p-8 shadow-2xl">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(79,209,255,0.18),transparent_55%)]" />
       <div className="relative mb-4 flex items-center justify-between">
         <div>
@@ -1120,7 +1121,7 @@ export function Dashboard() {
         </div>
         <Link
           to="/org"
-          className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300 no-underline transition-all duration-150 hover:-translate-y-[1px] hover:border-cyan-300/25 hover:bg-cyan-400/10 hover:text-slate-800 dark:text-white hover:shadow-[0_12px_24px_rgba(79,209,255,0.12)] active:translate-y-0 active:shadow-[0_6px_14px_rgba(79,209,255,0.08)]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/50 px-4 py-1.5 text-[11px] font-semibold text-foreground no-underline transition-all duration-200 hover:bg-muted hover:border-accent/30 hover-lift shadow-sm"
         >
           进入组织页
           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -1267,7 +1268,7 @@ export function Dashboard() {
   );
 
   const ActiveAgentsPanel = () => (
-    <div className="premium-panel hover-lift relative overflow-hidden rounded-[30px] border border-border bg-card p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+    <div className="premium-panel glass-surface hover-lift relative overflow-hidden rounded-[var(--radius-panel)] p-6 lg:p-8 shadow-2xl">
       <div className="relative mb-4 flex items-center justify-between">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-200">
@@ -1286,14 +1287,14 @@ export function Dashboard() {
             <button
               type="button"
               onClick={() => setSelectedDept("all")}
-              className="rounded-full border border-border bg-muted/50 px-4 py-2 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:bg-muted"
+              className="rounded-full border border-border bg-background/50 px-4 py-1.5 text-xs font-semibold text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground hover-lift shadow-sm"
             >
               重置部门
             </button>
           )}
           <Link
             to="/agents"
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground no-underline transition-all duration-150 hover:bg-muted"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/50 px-4 py-1.5 text-xs font-semibold text-foreground no-underline transition-all duration-200 hover:bg-muted hover-lift shadow-sm"
           >
             管理全部
             <ArrowUpRight className="h-3.5 w-3.5" />
@@ -1378,336 +1379,89 @@ export function Dashboard() {
     </div>
   );
 
-  const CommandHeader = () => {
+  const ZephyrHero = () => {
     return (
-      <>
-        <section className="premium-panel hover-lift relative overflow-hidden rounded-[34px] border border-slate-200 dark:border-white/10 bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_60%,#f5f5f4_100%)] shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_12%,rgba(59,130,246,0.08),transparent_28%),radial-gradient(circle_at_88%_16%,rgba(99,102,241,0.06),transparent_24%),linear-gradient(120deg,rgba(255,255,255,0.65),transparent_32%)]" />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-50"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(15,23,42,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.04) 1px, transparent 1px)",
-              backgroundSize: "96px 96px",
-            }}
-          />
-          <div className="relative grid gap-6 p-6 xl:grid-cols-[minmax(0,1.35fr)_420px] xl:p-8">
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="launch-chip launch-chip-cyan uppercase tracking-[0.24em]">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  AI 运行中枢
-                </span>
-                <span className="launch-chip">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                    <span className="animate-subtle-pulse relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                  </span>
-                  实时 · {lastSyncTime}
-                </span>
-                <span className="launch-chip">
-                  <Radar className="h-3.5 w-3.5 text-cyan-200" />
-                  {scopeView === "company"
-                    ? "公司视角"
-                    : scopeView === "project"
-                    ? "项目视角"
-                    : "部门视角"}
-                </span>
-              </div>
+      <section className="premium-panel glass-surface relative h-[520px] overflow-hidden rounded-[var(--radius-hero)] border-none shadow-2xl">
+        <div className="absolute inset-0 z-0">
+          <OrchestrationVisual className="scale-110 opacity-60 dark:opacity-40 translate-x-[25%] lg:translate-x-[30%]" />
+        </div>
+        
+        <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-12">
+          <div className="max-w-xl">
+            {/* 1. System Status Badge */}
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1.5 backdrop-blur-md">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/70">
+                System Active · {lastSyncTime}
+              </span>
+            </div>
 
-              <div className="max-w-4xl">
-                <p className="text-sm font-medium uppercase tracking-[0.34em] text-slate-500 dark:text-slate-400">
-                  Zephyr Nexus / OpenClaw / ECC
-                </p>
-                <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-slate-800 dark:text-white md:text-5xl xl:text-[58px] xl:leading-[1.02]">
-                  {selectedCompany?.name ?? "AI Operating System"}
-                </h1>
-                <p className="mt-4 max-w-3xl text-[15px] leading-7 text-slate-600 dark:text-slate-300 md:text-base">
-                  一页展示组织层、项目专用执行层与通用流水线层的真实运行状态，让这套
-                  AI 平台看起来像一个已经准备好公开演示的操作系统。
-                </p>
-              </div>
+            {/* 2 & 3. Zephyr Nexus + Chinese Name */}
+            <div className="space-y-1">
+              <h1 className="text-6xl lg:text-7xl font-bold tracking-tighter text-foreground">
+                Zephyr Nexus
+              </h1>
+              <h2 className="text-3xl lg:text-4xl font-light tracking-[.25em] text-foreground/60">
+                风之灵枢
+              </h2>
+            </div>
 
-              <div className="grid gap-3 md:grid-cols-3">
-                {(
-                  [
-                    {
-                      layer: "ORG",
-                      count: agentLayerCounts.ORG,
-                      accent: "border-cyan-400/18 bg-cyan-400/10 text-cyan-200",
-                    },
-                    {
-                      layer: "V1-PROJECT",
-                      count: agentLayerCounts["V1-PROJECT"],
-                      accent:
-                        "border-violet-400/18 bg-violet-400/10 text-violet-200",
-                    },
-                    {
-                      layer: "V2-PIPELINE",
-                      count: agentLayerCounts["V2-PIPELINE"],
-                      accent:
-                        "border-emerald-400/18 bg-emerald-400/10 text-emerald-200",
-                    },
-                  ] as const
-                ).map((item) => (
-                  <div
-                    key={item.layer}
-                    className="premium-panel hover-lift rounded-[24px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-4 shadow-[0_8px_20px_rgba(15,23,42,0.06)]"
-                  >
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] uppercase",
-                        item.accent
-                      )}
-                    >
-                      [{item.layer}]
-                    </span>
-                    <p className="mt-3 text-[30px] font-semibold tracking-[-0.04em] text-slate-800 dark:text-white">
-                      {item.count}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {item.layer === "ORG"
-                        ? "治理、调度与组织控制"
-                        : item.layer === "V1-PROJECT"
-                        ? "项目特定 review / verify / implement"
-                        : "v2 通用 pipeline 试点"}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            {/* 4. Product Description */}
+            <p className="mt-6 text-lg font-medium text-muted-foreground/80">
+              多智能体协同与任务调度中枢
+            </p>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-full border border-slate-200 dark:border-white/10 bg-slate-100/70 dark:bg-black/20 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                  <button
-                    onClick={() => setScopeView("company")}
-                    className={cn(
-                      "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150",
-                      scopeView === "company"
-                        ? "bg-white/12 text-slate-800 dark:text-white shadow-[0_8px_16px_rgba(0,0,0,0.18)]"
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"
-                    )}
-                  >
-                    公司
-                  </button>
-                  <button
-                    onClick={() => setScopeView("project")}
-                    className={cn(
-                      "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150",
-                      scopeView === "project"
-                        ? "bg-white/12 text-slate-800 dark:text-white shadow-[0_8px_16px_rgba(0,0,0,0.18)]"
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"
-                    )}
-                  >
-                    项目
-                  </button>
-                  <button
-                    onClick={() => setScopeView("department")}
-                    className={cn(
-                      "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150",
-                      scopeView === "department"
-                        ? "bg-white/12 text-slate-800 dark:text-white shadow-[0_8px_16px_rgba(0,0,0,0.18)]"
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"
-                    )}
-                  >
-                    部门
-                  </button>
-                </div>
-                {scopeView === "project" && (
-                  <select
-                    className="h-10 rounded-full border border-slate-200 dark:border-white/10 bg-white/[0.05] px-4 text-xs text-slate-600 dark:text-slate-300 outline-none"
-                    value={projectFilter}
-                    onChange={(e) => setProjectFilter(e.target.value)}
-                  >
-                    <option value="all">全部项目</option>
-                    {availableProjects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {scopeView === "department" && (
-                  <select
-                    className="h-10 rounded-full border border-slate-200 dark:border-white/10 bg-white/[0.05] px-4 text-xs text-slate-600 dark:text-slate-300 outline-none"
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                  >
-                    <option value="all">全部部门</option>
-                    {DEPARTMENTS.map((department) => (
-                      <option key={department} value={department}>
-                        {department}
-                      </option>
-                    ))}
-                  </select>
-                )}
+            {/* 5. Integrated Metrics Row */}
+            <div className="mt-10 flex items-center gap-12">
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-foreground tracking-tight">{departments.length}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">部门 / Departments</p>
+              </div>
+              <div className="h-8 w-px bg-border/40" />
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-foreground tracking-tight">{companyAgents.length}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">智能体 / Spirits</p>
+              </div>
+              <div className="h-8 w-px bg-border/40" />
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-foreground tracking-tight">{successRate}%</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">成功率 / Success</p>
               </div>
             </div>
 
-            <div className="grid gap-4">
-              <div className="premium-panel hover-lift rounded-[28px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                    运行概况
-                  </p>
-                  <Activity className="h-4 w-4 text-cyan-200" />
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[20px] border border-white/8 bg-slate-100/70 dark:bg-black/20 p-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      系统脉动
-                    </p>
-                    <div className="mt-3 flex items-end gap-2">
-                      <span className="text-[32px] font-semibold tracking-[-0.05em] text-slate-800 dark:text-white">
-                        {runningAgents.length}
-                      </span>
-                      <span className="pb-1 text-sm text-slate-500 dark:text-slate-400">
-                        活跃智能体
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                      {directorActive} 个治理节点在线，{workerActive}{" "}
-                      个执行节点推进中
-                    </p>
-                  </div>
-                  <div className="rounded-[20px] border border-white/8 bg-slate-100/70 dark:bg-black/20 p-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      任务健康度
-                    </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full border px-3 py-1 text-[12px] font-semibold",
-                          healthTone
-                        )}
-                      >
-                        {health}
-                      </span>
-                      <span className="text-sm text-slate-500 dark:text-slate-400">
-                        ETA {eta} 分钟
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                      {liveProjectName}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="premium-panel hover-lift rounded-[28px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                      执行摘要
-                    </p>
-                    <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-slate-800 dark:text-white">
-                      {liveTask?.title ?? "等待任务输入"}
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                      当前风险 {blockedIssues}，告警 {alertCount}，最近一次同步{" "}
-                      {lastSyncTime}。
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-rose-400/16 bg-rose-500/10 p-3 text-rose-200">
-                    <ShieldAlert className="h-5 w-5" />
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/18 bg-rose-500/10 px-3 py-1 text-[11px] font-medium text-rose-200">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    阻塞 {blockedIssues}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/18 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-200">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    告警 {alertCount}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                    <Building2 className="h-3.5 w-3.5 text-cyan-200" />
-                    {liveProjectName}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={
-                    blockedIssues > 0
-                      ? () => setBlockedModalOpen(true)
-                      : () => openNewIssue()
-                  }
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-slate-300 bg-slate-50 dark:bg-white/[0.06] px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-all duration-150 hover:border-slate-400 hover:bg-white dark:bg-white/[0.04]"
-                >
-                  {blockedIssues > 0 ? "处理阻塞任务" : "分配新任务"}
-                  <ArrowUpRight className="h-4 w-4" />
-                </button>
-              </div>
+            {/* 6. Primary CTA */}
+            <div className="mt-10">
+              <button
+                type="button"
+                onClick={() => openNewIssue()}
+                className="inline-flex items-center gap-3 rounded-2xl bg-foreground px-8 py-4 text-base font-bold text-background shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 active:scale-95 group"
+              >
+                <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
+                新建任务
+              </button>
             </div>
           </div>
-        </section>
 
-        {hasNoAgents && (
-          <div className="flex items-center justify-between gap-3 rounded-[24px] border border-amber-400/18 bg-amber-500/10 px-4 py-3.5">
-            <div className="flex items-center gap-2.5">
-              <Bot className="h-4 w-4 shrink-0 text-amber-200" />
-              <p className="text-sm text-amber-50">当前公司暂无智能体。</p>
-            </div>
-            <button
-              onClick={() =>
-                openOnboarding({
-                  initialStep: 2,
-                  companyId: selectedCompanyId!,
-                })
-              }
-              className="shrink-0 text-sm font-medium text-amber-100 underline underline-offset-2 transition-colors duration-150 hover:text-slate-800 dark:text-white"
-            >
-              立即创建
-            </button>
+          {/* 7. Capability Signature Line */}
+          <div className="mt-auto flex flex-wrap items-center gap-6 text-[11px] font-bold uppercase tracking-[.2em] text-muted-foreground/40">
+            <span className="hover:text-foreground transition-colors cursor-default">Zephyr Spirits｜智能体群</span>
+            <span className="h-1 w-1 rounded-full bg-current" />
+            <span className="hover:text-foreground transition-colors cursor-default">Wind Paths｜任务流</span>
+            <span className="h-1 w-1 rounded-full bg-current" />
+            <span className="hover:text-foreground transition-colors cursor-default">Zephyr Swarm｜协同网络</span>
+            <span className="h-1 w-1 rounded-full bg-current" />
+            <span className="hover:text-foreground transition-colors cursor-default">Wind Engine｜执行引擎</span>
           </div>
-        )}
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            title="运行中智能体"
-            value={runningAgents.length}
-            subtitle={`${directorActive} 位总监活跃，${workerActive} 位专员执行中`}
-            icon={<Bot className="h-4 w-4" />}
-            kind="primary"
-            onClick={() => navigate("/agents/active")}
-          />
-          <MetricCard
-            title="当前任务"
-            value={activeIssues.length}
-            subtitle={`${criticalIssues} 项重点任务，${Math.max(
-              activeIssues.length - criticalIssues,
-              0
-            )} 项常规任务`}
-            icon={<CircleDot className="h-4 w-4" />}
-            kind="accent"
-            onClick={() => navigate("/issues?preset=active")}
-          />
-          <MetricCard
-            title="阻塞任务"
-            value={blockedIssues}
-            subtitle={`${blockedIssues > 0 ? 1 : 0} 项依赖等待，${
-              failedRuns > 0 ? 1 : 0
-            } 项执行失败`}
-            icon={<AlertCircle className="h-4 w-4" />}
-            kind="warning"
-            onClick={() => setBlockedModalOpen(true)}
-          />
-          <SuccessRateCard
-            rate={trendBars.trendRate}
-            trendTotal={trendBars.trendTotal}
-            avgMinutes={avgRunMinutes}
-            window={successWindow}
-            onWindowChange={setSuccessWindow}
-            bars={trendBars.data}
-            onClick={() => navigate("/activity")}
-          />
-        </section>
-      </>
+        </div>
+      </section>
     );
   };
   const MissionControl = () => {
     return (
-      <section className="premium-panel hover-lift relative overflow-hidden rounded-[34px] border border-slate-200 dark:border-white/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+      <section className="premium-panel glass-surface hover-lift relative overflow-hidden rounded-[var(--radius-panel)] shadow-2xl">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.07),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.07),transparent_28%)]" />
         <div className="relative grid gap-6 p-6 xl:grid-cols-[minmax(0,1.18fr)_340px] xl:p-8">
           <div className="space-y-5">
@@ -1726,7 +1480,7 @@ export function Dashboard() {
               </div>
               <Link
                 to="/flow"
-                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/18 bg-cyan-400/10 px-4 py-2 text-xs font-semibold text-cyan-100 no-underline transition-all duration-150 hover:-translate-y-[1px] hover:border-cyan-300/28 hover:bg-cyan-400/14 hover:shadow-[0_14px_24px_rgba(79,209,255,0.14)] active:translate-y-0"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/50 px-4 py-1.5 text-xs font-semibold text-foreground no-underline transition-all duration-200 hover:bg-muted hover-lift shadow-sm"
               >
                 查看完整流程
                 <ArrowUpRight className="h-4 w-4" />
@@ -1747,7 +1501,7 @@ export function Dashboard() {
               <div className="animate-data-flow h-full w-full" />
             </div>
 
-            <div className="premium-panel hover-lift rounded-[28px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
@@ -1761,7 +1515,7 @@ export function Dashboard() {
                   {liveTask?.identifier ?? "实时任务"}
                 </div>
               </div>
-              <div className="rounded-[24px] border border-slate-200 dark:border-white/10 bg-[linear-gradient(180deg,rgba(244,249,255,0.98)_0%,rgba(233,242,255,0.95)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_16px_32px_rgba(0,0,0,0.18)]">
+              <div className="rounded-[var(--radius-card)] border border-border/40 bg-background/20 backdrop-blur-sm p-4 shadow-inner">
                 <TaskFlowBoard
                   task={liveTask}
                   showSummary={false}
@@ -1772,7 +1526,7 @@ export function Dashboard() {
           </div>
 
           <div className="grid gap-4">
-            <div className="premium-panel hover-lift rounded-[28px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                   任务简报
@@ -1812,7 +1566,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="premium-panel hover-lift rounded-[28px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                   执行流图
@@ -1854,7 +1608,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="premium-panel hover-lift rounded-[28px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                 运行信号
               </p>
@@ -1923,7 +1677,7 @@ export function Dashboard() {
   );
 
   const EventTimeline = () => (
-    <section className="premium-panel hover-lift relative overflow-hidden rounded-[30px] border border-slate-200 dark:border-white/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+    <section className="premium-panel glass-surface hover-lift relative overflow-hidden rounded-[var(--radius-panel)] p-6 lg:p-8 shadow-2xl">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_right,rgba(79,209,255,0.16),transparent_50%)]" />
       <div className="relative mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -1953,7 +1707,7 @@ export function Dashboard() {
           </div>
 
           <select
-            className="rounded-full border border-slate-200 dark:border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-slate-600 dark:text-slate-300"
+            className="rounded-full border border-border bg-background/50 px-4 py-1.5 text-xs text-foreground transition-all duration-200 hover:border-accent/40 focus:ring-2 focus:ring-accent/20 focus:outline-none"
             value={logWindow}
             onChange={(e) => setLogWindow(e.target.value as LogWindow)}
           >
@@ -2069,108 +1823,12 @@ export function Dashboard() {
           <div className="mx-auto flex w-full flex-col gap-6 pt-4">
             {/* Top Row: Brand Hero & Overview */}
             <div className="grid grid-cols-12 gap-6">
-              <div className="premium-panel col-span-12 lg:col-span-8 relative overflow-hidden rounded-[32px] p-8 lg:p-10 transition-all duration-500">
-                {/* Clean Neutral Ambient Glow */}
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-
-                <div className="relative z-10 flex h-full flex-col justify-between">
-                  <div>
-                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-sidebar-accent/50 px-3 py-1.5 shadow-sm">
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-                      </span>
-                      <span className="text-[11px] font-semibold text-foreground">
-                        系统运行正常
-                      </span>
-                    </div>
-                    <h1 className="text-6xl lg:text-7xl font-bold tracking-tighter text-foreground mb-1">
-                      <span className="text-gradient-accent">
-                        Zephyr Nexus
-                      </span>
-                    </h1>
-                    <div className="flex items-baseline gap-4 mb-10">
-                      <h2 className="text-4xl lg:text-5xl font-semibold text-foreground/90 tracking-tight">
-                        Zephyr Nexus
-                      </h2>
-                      <span className="text-xl text-muted-foreground font-light tracking-[0.3em] opacity-80">
-                        风之灵枢
-                      </span>
-                    </div>
-
-                    <div className="premium-panel bg-background/20 backdrop-blur-md rounded-[28px] p-6 mb-10 inline-flex gap-12 items-center border-white/5 shadow-2xl">
-                      <div className="flex items-center gap-4">
-                        <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent transition-colors group-hover:bg-accent/20">
-                           <Radar className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-foreground leading-none">{departments.length} 部门</p>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5 font-medium">2 Departments</p>
-                        </div>
-                      </div>
-                      <div className="h-10 w-px bg-border/20" />
-                      <div className="flex items-center gap-4">
-                        <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-                           <Bot className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-foreground leading-none">{companyAgents.length} Spirits</p>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5 font-medium">19 Spirits</p>
-                        </div>
-                      </div>
-                      <div className="h-10 w-px bg-border/20" />
-                      <div className="flex items-center gap-4">
-                        <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success transition-colors group-hover:bg-success/20">
-                           <ShieldCheck className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-foreground leading-none">{successWindow === "24h" ? 98 : 96}% Success</p>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5 font-medium">System Health</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 flex flex-col gap-6">
-                    <div className="flex items-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() => openNewIssue()}
-                        className="inline-flex items-center gap-2 rounded-[16px] bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 active:scale-95"
-                      >
-                        <Plus className="h-4 w-4" /> 新建任务
-                      </button>
-                      <div className="flex -space-x-3">
-                        {companyAgents.slice(0, 3).map((agent, idx) => (
-                          <div
-                            key={agent.id}
-                            className="relative flex items-center justify-center p-1 rounded-full border-2 border-card bg-sidebar-accent shadow-sm"
-                            style={{ zIndex: 3 - idx, width: 36, height: 36 }}
-                          >
-                            <AgentIcon icon={agent.icon} className="h-6 w-6" seed={agent.id} />
-                          </div>
-                        ))}
-                        <div className="relative z-[4] flex h-9 w-9 items-center justify-center rounded-full border-2 border-card bg-sidebar-accent text-[10px] font-bold text-muted-foreground shadow-sm">
-                          +{Math.max(0, companyAgents.length - 3)}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <p className="text-[12px] font-medium text-muted-foreground/50 tracking-[0.1em] flex items-center gap-3 ml-1">
-                      <span>Zephyr Spirits</span>
-                      <span className="h-1 w-1 rounded-full bg-border" />
-                      <span>Wind Paths</span>
-                      <span className="h-1 w-1 rounded-full bg-border" />
-                      <span>Zephyr Swarm</span>
-                      <span className="h-1 w-1 rounded-full bg-border" />
-                      <span>Wind Engine</span>
-                    </p>
-                  </div>
-                </div>
+              <div className="col-span-12 lg:col-span-8">
+                <ZephyrHero />
               </div>
 
               <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                <div className="premium-panel flex-1 rounded-[24px] p-6 lg:p-8 relative overflow-hidden flex flex-col justify-between">
+                <div className="premium-panel glass-surface flex-1 rounded-[var(--radius-panel)] p-6 lg:p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl">
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent to-accent/5 pointer-events-none" />
 
                   <div className="relative z-10">
@@ -2221,7 +1879,7 @@ export function Dashboard() {
               animationDelay: "40ms",
             }}
           >
-            <div className="premium-panel hover-lift rounded-[28px] overflow-hidden">
+            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-panel)] overflow-hidden shadow-2xl">
               <div className="px-5 py-5 pb-6 border-b border-border/50 bg-background/50">
                 <div className="flex items-start justify-between">
                   <div>
@@ -2280,7 +1938,7 @@ export function Dashboard() {
                   <Network className="h-5 w-5 text-muted-foreground" />
                   组织拓扑
                 </h2>
-                <div className="premium-panel hover-lift overflow-hidden rounded-[28px] p-6 lg:p-8 h-full">
+                <div className="premium-panel glass-surface hover-lift overflow-hidden rounded-[var(--radius-panel)] p-6 lg:p-8 h-full shadow-2xl">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                     <MetricCard
                       title="活跃任务"
@@ -2311,7 +1969,7 @@ export function Dashboard() {
                   <Bot className="h-5 w-5 text-muted-foreground" />
                   活跃智能体
                 </h2>
-                <div className="premium-panel hover-lift overflow-hidden rounded-[28px] flex flex-col items-stretch divide-y divide-border/50 h-full max-h-[420px] overflow-y-auto scrollbar-auto-hide">
+                <div className="premium-panel glass-surface hover-lift overflow-hidden rounded-[var(--radius-panel)] flex flex-col items-stretch divide-y divide-border/50 h-full max-h-[420px] overflow-y-auto scrollbar-auto-hide shadow-2xl">
                   {companyAgents.slice(0, 5).map((agent) => (
                     <Link
                       key={agent.id}
@@ -2360,7 +2018,7 @@ export function Dashboard() {
 
       <Dialog open={blockedModalOpen} onOpenChange={setBlockedModalOpen}>
         {" "}
-        <DialogContent className="max-w-2xl border-slate-200 dark:border-white/10 bg-white text-slate-700 dark:text-slate-200 shadow-[0_20px_48px_rgba(15,23,42,0.12)]">
+        <DialogContent className="max-w-2xl glass-surface rounded-[var(--radius-panel)] p-8 shadow-3xl border-none">
           <DialogHeader>
             <DialogTitle>阻塞任务列表</DialogTitle>
             <DialogDescription className="text-slate-500 dark:text-slate-400">
@@ -2399,10 +2057,10 @@ export function Dashboard() {
           <button
             type="button"
             aria-label="关闭节点详情"
-            className="fixed inset-0 z-[80] bg-black/45 backdrop-blur-sm"
+            className="fixed inset-0 z-[80] bg-black/20 backdrop-blur-md"
             onClick={() => setSelectedFlowNode(null)}
           />
-          <aside className="fixed right-0 top-0 z-[90] flex h-full w-full max-w-md flex-col overflow-hidden border-l border-border bg-card shadow-[-18px_0_48px_rgba(0,0,0,0.4)]">
+          <aside className="fixed right-0 top-0 z-[90] flex h-full w-full max-w-md flex-col overflow-hidden border-l border-border glass-surface shadow-2xl">
             {/* status-colored top bar */}
             <div
               className="h-1.5 w-full flex-none"
@@ -2496,7 +2154,7 @@ export function Dashboard() {
                   <Link
                     to={`/issues/${liveTask.identifier ?? liveTask.id}`}
                     onClick={() => setSelectedFlowNode(null)}
-                    className="inline-flex rounded-full border border-cyan-400/18 bg-[linear-gradient(90deg,rgba(79,209,255,0.16),rgba(99,102,241,0.16))] px-4 py-2 text-sm font-medium text-slate-800 dark:text-white no-underline transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_12px_24px_rgba(79,209,255,0.2)] active:translate-y-0 active:brightness-95"
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-5 py-2 text-sm font-semibold text-foreground no-underline transition-all duration-200 hover:bg-muted hover-lift shadow-sm"
                   >
                     查看任务详情
                   </Link>
@@ -2511,7 +2169,7 @@ export function Dashboard() {
         open={!!selectedAgentPanel}
         onOpenChange={(open) => !open && setSelectedAgentPanel(null)}
       >
-        <DialogContent className="border-border bg-card text-foreground shadow-[0_30px_80px_rgba(0,0,0,0.48)]">
+        <DialogContent className="glass-surface rounded-[var(--radius-panel)] p-8 shadow-3xl border-none">
           <DialogHeader>
             <DialogTitle>
               {selectedAgentPanel?.name ?? "智能体详情"}
@@ -2539,7 +2197,7 @@ export function Dashboard() {
               <Link
                 to={selectedAgentPanel.route}
                 onClick={() => setSelectedAgentPanel(null)}
-                className="inline-flex rounded-full border border-cyan-400/18 bg-[linear-gradient(90deg,rgba(79,209,255,0.16),rgba(99,102,241,0.16))] px-4 py-2 text-sm font-medium text-slate-800 dark:text-white no-underline transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_12px_24px_rgba(79,209,255,0.2)] active:translate-y-0 active:brightness-95"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-5 py-2 text-sm font-semibold text-foreground no-underline transition-all duration-200 hover:bg-muted hover-lift shadow-sm"
               >
                 打开智能体面板
               </Link>

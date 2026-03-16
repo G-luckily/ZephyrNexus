@@ -1,4 +1,4 @@
-import type { SecretProvider, SecretProviderDescriptor } from "@paperclipai/shared";
+import type { SecretProvider, SecretProviderDescriptor } from "@zephyr-nexus/shared";
 
 export interface StoredSecretVersionMaterial {
   [key: string]: unknown;

@@ -1,5 +1,5 @@
 {
-  "name": "@paperclipai/context-extractor",
+  "name": "@zephyr-nexus/context-extractor",
   "version": "0.1.0",
   "type": "module",
   "bin": {
@@ -24,7 +24,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@paperclipai/context-manager": "workspace:*",
+    "@zephyr-nexus/context-manager": "workspace:*",
     "ts-morph": "^24.0.0"
   },
   "devDependencies": {

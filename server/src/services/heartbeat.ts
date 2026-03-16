@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@zephyr-nexus/db";
 import {
   agents,
   agentRuntimeState,
@@ -13,7 +13,7 @@ import {
   issues,
   projects,
   projectWorkspaces,
-} from "@paperclipai/db";
+} from "@zephyr-nexus/db";
 import { conflict, notFound } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 import { publishLiveEvent } from "./live-events.js";
@@ -45,7 +45,7 @@ import {
   writeDiffSnapshot,
   normalizeDiffSnapshotInput,
   SqliteContextStore,
-} from "@paperclipai/context-manager";
+} from "@zephyr-nexus/context-manager";
 
 const MAX_LIVE_LOG_CHUNK_BYTES = 8 * 1024;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
@@ -54,14 +54,14 @@ const DEFAULT_MAX_CONTEXT_PRIOR_SNAPSHOTS = 8;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_MAX = 10;
 
 function getMaxContextBlockChars(): number {
-  const raw = process.env.PAPERCLIP_MAX_CONTEXT_CHARS;
+  const raw = process.env.ZEPHYR_MAX_CONTEXT_CHARS;
   if (raw === undefined || raw === "") return DEFAULT_MAX_CONTEXT_BLOCK_CHARS;
   const n = Number.parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? Math.min(n, 100_000) : DEFAULT_MAX_CONTEXT_BLOCK_CHARS;
 }
 
 function getMaxContextPriorSnapshots(): number {
-  const raw = process.env.PAPERCLIP_MAX_PRIOR_SNAPSHOTS;
+  const raw = process.env.ZEPHYR_MAX_PRIOR_SNAPSHOTS;
   if (raw === undefined || raw === "") return DEFAULT_MAX_CONTEXT_PRIOR_SNAPSHOTS;
   const n = Number.parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? Math.min(n, 50) : DEFAULT_MAX_CONTEXT_PRIOR_SNAPSHOTS;
@@ -1560,7 +1560,7 @@ export function heartbeatService(db: Db) {
             runId: run.id,
             adapterType: agent.adapterType,
           },
-          "local agent jwt secret missing or invalid; running without injected PAPERCLIP_API_KEY",
+          "local agent jwt secret missing or invalid; running without injected ZEPHYR_API_KEY",
         );
       }
       const adapterResult = await adapter.execute({

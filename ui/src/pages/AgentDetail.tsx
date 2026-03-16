@@ -20,7 +20,7 @@ import {
   isUuidLike,
   type HeartbeatRunEvent,
   type LiveEvent
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { heartbeatsApi } from "../api/heartbeats";
 import { ApiError } from "../api/client";
 import {

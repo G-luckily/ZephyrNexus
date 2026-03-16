@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import { agents, costEvents, heartbeatRuns, issues, type Db } from "@paperclipai/db";
+import { agents, costEvents, heartbeatRuns, issues, type Db } from "@zephyr-nexus/db";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   addIssueCommentSchema,
@@ -10,7 +10,7 @@ import {
   createIssueSchema,
   linkIssueApprovalSchema,
   updateIssueSchema,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import type { StorageService } from "../storage/types.js";
 import { validate } from "../middleware/validate.js";
 import {

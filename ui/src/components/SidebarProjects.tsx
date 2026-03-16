@@ -30,7 +30,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import type { Project } from "@paperclipai/shared";
+import type { Project } from "@zephyr-nexus/shared";
 
 function SortableProjectItem({
   activeProjectRef,

@@ -2,7 +2,7 @@ import type {
   CostSummary,
   CostByAgent,
   CostByModel,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { api } from "./client";
 
 export interface CostByProject {

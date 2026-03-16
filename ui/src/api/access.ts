@@ -1,4 +1,4 @@
-import type { AgentAdapterType, JoinRequest } from "@paperclipai/shared";
+import type { AgentAdapterType, JoinRequest } from "@zephyr-nexus/shared";
 import { api } from "./client";
 
 type InviteSummary = {

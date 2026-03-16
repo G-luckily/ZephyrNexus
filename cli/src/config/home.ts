@@ -1,17 +1,58 @@
 import os from "node:os";
 import path from "node:path";
+import fs from "node:fs";
 
 const DEFAULT_INSTANCE_ID = "default";
 const INSTANCE_ID_RE = /^[a-zA-Z0-9_-]+$/;
 
+function ensureHomeMigration(): void {
+  const oldHome = path.resolve(os.homedir(), ".paperclip");
+  const newHome = path.resolve(os.homedir(), ".zephyr-nexus");
+
+  if (fs.existsSync(oldHome)) {
+    if (fs.existsSync(newHome)) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const backupNewHome = `${newHome}.backup-${timestamp}`;
+      try {
+        fs.renameSync(newHome, backupNewHome);
+        console.log(`[Zephyr Nexus] Backed up existing ${newHome} to ${backupNewHome}`);
+      } catch (err) {
+        console.warn(`[Zephyr Nexus] Failed to backup existing ${newHome}, skipping migration:`, err);
+        return;
+      }
+    }
+
+    try {
+      fs.renameSync(oldHome, newHome);
+      console.log(`[Zephyr Nexus] Migrated legacy data from ${oldHome} to ${newHome}`);
+    } catch (err) {
+      console.warn(`[Zephyr Nexus] Failed to migrate ${oldHome} to ${newHome}:`, err);
+    }
+  }
+
+  // Also migrate worktrees if they exist
+  const oldWorktrees = path.resolve(os.homedir(), ".paperclip-worktrees");
+  const newWorktrees = path.resolve(os.homedir(), ".zephyr-nexus-worktrees");
+  if (fs.existsSync(oldWorktrees) && !fs.existsSync(newWorktrees)) {
+    try {
+      fs.renameSync(oldWorktrees, newWorktrees);
+      console.log(`[Zephyr Nexus] Migrated legacy worktrees from ${oldWorktrees} to ${newWorktrees}`);
+    } catch (err) {
+      // Ignore errors for worktrees, they are less critical
+    }
+  }
+}
+
 export function resolvePaperclipHomeDir(): string {
-  const envHome = process.env.PAPERCLIP_HOME?.trim();
+  const envHome = process.env.ZEPHYR_HOME?.trim();
   if (envHome) return path.resolve(expandHomePrefix(envHome));
-  return path.resolve(os.homedir(), ".paperclip");
+
+  ensureHomeMigration();
+  return path.resolve(os.homedir(), ".zephyr-nexus");
 }
 
 export function resolvePaperclipInstanceId(override?: string): string {
-  const raw = override?.trim() || process.env.PAPERCLIP_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
+  const raw = override?.trim() || process.env.ZEPHYR_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
   if (!INSTANCE_ID_RE.test(raw)) {
     throw new Error(
       `Invalid instance id '${raw}'. Allowed characters: letters, numbers, '_' and '-'.`,

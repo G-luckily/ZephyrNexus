@@ -11,7 +11,7 @@ import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { TaskFlowBoard } from "../components/dashboard/TaskFlowBoard";
 import { Workflow } from "lucide-react";
-import type { Issue } from "@paperclipai/shared";
+import type { Issue } from "@zephyr-nexus/shared";
 
 type FlowFilter = "all" | "active" | "blocked" | "review";
 

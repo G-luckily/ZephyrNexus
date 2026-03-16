@@ -7,7 +7,7 @@ import {
   deriveProjectUrlKey,
   type ActivityEvent,
   type Agent,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 
 const ACTION_VERBS: Record<string, string> = {
   "issue.created": "created",

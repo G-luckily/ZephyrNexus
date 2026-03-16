@@ -5,7 +5,7 @@ import type {
   CompanyPortabilityImportResult,
   CompanyPortabilityPreviewRequest,
   CompanyPortabilityPreviewResult,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { api } from "./client";
 
 export type CompanyStats = Record<

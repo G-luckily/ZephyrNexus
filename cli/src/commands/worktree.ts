@@ -26,7 +26,7 @@ import {
   projectWorkspaces,
   runDatabaseBackup,
   runDatabaseRestore,
-} from "@paperclipai/db";
+} from "@zephyr-nexus/db";
 import type { Command } from "commander";
 import { ensureAgentJwtSecret, loadPaperclipEnvFile, mergePaperclipEnvEntries, readPaperclipEnvEntries, resolvePaperclipEnvFile } from "../config/env.js";
 import { expandHomePrefix } from "../config/home.js";
@@ -437,8 +437,8 @@ export function copySeededSecretsKey(input: {
   mkdirSync(path.dirname(input.targetKeyFilePath), { recursive: true });
 
   const sourceInlineMasterKey =
-    nonEmpty(input.sourceEnvEntries.PAPERCLIP_SECRETS_MASTER_KEY) ??
-    nonEmpty(process.env.PAPERCLIP_SECRETS_MASTER_KEY);
+    nonEmpty(input.sourceEnvEntries.ZEPHYR_SECRETS_MASTER_KEY) ??
+    nonEmpty(process.env.ZEPHYR_SECRETS_MASTER_KEY);
   if (sourceInlineMasterKey) {
     writeFileSync(input.targetKeyFilePath, sourceInlineMasterKey, {
       encoding: "utf8",
@@ -453,8 +453,8 @@ export function copySeededSecretsKey(input: {
   }
 
   const sourceKeyFileOverride =
-    nonEmpty(input.sourceEnvEntries.PAPERCLIP_SECRETS_MASTER_KEY_FILE) ??
-    nonEmpty(process.env.PAPERCLIP_SECRETS_MASTER_KEY_FILE);
+    nonEmpty(input.sourceEnvEntries.ZEPHYR_SECRETS_MASTER_KEY_FILE) ??
+    nonEmpty(process.env.ZEPHYR_SECRETS_MASTER_KEY_FILE);
   const sourceConfiguredKeyPath = sourceKeyFileOverride ?? input.sourceConfig.secrets.localEncrypted.keyFilePath;
   const sourceKeyFilePath = resolveRuntimeLikePath(sourceConfiguredKeyPath, input.sourceConfigPath);
 
@@ -753,10 +753,10 @@ export async function worktreeEnvCommand(opts: WorktreeEnvOptions): Promise<void
   const envPath = resolvePaperclipEnvFile(configPath);
   const envEntries = readPaperclipEnvEntries(envPath);
   const out = {
-    PAPERCLIP_CONFIG: configPath,
-    ...(envEntries.PAPERCLIP_HOME ? { PAPERCLIP_HOME: envEntries.PAPERCLIP_HOME } : {}),
-    ...(envEntries.PAPERCLIP_INSTANCE_ID ? { PAPERCLIP_INSTANCE_ID: envEntries.PAPERCLIP_INSTANCE_ID } : {}),
-    ...(envEntries.PAPERCLIP_CONTEXT ? { PAPERCLIP_CONTEXT: envEntries.PAPERCLIP_CONTEXT } : {}),
+    ZEPHYR_CONFIG: configPath,
+    ...(envEntries.ZEPHYR_HOME ? { ZEPHYR_HOME: envEntries.ZEPHYR_HOME } : {}),
+    ...(envEntries.ZEPHYR_INSTANCE_ID ? { ZEPHYR_INSTANCE_ID: envEntries.ZEPHYR_INSTANCE_ID } : {}),
+    ...(envEntries.ZEPHYR_CONTEXT ? { ZEPHYR_CONTEXT: envEntries.ZEPHYR_CONTEXT } : {}),
     ...envEntries,
   };
 
@@ -778,7 +778,7 @@ export function registerWorktreeCommands(program: Command): void {
     .option("--instance <id>", "Explicit isolated instance id")
     .option("--home <path>", `Home root for worktree instances (default: ${DEFAULT_WORKTREE_HOME})`)
     .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
+    .option("--from-data-dir <path>", "Source ZEPHYR_HOME used when deriving the source config")
     .option("--from-instance <id>", "Source instance id when deriving the source config", "default")
     .option("--server-port <port>", "Preferred server port", (value) => Number(value))
     .option("--db-port <port>", "Preferred embedded Postgres port", (value) => Number(value))
@@ -794,7 +794,7 @@ export function registerWorktreeCommands(program: Command): void {
     .option("--instance <id>", "Explicit isolated instance id")
     .option("--home <path>", `Home root for worktree instances (default: ${DEFAULT_WORKTREE_HOME})`)
     .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
+    .option("--from-data-dir <path>", "Source ZEPHYR_HOME used when deriving the source config")
     .option("--from-instance <id>", "Source instance id when deriving the source config", "default")
     .option("--server-port <port>", "Preferred server port", (value) => Number(value))
     .option("--db-port <port>", "Preferred embedded Postgres port", (value) => Number(value))

@@ -5,7 +5,7 @@ import type {
   IssueComment,
   IssueLabel,
   IssueBudgetSummary,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { api } from "./client";
 
 export const issuesApi = {

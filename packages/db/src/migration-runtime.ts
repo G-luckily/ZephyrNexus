@@ -81,10 +81,25 @@ async function ensureEmbeddedPostgresConnection(
 
   if (runningPid) {
     const port = runningPort ?? preferredPort;
-    const adminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`;
-    await ensurePostgresDatabase(adminConnectionString, "paperclip");
+    const adminConnectionString = `postgres://zephyr:zephyr_nexus@127.0.0.1:${port}/postgres`;
+    try {
+      await ensurePostgresDatabase(adminConnectionString, "zephyr_nexus");
+    } catch (err: any) {
+      if (err?.message?.includes('role "zephyr" does not exist')) {
+        const legacyAdminUrl = `postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`;
+        const sql = (await import("postgres")).default(legacyAdminUrl);
+        try {
+          await sql.unsafe("CREATE ROLE zephyr WITH LOGIN SUPERUSER PASSWORD 'zephyr_nexus'");
+          await ensurePostgresDatabase(adminConnectionString, "zephyr_nexus");
+        } finally {
+          await sql.end();
+        }
+      } else {
+        throw err;
+      }
+    }
     return {
-      connectionString: `postgres://paperclip:paperclip@127.0.0.1:${port}/paperclip`,
+      connectionString: `postgres://zephyr:zephyr_nexus@127.0.0.1:${port}/zephyr_nexus`,
       source: `embedded-postgres@${port}`,
       stop: async () => {},
     };
@@ -100,7 +115,8 @@ async function ensureEmbeddedPostgresConnection(
     onError: () => {},
   });
 
-  if (!existsSync(path.resolve(dataDir, "PG_VERSION"))) {
+  const pgVersionPath = path.resolve(dataDir, "PG_VERSION");
+  if (!existsSync(pgVersionPath)) {
     await instance.initialise();
   }
   if (existsSync(postmasterPidFile)) {
@@ -108,11 +124,26 @@ async function ensureEmbeddedPostgresConnection(
   }
   await instance.start();
 
-  const adminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${preferredPort}/postgres`;
-  await ensurePostgresDatabase(adminConnectionString, "paperclip");
+  const adminConnectionString = `postgres://zephyr:zephyr_nexus@127.0.0.1:${preferredPort}/postgres`;
+  try {
+    await ensurePostgresDatabase(adminConnectionString, "zephyr_nexus");
+  } catch (err: any) {
+    if (err?.message?.includes('role "zephyr" does not exist')) {
+      const legacyAdminUrl = `postgres://paperclip:paperclip@127.0.0.1:${preferredPort}/postgres`;
+      const sql = (await import("postgres")).default(legacyAdminUrl);
+      try {
+        await sql.unsafe("CREATE ROLE zephyr WITH LOGIN SUPERUSER PASSWORD 'zephyr_nexus'");
+        await ensurePostgresDatabase(adminConnectionString, "zephyr_nexus");
+      } finally {
+        await sql.end();
+      }
+    } else {
+      throw err;
+    }
+  }
 
   return {
-    connectionString: `postgres://paperclip:paperclip@127.0.0.1:${preferredPort}/paperclip`,
+    connectionString: `postgres://zephyr:zephyr_nexus@127.0.0.1:${preferredPort}/zephyr_nexus`,
     source: `embedded-postgres@${preferredPort}`,
     stop: async () => {
       await instance.stop();

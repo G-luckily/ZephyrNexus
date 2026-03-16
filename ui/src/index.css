@@ -45,61 +45,68 @@
 :root {
   color-scheme: light;
   --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-hero: 40px;
+  --radius-panel: 32px;
+  --radius-card: 24px;
+  --radius-chip: 12px;
 
-  /* Core Foundation - Bone / Warm Light Gray */
-  --background: #f7f7f5;
-  --foreground: #171717; /* Deep Charcoal */
+  /* Zephyr Nexus Day Mode - Airy & Elegant */
+  --background: #fdfdfc;
+  --foreground: #1c1c1e;
 
   /* Surfaces */
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: #1c1c1e;
   --popover: #ffffff;
-  --popover-foreground: #171717;
+  --popover-foreground: #1c1c1e;
 
-  /* Primary & Accent - Cobalt Blue */
-  --primary: #171717;
+  /* Primary & Accent - Deep Indigo / Azure */
+  --primary: #1c1c1e;
   --primary-foreground: #ffffff;
-  --accent: #1d4ed8;
+  --accent: #2563eb;
   --accent-foreground: #ffffff;
 
+  /* Deep Celestial Gradients */
+  --celestial-1: #3b82f6;
+  --celestial-2: #8b5cf6;
+  --celestial-3: #2dd4bf;
+
   /* Secondary & Muted */
-  --secondary: #f0f0ee;
-  --secondary-foreground: #171717;
-  --muted: #f0f0ee;
-  --muted-foreground: #8b8b8b;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #1c1c1e;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
 
   /* Status Colors */
-  --destructive: #dc2626;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --success: #059669;
-  --warning: #d97706;
-  --error: #dc2626;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
 
   /* Borders & Inputs */
-  --border: #e5e5e0;
-  --input: #e5e5e0;
-  --ring: rgba(29, 78, 216, 0.4);
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: rgba(37, 99, 235, 0.2);
 
-  /* Shadows */
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.04);
-  --shadow-card-strong: 0 12px 32px rgba(0, 0, 0, 0.08);
-
-  /* Charts */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  /* Shadows - Refined & Subtle */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.03), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
 
   /* Sidebar */
-  --sidebar: #f7f7f5;
-  --sidebar-foreground: #171717;
-  --sidebar-primary: #171717;
+  --sidebar: #fdfdfc;
+  --sidebar-foreground: #1c1c1e;
+  --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e5e5e0;
-  --sidebar-accent-foreground: #171717;
-  --sidebar-border: #e5e5e0;
-  --sidebar-ring: rgba(23, 23, 23, 0.2);
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #1c1c1e;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: rgba(37, 99, 235, 0.2);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -110,61 +117,66 @@
 }
 
 .dark {
-  /* Premium Lighter Dark Mode Palette - Vercel / Linear inspired */
-  --background: #111113; 
-  --foreground: #fcfcfc; 
+  /* Zephyr Nexus Night Mode - Cosmic & Deep */
+  --background: #09090b; 
+  --foreground: #fafafa; 
 
   /* Surfaces */
-  --card: #161618;
-  --card-foreground: #fcfcfc;
-  --popover: #161618;
-  --popover-foreground: #fcfcfc;
+  --card: #121214;
+  --card-foreground: #fafafa;
+  --popover: #121214;
+  --popover-foreground: #fafafa;
 
-  /* Primary & Accent - Neutral high contrast */
-  --primary: #fcfcfc;
-  --primary-foreground: #111113;
-  --accent: #232326; 
-  --accent-foreground: #fcfcfc;
+  /* Primary & Accent - Astral White / Cyan */
+  --primary: #fafafa;
+  --primary-foreground: #09090b;
+  --accent: #0ea5e9; 
+  --accent-foreground: #fafafa;
+
+  /* Stellar Gradients */
+  --celestial-1: #0ea5e9;
+  --celestial-2: #a855f7;
+  --celestial-3: #22d3ee;
 
   /* Secondary & Muted */
-  --secondary: #232326;
-  --secondary-foreground: #fcfcfc;
+  --secondary: #1c1c1f;
+  --secondary-foreground: #fafafa;
   --muted: #1c1c1f; 
-  --muted-foreground: #a1a1aa; /* Zinc 400 */
+  --muted-foreground: #a1a1aa;
 
   /* Status Colors */
-  --destructive: #ef4444;
-  --destructive-foreground: #fcfcfc;
+  --destructive: #f43f5e;
+  --destructive-foreground: #fafafa;
   --success: #10b981;
   --warning: #f59e0b;
-  --error: #ef4444;
+  --error: #f43f5e;
 
   /* Borders & Inputs */
-  --border: #2c2c30; 
-  --input: #2c2c30;
-  --ring: rgba(252, 252, 252, 0.4);
+  --border: #242427; 
+  --input: #242427;
+  --ring: rgba(14, 165, 233, 0.3);
+
+  /* Shadows - Depth & Glow */
+  --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
 
   /* Sidebar */
-  --sidebar: #111113;
-  --sidebar-foreground: #fcfcfc;
-  --sidebar-primary: #fcfcfc;
-  --sidebar-primary-foreground: #111113;
-  --sidebar-accent: #232326;
-  --sidebar-accent-foreground: #fcfcfc;
-  --sidebar-border: #2c2c30;
-  --sidebar-ring: rgba(252, 252, 252, 0.2);
-
-  /* Ensure charts look good on dark */
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: #09090b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #0ea5e9;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #1c1c1f;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #242427;
+  --sidebar-ring: rgba(14, 165, 233, 0.2);
 }
 
 @layer base {
   * {
     @apply border-border;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
   }
   html {
     height: 100%;
@@ -340,19 +352,19 @@
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: linear-gradient(to bottom right, var(--accent), transparent);
+  background: radial-gradient(circle at center, var(--accent), transparent 70%);
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: -1;
   pointer-events: none;
 }
 
 .glow-effect:hover::before {
-  opacity: 0.15;
+  opacity: 0.08;
 }
 
 .dark .glow-effect:hover::before {
-  opacity: 0.25;
+  opacity: 0.12;
 }
 
 .hover-lift {
@@ -771,4 +783,55 @@ a.paperclip-project-mention-chip {
 .paperclip-mdxeditor [class*="_toolbarButtonDropdownContainer_"],
 .paperclip-mdxeditor [class*="_toolbarNodeKindSelectContainer_"] {
   z-index: 81 !important;
+}
+
+/* Zephyr Nexus Celestial Animations */
+@keyframes celestial-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.05); }
+}
+
+@keyframes celestial-pulse {
+  0%, 100% { opacity: 0.4; filter: blur(2px); }
+  50% { opacity: 0.8; filter: blur(4px); }
+}
+
+@keyframes celestial-drift {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -100; }
+}
+
+.animate-celestial-float {
+  animation: celestial-float 6s ease-in-out infinite;
+}
+
+.animate-celestial-pulse {
+  animation: celestial-pulse 4s ease-in-out infinite;
+}
+
+.animate-celestial-drift {
+  animation: celestial-drift 30s linear infinite;
+}
+
+/* Glassmorphism Utilities */
+.glass-surface {
+  background: color-mix(in oklab, var(--card) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in oklab, var(--border) 20%, transparent);
+}
+
+.dark .glass-surface {
+  background: rgba(18, 18, 20, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 70%);
+  opacity: 0.05;
+}
+
+.dark .hero-gradient {
+  background: radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 70%);
+  opacity: 0.15;
 }

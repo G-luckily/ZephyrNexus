@@ -1,10 +1,10 @@
-import type { CLIAdapterModule } from "@paperclipai/adapter-utils";
-import { printClaudeStreamEvent } from "@paperclipai/adapter-claude-local/cli";
-import { printCodexStreamEvent } from "@paperclipai/adapter-codex-local/cli";
-import { printCursorStreamEvent } from "@paperclipai/adapter-cursor-local/cli";
-import { printOpenCodeStreamEvent } from "@paperclipai/adapter-opencode-local/cli";
-import { printPiStreamEvent } from "@paperclipai/adapter-pi-local/cli";
-import { printOpenClawGatewayStreamEvent } from "@paperclipai/adapter-openclaw-gateway/cli";
+import type { CLIAdapterModule } from "@zephyr-nexus/adapter-utils";
+import { printClaudeStreamEvent } from "@zephyr-nexus/adapter-claude-local/cli";
+import { printCodexStreamEvent } from "@zephyr-nexus/adapter-codex-local/cli";
+import { printCursorStreamEvent } from "@zephyr-nexus/adapter-cursor-local/cli";
+import { printOpenCodeStreamEvent } from "@zephyr-nexus/adapter-opencode-local/cli";
+import { printPiStreamEvent } from "@zephyr-nexus/adapter-pi-local/cli";
+import { printOpenClawGatewayStreamEvent } from "@zephyr-nexus/adapter-openclaw-gateway/cli";
 import { processCLIAdapter } from "./process/index.js";
 import { httpCLIAdapter } from "./http/index.js";
 

@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import type { Agent } from "@paperclipai/shared";
+import type { Agent } from "@zephyr-nexus/shared";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -39,7 +39,7 @@ interface SkillsInstallSummary {
 }
 
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
-const PAPERCLIP_SKILLS_CANDIDATES = [
+const ZEPHYR_SKILLS_CANDIDATES = [
   path.resolve(__moduleDir, "../../../../../skills"), // dev: cli/src/commands/client -> repo root/skills
   path.resolve(process.cwd(), "skills"),
 ];
@@ -57,7 +57,7 @@ function claudeSkillsHome(): string {
 }
 
 async function resolvePaperclipSkillsDir(): Promise<string | null> {
-  for (const candidate of PAPERCLIP_SKILLS_CANDIDATES) {
+  for (const candidate of ZEPHYR_SKILLS_CANDIDATES) {
     const isDir = await fs.stat(candidate).then((s) => s.isDirectory()).catch(() => false);
     if (isDir) return candidate;
   }
@@ -111,10 +111,10 @@ function buildAgentEnvExports(input: {
 }): string {
   const escaped = (value: string) => value.replace(/'/g, "'\"'\"'");
   return [
-    `export PAPERCLIP_API_URL='${escaped(input.apiBase)}'`,
-    `export PAPERCLIP_COMPANY_ID='${escaped(input.companyId)}'`,
-    `export PAPERCLIP_AGENT_ID='${escaped(input.agentId)}'`,
-    `export PAPERCLIP_API_KEY='${escaped(input.apiKey)}'`,
+    `export ZEPHYR_API_URL='${escaped(input.apiBase)}'`,
+    `export ZEPHYR_COMPANY_ID='${escaped(input.companyId)}'`,
+    `export ZEPHYR_AGENT_ID='${escaped(input.agentId)}'`,
+    `export ZEPHYR_API_KEY='${escaped(input.apiKey)}'`,
   ].join("\n");
 }
 

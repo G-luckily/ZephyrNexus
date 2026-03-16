@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-IMAGE_NAME="${IMAGE_NAME:-paperclip-onboard-smoke}"
+IMAGE_NAME="${IMAGE_NAME:-zephyr-nexus-onboard-smoke}"
 HOST_PORT="${HOST_PORT:-3131}"
 PAPERCLIPAI_VERSION="${PAPERCLIPAI_VERSION:-latest}"
 DATA_DIR="${DATA_DIR:-$REPO_ROOT/data/docker-onboard-smoke}"
@@ -13,7 +13,7 @@ PAPERCLIP_PUBLIC_URL="${PAPERCLIP_PUBLIC_URL:-http://localhost:${HOST_PORT}}"
 SMOKE_AUTO_BOOTSTRAP="${SMOKE_AUTO_BOOTSTRAP:-true}"
 SMOKE_ADMIN_NAME="${SMOKE_ADMIN_NAME:-Smoke Admin}"
 SMOKE_ADMIN_EMAIL="${SMOKE_ADMIN_EMAIL:-smoke-admin@zephyr-nexus.local}"
-SMOKE_ADMIN_PASSWORD="${SMOKE_ADMIN_PASSWORD:-paperclip-smoke-password}"
+SMOKE_ADMIN_PASSWORD="${SMOKE_ADMIN_PASSWORD:-zephyr-nexus-smoke-password}"
 CONTAINER_NAME="${IMAGE_NAME//[^a-zA-Z0-9_.-]/-}"
 LOG_PID=""
 COOKIE_JAR=""
@@ -228,13 +228,13 @@ docker run -d --rm \
   -e PAPERCLIP_DEPLOYMENT_MODE="$PAPERCLIP_DEPLOYMENT_MODE" \
   -e PAPERCLIP_DEPLOYMENT_EXPOSURE="$PAPERCLIP_DEPLOYMENT_EXPOSURE" \
   -e PAPERCLIP_PUBLIC_URL="$PAPERCLIP_PUBLIC_URL" \
-  -v "$DATA_DIR:/paperclip" \
+  -v "$DATA_DIR:/zephyr-nexus" \
   "$IMAGE_NAME" >/dev/null
 
 docker logs -f "$CONTAINER_NAME" &
 LOG_PID=$!
 
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/paperclip-onboard-smoke.XXXXXX")"
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/zephyr-nexus-onboard-smoke.XXXXXX")"
 COOKIE_JAR="$TMP_DIR/cookies.txt"
 
 if ! wait_for_http "$PAPERCLIP_PUBLIC_URL/api/health" 90 1; then

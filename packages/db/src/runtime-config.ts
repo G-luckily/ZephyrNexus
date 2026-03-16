@@ -42,15 +42,15 @@ function expandHomePrefix(value: string): string {
 }
 
 function resolvePaperclipHomeDir(): string {
-  const envHome = process.env.PAPERCLIP_HOME?.trim();
+  const envHome = process.env.ZEPHYR_HOME?.trim();
   if (envHome) return path.resolve(expandHomePrefix(envHome));
-  return path.resolve(os.homedir(), ".paperclip");
+  return path.resolve(os.homedir(), ".zephyr-nexus");
 }
 
 function resolvePaperclipInstanceId(): string {
-  const raw = process.env.PAPERCLIP_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
+  const raw = process.env.ZEPHYR_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
   if (!INSTANCE_ID_RE.test(raw)) {
-    throw new Error(`Invalid PAPERCLIP_INSTANCE_ID '${raw}'.`);
+    throw new Error(`Invalid ZEPHYR_INSTANCE_ID '${raw}'.`);
   }
   return raw;
 }
@@ -76,8 +76,11 @@ function findConfigFileFromAncestors(startDir: string): string | null {
   let currentDir = path.resolve(startDir);
 
   while (true) {
-    const candidate = path.resolve(currentDir, ".paperclip", CONFIG_BASENAME);
+    const candidate = path.resolve(currentDir, ".zephyr-nexus", CONFIG_BASENAME);
     if (existsSync(candidate)) return candidate;
+
+    const legacyCandidate = path.resolve(currentDir, ".paperclip", CONFIG_BASENAME);
+    if (existsSync(legacyCandidate)) return legacyCandidate;
 
     const nextDir = path.resolve(currentDir, "..");
     if (nextDir === currentDir) return null;
@@ -86,8 +89,8 @@ function findConfigFileFromAncestors(startDir: string): string | null {
 }
 
 function resolvePaperclipConfigPath(): string {
-  if (process.env.PAPERCLIP_CONFIG?.trim()) {
-    return path.resolve(process.env.PAPERCLIP_CONFIG.trim());
+  if (process.env.ZEPHYR_CONFIG?.trim()) {
+    return path.resolve(process.env.ZEPHYR_CONFIG.trim());
   }
   return findConfigFileFromAncestors(process.cwd()) ?? resolveDefaultConfigPath();
 }

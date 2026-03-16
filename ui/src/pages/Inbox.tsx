@@ -44,7 +44,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useInboxSettings } from "../lib/inbox-settings";
 import { Settings2, CheckCheck } from "lucide-react";
-import type { HeartbeatRun, Issue, JoinRequest, SidebarBadges } from "@paperclipai/shared";
+import type { HeartbeatRun, Issue, JoinRequest, SidebarBadges } from "@zephyr-nexus/shared";
 import { sidebarBadgesApi } from "../api/sidebarBadges";
 
 const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours

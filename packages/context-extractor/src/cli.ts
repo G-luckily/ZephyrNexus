@@ -7,7 +7,7 @@
 
 import { mkdirSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { SqliteContextStore } from "@paperclipai/context-manager";
+import { SqliteContextStore } from "@zephyr-nexus/context-manager";
 import { run } from "./run.js";
 
 function parseArgs(): { repoRoot: string; dbPath: string; days: number } {

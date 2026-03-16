@@ -3,7 +3,7 @@ import type {
   ExecutionWorkspaceStrategy,
   IssueExecutionWorkspaceSettings,
   ProjectExecutionWorkspacePolicy,
-} from "@paperclipai/shared";
+} from "@zephyr-nexus/shared";
 import { asString, parseObject } from "../adapters/utils.js";
 
 type ParsedExecutionWorkspaceMode = Exclude<ExecutionWorkspaceMode, "inherit">;

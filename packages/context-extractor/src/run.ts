@@ -2,7 +2,7 @@
  * Run full extraction (modules + git) and write to store.
  */
 
-import type { ContextStore } from "@paperclipai/context-manager";
+import type { ContextStore } from "@zephyr-nexus/context-manager";
 import { extractModules } from "./extract-modules.js";
 import { extractGitChanges } from "./extract-git.js";
 

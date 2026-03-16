@@ -3,7 +3,7 @@
  */
 
 import { Project } from "ts-morph";
-import type { ModuleRow } from "@paperclipai/context-manager";
+import type { ModuleRow } from "@zephyr-nexus/context-manager";
 import { statSync } from "node:fs";
 import { join } from "node:path";
 

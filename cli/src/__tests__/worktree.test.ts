@@ -145,10 +145,10 @@ describe("worktree helpers", () => {
     );
 
     const env = buildWorktreeEnvEntries(paths);
-    expect(env.PAPERCLIP_HOME).toBe(path.resolve("/tmp/paperclip-worktrees"));
-    expect(env.PAPERCLIP_INSTANCE_ID).toBe("feature-worktree-support");
-    expect(env.PAPERCLIP_IN_WORKTREE).toBe("true");
-    expect(formatShellExports(env)).toContain("export PAPERCLIP_INSTANCE_ID='feature-worktree-support'");
+    expect(env.ZEPHYR_HOME).toBe(path.resolve("/tmp/paperclip-worktrees"));
+    expect(env.ZEPHYR_INSTANCE_ID).toBe("feature-worktree-support");
+    expect(env.ZEPHYR_IN_WORKTREE).toBe("true");
+    expect(formatShellExports(env)).toContain("export ZEPHYR_INSTANCE_ID='feature-worktree-support'");
   });
 
   it("uses minimal seed mode to keep app state but drop heavy runtime history", () => {
@@ -200,7 +200,7 @@ describe("worktree helpers", () => {
         sourceConfigPath,
         sourceConfig: buildSourceConfig(),
         sourceEnvEntries: {
-          PAPERCLIP_SECRETS_MASTER_KEY: "inline-source-master-key",
+          ZEPHYR_SECRETS_MASTER_KEY: "inline-source-master-key",
         },
         targetKeyFilePath: targetKeyPath,
       });

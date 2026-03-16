@@ -2,18 +2,18 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { execute } from "@paperclipai/adapter-cursor-local/server";
+import { execute } from "@zephyr-nexus/adapter-cursor-local/server";
 
 async function writeFakeCursorCommand(commandPath: string): Promise<void> {
   const script = `#!/usr/bin/env node
 const fs = require("node:fs");
 
-const capturePath = process.env.PAPERCLIP_TEST_CAPTURE_PATH;
+const capturePath = process.env.ZEPHYR_TEST_CAPTURE_PATH;
 const payload = {
   argv: process.argv.slice(2),
   prompt: fs.readFileSync(0, "utf8"),
   paperclipEnvKeys: Object.keys(process.env)
-    .filter((key) => key.startsWith("PAPERCLIP_"))
+    .filter((key) => key.startsWith("ZEPHYR_"))
     .sort(),
 };
 if (capturePath) {
@@ -80,7 +80,7 @@ describe("cursor execute", () => {
           cwd: workspace,
           model: "auto",
           env: {
-            PAPERCLIP_TEST_CAPTURE_PATH: capturePath,
+            ZEPHYR_TEST_CAPTURE_PATH: capturePath,
           },
           promptTemplate: "Follow the paperclip heartbeat.",
         },
@@ -101,17 +101,17 @@ describe("cursor execute", () => {
       expect(capture.argv).not.toContain("ask");
       expect(capture.paperclipEnvKeys).toEqual(
         expect.arrayContaining([
-          "PAPERCLIP_AGENT_ID",
-          "PAPERCLIP_API_KEY",
-          "PAPERCLIP_API_URL",
-          "PAPERCLIP_COMPANY_ID",
-          "PAPERCLIP_RUN_ID",
+          "ZEPHYR_AGENT_ID",
+          "ZEPHYR_API_KEY",
+          "ZEPHYR_API_URL",
+          "ZEPHYR_COMPANY_ID",
+          "ZEPHYR_RUN_ID",
         ]),
       );
       expect(capture.prompt).toContain("Paperclip runtime note:");
-      expect(capture.prompt).toContain("PAPERCLIP_API_KEY");
+      expect(capture.prompt).toContain("ZEPHYR_API_KEY");
       expect(invocationPrompt).toContain("Paperclip runtime note:");
-      expect(invocationPrompt).toContain("PAPERCLIP_API_URL");
+      expect(invocationPrompt).toContain("ZEPHYR_API_URL");
     } finally {
       if (previousHome === undefined) {
         delete process.env.HOME;
@@ -155,7 +155,7 @@ describe("cursor execute", () => {
           model: "auto",
           mode: "ask",
           env: {
-            PAPERCLIP_TEST_CAPTURE_PATH: capturePath,
+            ZEPHYR_TEST_CAPTURE_PATH: capturePath,
           },
           promptTemplate: "Follow the paperclip heartbeat.",
         },
