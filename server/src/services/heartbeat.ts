@@ -1370,9 +1370,9 @@ export function heartbeatService(db: Db) {
         if (blockText.length > maxContextChars) {
           const originalLen = blockText.length;
           blockText = blockText.slice(0, maxContextChars - 50) + "\n\n[... context truncated by size limit ...]";
-          logger.debug({ cwd: executionWorkspace.cwd, originalLen }, "paperclipContextBlock truncated");
+          logger.debug({ cwd: executionWorkspace.cwd, originalLen }, "zephyrContextBlock truncated");
         }
-        context.paperclipContextBlock = blockText;
+        context.zephyrContextBlock = blockText;
         contextStore.close();
       } catch (contextErr) {
         logger.debug({ err: contextErr, cwd: executionWorkspace.cwd }, "context-manager buildContext skipped");
@@ -1625,7 +1625,7 @@ export function heartbeatService(db: Db) {
         try {
           const contextDbPath = path.join(executionWorkspace.cwd, ".paperclip", "context.db");
           const contextStore = new SqliteContextStore({ dbPath: contextDbPath });
-          const rawSnapshot = adapterResult.resultJson?.paperclipDiffSnapshot as Record<string, unknown> | undefined;
+          const rawSnapshot = adapterResult.resultJson?.zephyrDiffSnapshot as Record<string, unknown> | undefined;
           const snapshotInput = rawSnapshot && typeof rawSnapshot === "object"
             ? normalizeDiffSnapshotInput({
                 taskId: readNonEmptyString(context.issueId ?? context.taskId) ?? run.id,

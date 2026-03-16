@@ -153,44 +153,27 @@ export function TaskFlowBoard({
     const taskFailed = task.status === "blocked";
     const steps: Array<FlowNodeDetail> = [
       {
-        id: "ceo",
-        title: "总裁",
+        id: "start",
+        title: "Start",
         state: task.status === "todo" ? "active" : "done",
-        desc: "任务拆解与责任路径确认",
+        desc: "Initiate orchestration sequence",
       },
       {
-        id: "research",
-        title: "社会研究院",
+        id: "schedule",
+        title: "Schedule Tasks",
         state:
           task.status === "todo" ? "pending" : taskFailed ? "failed" : "active",
-        desc: "文献综述与研究统筹",
+        desc: "Distributing workloads to agents",
       },
       {
-        id: "public",
-        title: "公共责任部",
+        id: "query",
+        title: "Query Metrics",
         state:
           task.status === "in_review" || task.status === "done"
             ? "active"
             : "pending",
-        desc: "策略校核与外部协同",
-      },
-      {
-        id: "report",
-        title: "报告生成",
-        state:
-          task.status === "done"
-            ? "done"
-            : task.status === "in_review"
-            ? "active"
-            : "pending",
-        desc: "结构化生成与结果归档",
-      },
-      {
-        id: "archive",
-        title: "发布归档",
-        state: task.status === "done" ? "done" : "pending",
-        desc: "交付发布与审计追踪",
-      },
+        desc: "Validating system output & performance",
+      }
     ];
 
     const renderSteps = buildVisibleSteps(steps);
@@ -261,25 +244,20 @@ export function TaskFlowBoard({
         },
         style: {
           width: nodeWidth,
-          minHeight: nodeMinHeight,
-          borderRadius: 20,
-          border: `1.5px solid ${style.border}`,
-          background: style.bg,
-          padding: 18,
+          minHeight: 100,
+          borderRadius: 999, // Capsule style
+          border: `1px solid ${style.border}`,
+          background: "var(--card)",
+          padding: "12px 24px",
           boxShadow: isHovered
-            ? `${style.glow}, 0 16px 34px rgba(15,23,42,0.14)`
+            ? `${style.glow}, 0 8px 24px rgba(0,0,0,0.08)`
             : style.glow,
           cursor: onNodeSelect ? "pointer" : "default",
-          transition:
-            "transform 220ms cubic-bezier(.22,.61,.36,1), box-shadow 220ms cubic-bezier(.22,.61,.36,1), border-color 220ms ease, filter 220ms ease",
+          transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
           animation:
             step.state === "active" && !isHovered
-              ? "activeNodePulse 2.8s ease-in-out infinite"
+              ? "activeNodePulse 3s ease-in-out infinite"
               : undefined,
-          transform: isHovered
-            ? "translateY(-2px) scale(1.01)"
-            : "translateY(0) scale(1)",
-          filter: isHovered ? "saturate(1.04)" : "none",
         },
       };
     });

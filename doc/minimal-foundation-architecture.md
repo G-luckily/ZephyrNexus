@@ -32,7 +32,7 @@
   - 不允许每次全量塞历史/日志/项目说明进 prompt
   - 默认：检索 → 摘要 → 注入
 - **现有落点**
-  - `.paperclip/context.db` + `@paperclipai/context-manager`
+  - `.paperclip/context.db` + `@zephyr-nexus/context-manager`
   - `server/src/services/heartbeat.ts` 中 `buildContext()` / `writeDiffSnapshot()`
 - **Phase 2 已落地**
   - 上下文上限可配置：`PAPERCLIP_MAX_CONTEXT_CHARS`（默认 12000）、`PAPERCLIP_MAX_PRIOR_SNAPSHOTS`（默认 8）；超限时截断并追加标记

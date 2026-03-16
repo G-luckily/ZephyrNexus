@@ -1,7 +1,7 @@
 # OpenClaw Gateway Onboarding and Test Plan
 
 ## Scope
-This plan is now **gateway-only**. Paperclip supports OpenClaw through `openclaw_gateway` only.
+This plan is now **gateway-only**. Zephyr Nexus supports OpenClaw through `openclaw_gateway` only.
 
 - Removed path: legacy `openclaw` adapter (`/v1/responses`, `/hooks/*`, SSE/webhook transport switching)
 - Supported path: `openclaw_gateway` over WebSocket (`ws://` or `wss://`)
@@ -102,8 +102,8 @@ pnpm build
 
 If full suite is too heavy locally, run at least:
 ```bash
-pnpm --filter @paperclipai/server test:run -- openclaw-gateway
-pnpm --filter @paperclipai/server typecheck
-pnpm --filter @paperclipai/ui typecheck
-pnpm --filter paperclipai typecheck
+pnpm --filter @zephyr-nexus/server test:run -- openclaw-gateway
+pnpm --filter @zephyr-nexus/server typecheck
+pnpm --filter @zephyr-nexus/ui typecheck
+pnpm --filter @zephyr-nexus/cli typecheck
 ```

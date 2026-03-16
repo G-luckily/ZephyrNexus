@@ -1677,7 +1677,7 @@ Build:
 - graceful shutdown with configurable deadlines
 - plugin logging and health dashboard
 - uninstall with data retention grace period
-- `@paperclipai/plugin-test-harness` and `create-paperclip-plugin` starter template
+- `@zephyr-nexus/plugin-test-harness` and `create-paperclip-plugin` starter template
 - hot plugin lifecycle (install, uninstall, upgrade, config change without server restart)
 - SDK versioning with multi-version host support and deprecation policy
 

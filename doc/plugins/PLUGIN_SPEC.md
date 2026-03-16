@@ -1468,16 +1468,13 @@ The host should publish a starter template (`create-paperclip-plugin`) that scaf
 - worker entry with SDK type imports and example event handler
 - UI entry with example `DashboardWidget` using bridge hooks
 - test file using the test harness
-- build configuration (esbuild or similar) for both worker and UI bundles
-- `.gitignore` and `tsconfig.json`
 
 ## 28. Example Mappings
 
 This spec directly supports the following plugin types:
 
-- `@paperclip/plugin-workspace-files`
-- `@paperclip/plugin-terminal`
-- `@paperclip/plugin-git`
+- `@zephyr-nexus/adapter-utils`: Shared types and helpers.
+- `@zephyr-nexus/db`: Persistent state.
 - `@paperclip/plugin-linear`
 - `@paperclip/plugin-github-issues`
 - `@paperclip/plugin-grafana`

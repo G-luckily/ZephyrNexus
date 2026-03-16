@@ -21,7 +21,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { cn, relativeTime, agentUrl } from "../lib/utils";
 import { tStatus } from "../lib/i18n";
 import { buildOrgUnits } from "../lib/company-scope";
-import { OrchestrationVisual } from "../components/dashboard/OrchestrationVisual";
+import { ConstellationWindField } from "../components/dashboard/ConstellationWindField";
 import {
   Activity,
   AlertTriangle,
@@ -1104,19 +1104,18 @@ export function Dashboard() {
   const recentEvents = useMemo(() => (activity ?? []).slice(0, 5), [activity]);
 
   const OrgRuntimePanel = () => (
-    <div className="premium-panel glass-surface hover-lift relative overflow-hidden rounded-[var(--radius-panel)] p-6 lg:p-8 shadow-2xl">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(79,209,255,0.18),transparent_55%)]" />
-      <div className="relative mb-4 flex items-center justify-between">
+    <div className="premium-panel glass-surface rounded-[var(--radius-panel)] p-6 lg:p-8 shadow-xl">
+      <div className="relative mb-6 flex items-center justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-accent">
             <Layers3 className="h-3.5 w-3.5" />
-            [ORG] 组织控制层
+            Orchestration Topology
           </div>
-          <h3 className="mt-3 text-[22px] font-semibold tracking-[-0.03em] text-slate-800 dark:text-white">
+          <h3 className="mt-3 text-[22px] font-semibold tracking-tight text-foreground">
             组织拓扑
           </h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            从高层治理到执行单元，按部门查看当前运行密度与异常点。
+          <p className="mt-1 text-sm text-muted-foreground">
+            从高层治理到执行单元，按部门查看实时运行密度。
           </p>
         </div>
         <Link
@@ -1128,15 +1127,14 @@ export function Dashboard() {
         </Link>
       </div>
 
-      <div className="relative rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(9,18,31,0.96)_0%,rgba(7,13,22,0.98)_100%)] p-3.5">
+      <div className="relative rounded-[24px] border border-border/40 bg-muted/20 p-4">
         <div className="mb-4 flex items-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-200">
-            <Briefcase className="h-3.5 w-3.5" />
-            指挥链路
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            指挥链路 COMMAND CHAIN
           </span>
-          <div className="h-px flex-1 bg-white/10" />
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-            {orgUnits.length} 个节点
+          <div className="h-px flex-1 bg-border/40" />
+          <span className="text-[10px] font-mono font-medium text-muted-foreground">
+            {orgUnits.length} Nodes Synchronized
           </span>
         </div>
 
@@ -1268,18 +1266,18 @@ export function Dashboard() {
   );
 
   const ActiveAgentsPanel = () => (
-    <div className="premium-panel glass-surface hover-lift relative overflow-hidden rounded-[var(--radius-panel)] p-6 lg:p-8 shadow-2xl">
-      <div className="relative mb-4 flex items-center justify-between">
+    <div className="premium-panel glass-surface rounded-[var(--radius-panel)] p-6 lg:p-8 shadow-xl">
+      <div className="relative mb-6 flex items-center justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-accent">
             <Bot className="h-3.5 w-3.5" />
-            智能体矩阵
+            Swarm Matrix
           </div>
-          <h3 className="mt-3 text-[22px] font-semibold tracking-[-0.03em] text-foreground">
-            全部智能体 ({selectedDeptAgentRows.length})
+          <h3 className="mt-3 text-[22px] font-semibold tracking-tight text-foreground">
+            活跃智能体 ({selectedDeptAgentRows.length})
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            当前部门：{selectedDept === "all" ? "全部" : selectedDept}
+            当前网络下活跃的智能体执行状态。
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1341,13 +1339,7 @@ export function Dashboard() {
                       />
                       <p className="truncate text-base font-semibold text-foreground">
                         {row.name}
-                      </p>
-                      <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        {row.dept}
-                      </span>
-                      <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground uppercase">
-                        {row.layer}
-                      </span>
+                      </p>                      
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <span
@@ -1381,54 +1373,49 @@ export function Dashboard() {
 
   const ZephyrHero = () => {
     return (
-      <section className="premium-panel glass-surface relative h-[520px] overflow-hidden rounded-[var(--radius-hero)] border-none shadow-2xl">
+      <section className="premium-panel glass-surface relative h-[480px] overflow-hidden rounded-[var(--radius-hero)] border shadow-xl">
         <div className="absolute inset-0 z-0">
-          <OrchestrationVisual className="scale-110 opacity-60 dark:opacity-40 translate-x-[25%] lg:translate-x-[30%]" />
+          <ConstellationWindField className="opacity-70 dark:opacity-60 translate-x-[20%] lg:translate-x-[25%]" />
         </div>
         
-        <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-12">
-          <div className="max-w-xl">
+        <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-14">
+          <div className="max-w-2xl">
             {/* 1. System Status Badge */}
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1.5 backdrop-blur-md">
+            <div className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-border bg-background/50 px-4 py-1.5 backdrop-blur-xl">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/70">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
                 System Active · {lastSyncTime}
               </span>
-            </div>
+            </div> 
 
             {/* 2 & 3. Zephyr Nexus + Chinese Name */}
-            <div className="space-y-1">
-              <h1 className="text-6xl lg:text-7xl font-bold tracking-tighter text-foreground">
+            <div className="space-y-2">
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-foreground font-serif">
                 Zephyr Nexus
               </h1>
-              <h2 className="text-3xl lg:text-4xl font-light tracking-[.25em] text-foreground/60">
-                风之灵枢
+              <h2 className="text-2xl lg:text-3xl font-light tracking-[0.3em] text-muted-foreground">
+                风之灵枢 <span className="mx-2 text-border">·</span> AI Orchestration System
               </h2>
             </div>
 
-            {/* 4. Product Description */}
-            <p className="mt-6 text-lg font-medium text-muted-foreground/80">
-              多智能体协同与任务调度中枢
-            </p>
-
-            {/* 5. Integrated Metrics Row */}
-            <div className="mt-10 flex items-center gap-12">
+            {/* 5. Integrated Stats Row */}
+            <div className="mt-10 flex items-center gap-10">
               <div className="space-y-1">
-                <p className="text-3xl font-bold text-foreground tracking-tight">{departments.length}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">部门 / Departments</p>
+                <p className="text-3xl font-semibold text-foreground tracking-tight">{departments.length} 部门</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{departments.length} Departments</p>
               </div>
-              <div className="h-8 w-px bg-border/40" />
+              <div className="h-8 w-px bg-border/50" />
               <div className="space-y-1">
-                <p className="text-3xl font-bold text-foreground tracking-tight">{companyAgents.length}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">智能体 / Spirits</p>
+                <p className="text-3xl font-semibold text-foreground tracking-tight">{companyAgents.length} Spirits</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{companyAgents.length} Spirits</p>
               </div>
-              <div className="h-8 w-px bg-border/40" />
+              <div className="h-8 w-px bg-border/50" />
               <div className="space-y-1">
-                <p className="text-3xl font-bold text-foreground tracking-tight">{successRate}%</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">成功率 / Success</p>
+                <p className="text-3xl font-semibold text-foreground tracking-tight">96% System Health</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">System Health</p>
               </div>
             </div>
 
@@ -1459,191 +1446,75 @@ export function Dashboard() {
       </section>
     );
   };
+  const SystemMetricsPanel = () => {
+    const metrics = [
+      { label: "Active Tasks", value: activeIssues.length, trend: "+2", icon: <Activity className="h-4 w-4" /> },
+      { label: "Human Escalations", value: blockedIssues, trend: "+1", icon: <AlertTriangle className="h-4 w-4" />, warning: blockedIssues > 0 },
+      { label: "System Success Rate", value: `${successRate}%`, trend: "+1%", icon: <ShieldCheck className="h-4 w-4" /> },
+      { label: "Communication Bot", value: "Active", trend: "Syncing", icon: <Bot className="h-4 w-4" /> },
+      { label: "Security Monitor", value: "Secure", trend: "Live", icon: <ShieldAlert className="h-4 w-4" /> },
+    ];
+
+    return (
+      <div className="premium-panel glass-surface rounded-[var(--radius-panel)] p-6 shadow-xl">
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold tracking-tight text-foreground">统计数据</h3>
+          <p className="text-sm text-muted-foreground mt-1">系统性能与实时指标</p>
+        </div>
+        <div className="space-y-4">
+          {metrics.map((m, i) => (
+            <div key={i} className="flex items-center justify-between group py-2 border-b border-border/50 last:border-0 hover:bg-accent-soft rounded-xl px-3 -mx-3 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className={cn("p-2 rounded-xl bg-muted/50 text-muted-foreground group-hover:text-accent group-hover:bg-accent/10 transition-colors", m.warning && "text-warning bg-warning/10")}>
+                  {m.icon}
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-foreground">{m.label}</p>
+                  <p className="text-[11px] text-muted-foreground">Recent Activity</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={cn("text-lg font-semibold text-foreground", m.warning && "text-warning")}>
+                  {m.value}
+                </p>
+                <p className="text-[11px] font-medium text-accent">
+                   {m.trend}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 flex items-center justify-between text-[11px] font-medium text-muted-foreground/60 border-t border-border pt-4">
+          <span>Zephyr Spirits</span>
+          <span>Wind Paths</span>
+          <span>Zephyr Swarm</span>
+          <span>Wind Engine</span>
+        </div>
+      </div>
+    );
+  };
+
   const MissionControl = () => {
     return (
-      <section className="premium-panel glass-surface hover-lift relative overflow-hidden rounded-[var(--radius-panel)] shadow-2xl">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.07),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.07),transparent_28%)]" />
-        <div className="relative grid gap-6 p-6 xl:grid-cols-[minmax(0,1.18fr)_340px] xl:p-8">
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
-                  任务执行流
-                </p>
-                <h3 className="mt-3 text-[30px] font-semibold tracking-[-0.04em] text-slate-800 dark:text-white">
-                  主任务执行中心
-                </h3>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  主任务：{liveTask?.title ?? "等待主任务"} · 责任链：总裁 →
-                  社会研究院 → 公共责任部 → 报告生成。
-                </p>
-              </div>
-              <Link
-                to="/flow"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/50 px-4 py-1.5 text-xs font-semibold text-foreground no-underline transition-all duration-200 hover:bg-muted hover-lift shadow-sm"
-              >
-                查看完整流程
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="launch-chip">进度 {progress}%</span>
-              <span className="launch-chip">预计 {eta} 分钟</span>
-              <span className={cn("launch-chip", healthTone)}>
-                状态 {health}
-              </span>
-              <span className="launch-chip launch-chip-violet">
-                项目 {liveProjectName}
-              </span>
-            </div>
-            <div className="h-px w-full overflow-hidden rounded-full bg-white/10">
-              <div className="animate-data-flow h-full w-full" />
-            </div>
-
-            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    执行流图
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    点击节点查看当前阶段上下文与日志。
-                  </p>
-                </div>
-                <div className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] px-3 py-1 text-[11px] text-slate-600 dark:text-slate-300">
-                  {liveTask?.identifier ?? "实时任务"}
-                </div>
-              </div>
-              <div className="rounded-[var(--radius-card)] border border-border/40 bg-background/20 backdrop-blur-sm p-4 shadow-inner">
-                <TaskFlowBoard
-                  task={liveTask}
-                  showSummary={false}
-                  onNodeSelect={setSelectedFlowNode}
-                />
-              </div>
+      <section className="premium-panel glass-surface relative overflow-hidden rounded-[var(--radius-panel)] shadow-xl p-8">
+        <div className="relative space-y-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-accent">
+                任务编排
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                正在执行
+              </h3>
             </div>
           </div>
 
-          <div className="grid gap-4">
-            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  任务简报
-                </p>
-                <CircleDot className="h-4 w-4 text-cyan-200" />
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className="launch-chip launch-chip-cyan px-2.5 py-1 text-[10px]">
-                  运行中 {runningAgents.length}
-                </span>
-                <span className="launch-chip launch-chip-rose px-2.5 py-1 text-[10px]">
-                  阻塞 {blockedIssues}
-                </span>
-                <span className="launch-chip px-2.5 py-1 text-[10px]">
-                  失败 {failedRuns}
-                </span>
-              </div>
-              <p className="mt-4 text-[22px] font-semibold tracking-[-0.03em] text-slate-800 dark:text-white">
-                {progress}%
-              </p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                执行进度已进入{" "}
-                {liveTask?.status === "in_review"
-                  ? "review"
-                  : liveTask?.status === "done"
-                  ? "done"
-                  : liveTask?.status === "blocked"
-                  ? "blocked"
-                  : "active"}{" "}
-                阶段。
-              </p>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/8">
-                <div
-                  className="animate-data-flow h-full rounded-full bg-[linear-gradient(90deg,#4fd1ff,#818cf8)] shadow-[0_0_20px_rgba(79,209,255,0.35)]"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  执行流图
-                </p>
-                <Workflow className="h-4 w-4 text-violet-200" />
-              </div>
-              <div className="mt-4 space-y-2.5">
-                {missionStages.map((stage, idx) => (
-                  <div
-                    key={stage.name}
-                    className="hover-lift relative rounded-[20px] border border-white/8 bg-slate-100/70 dark:bg-black/20 p-3.5"
-                  >
-                    {idx < missionStages.length - 1 && (
-                      <span className="pointer-events-none absolute left-[18px] top-[34px] h-5 w-px bg-white/12" />
-                    )}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                          执行阶段 {idx + 1}
-                        </p>
-                        <p className="truncate text-sm font-semibold text-slate-800 dark:text-white">
-                          {stage.name}
-                        </p>
-                        <p className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
-                          {stage.desc}
-                        </p>
-                      </div>
-                      <span
-                        className={cn(
-                          "inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold",
-                          stage.tone
-                        )}
-                      >
-                        {stage.label}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-card)] p-6 shadow-xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                运行信号
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <div className="rounded-[20px] border border-white/8 bg-slate-100/70 dark:bg-black/20 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    风险堆栈
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    阻塞 {blockedIssues} · 失败 {failedRuns} · 告警 {alertCount}
-                  </p>
-                </div>
-                <div className="rounded-[20px] border border-white/8 bg-slate-100/70 dark:bg-black/20 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    关键节点
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    {runningAgents[0]?.name ?? "暂无活跃执行者"}
-                  </p>
-                </div>
-                <div className="rounded-[20px] border border-white/8 bg-slate-100/70 dark:bg-black/20 p-4 sm:col-span-2 xl:col-span-1">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    同步视角
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    同步 {lastSyncTime} · 视角{" "}
-                    {scopeView === "company"
-                      ? "公司"
-                      : scopeView === "project"
-                      ? "项目"
-                      : "部门"}
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="rounded-[var(--radius-card)] border border-border/40 bg-background/30 backdrop-blur-sm p-6 shadow-sm">
+            <TaskFlowBoard
+              task={liveTask}
+              showSummary={false}
+              onNodeSelect={setSelectedFlowNode}
+            />
           </div>
         </div>
       </section>
@@ -1711,24 +1582,10 @@ export function Dashboard() {
             value={logWindow}
             onChange={(e) => setLogWindow(e.target.value as LogWindow)}
           >
-            <option value="15m">最近 15 分钟</option>
             <option value="1h">最近 1 小时</option>
             <option value="24h">最近 24 小时</option>
           </select>
         </div>
-      </div>
-      <div className="relative mb-4 flex flex-wrap items-center gap-2">
-        <span className="launch-chip launch-chip-cyan">
-          事件 {filteredEvents.length}
-        </span>
-        <span className="launch-chip launch-chip-rose">
-          错误{" "}
-          {filteredEvents.filter((event) => toLevel(event) === "错误").length}
-        </span>
-        <span className="launch-chip launch-chip-amber">
-          警告{" "}
-          {filteredEvents.filter((event) => toLevel(event) === "警告").length}
-        </span>
       </div>
 
       {filteredEvents.length === 0 ? (
@@ -1776,7 +1633,6 @@ export function Dashboard() {
         />
       );
     }
-
     return (
       <EmptyState icon={Workflow} message="请先选择一个公司再查看运营台。" />
     );
@@ -1786,238 +1642,48 @@ export function Dashboard() {
 
   return (
     <div
-      className="relative mx-auto w-full max-w-[2400px] space-y-6 lg:px-6 xl:px-10 px-4 pb-12 pt-4 text-foreground selection:bg-accent selection:text-accent-foreground"
-      style={{
-        fontFamily:
-          '"IBM Plex Sans", "Inter", "HarmonyOS Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-      }}
+      className="relative mx-auto w-full max-w-[1280px] space-y-12 px-6 pb-24 pt-12 text-foreground"
     >
-      {/* Background ambient container - Neutral */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" />
       <style>{`
-        @keyframes eventRowIn {
-          from { opacity: 0; transform: translateX(-7px); }
-          to   { opacity: 1; transform: none; }
-        }
-        @keyframes eventDotBreathSoft {
-          0%, 100% { transform: scale(1); opacity: 0.9; }
-          50%      { transform: scale(1.3); opacity: 0.45; }
-        }
-        @keyframes eventDotBreathStrong {
-          0%, 100% { transform: scale(1); opacity: 0.95; }
-          50%      { transform: scale(1.55); opacity: 0.28; }
-        }
-        @keyframes drawerFadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: none; }
-        }
         @keyframes panelRiseIn {
-          from { opacity: 0; transform: translateY(10px) scale(0.99); }
-          to   { opacity: 1; transform: none; }
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-      {error && <p className="text-sm text-rose-300">{error.message}</p>}
 
-      {data && (
-        <div className="space-y-6">
-          <div className="mx-auto flex w-full flex-col gap-6 pt-4">
-            {/* Top Row: Brand Hero & Overview */}
-            <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-12 lg:col-span-8">
-                <ZephyrHero />
-              </div>
+      <section style={{ animation: "panelRiseIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both" }}>
+        <ZephyrHero />
+      </section>
 
-              <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                <div className="premium-panel glass-surface flex-1 rounded-[var(--radius-panel)] p-6 lg:p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-accent/5 pointer-events-none" />
-
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                        执行摘要
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-foreground tracking-tight mt-1">
-                      平台状态
-                    </h3>
-                  </div>
-
-                  <div className="relative z-10 mt-6 space-y-4">
-                    <div className="flex items-center justify-between border-b border-border pb-3">
-                      <span className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Network className="h-3.5 w-3.5" /> 组织架构
-                      </span>
-                      <span className="text-sm font-semibold text-foreground">
-                        {departments.length} 部门
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-border pb-3">
-                      <span className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Briefcase className="h-3.5 w-3.5" /> 运行项目
-                      </span>
-                      <span className="text-sm font-semibold text-foreground">
-                        {recentProjects.length} 活跃
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Activity className="h-3.5 w-3.5" /> 处理事件
-                      </span>
-                      <span className="text-sm font-semibold text-foreground">
-                        {recentEvents.length} 条 (近期)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              animation: "panelRiseIn 0.36s ease both",
-              animationDelay: "40ms",
-            }}
-          >
-            <div className="premium-panel glass-surface hover-lift rounded-[var(--radius-panel)] overflow-hidden shadow-2xl">
-              <div className="px-5 py-5 pb-6 border-b border-border/50 bg-background/50">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-2 w-2 rounded-full border-2 border-primary bg-background" />
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                        MISSION FLOW
-                      </span>
-                    </div>
-                    <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                      任务执行流
-                    </h2>
-                    <p className="text-[14px] font-medium text-muted-foreground">
-                      正在处理中...
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Ribbon below content */}
-              <div className="flex items-center justify-between bg-sidebar-accent/50 px-5 py-3">
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                    <ShieldCheck className="h-3.5 w-3.5 text-success" />{" "}
-                    安全已校验
-                  </span>
-                  <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                    <Network className="h-3.5 w-3.5" /> 跨节点路由已启用
-                  </span>
-                </div>
-                <Link
-                  to="/issues"
-                  className="group inline-flex items-center gap-1 rounded-full bg-foreground px-3 py-1 text-[11px] font-semibold text-background transition-colors hover:bg-foreground/90"
-                >
-                  查看详情
-                  <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              animation: "panelRiseIn 0.4s ease both",
-              animationDelay: "80ms",
-            }}
-          >
-            <div
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-              style={{
-                animation: "panelRiseIn 0.44s ease both",
-                animationDelay: "120ms",
-              }}
-            >
-              <div className="flex flex-col gap-4">
-                <h2 className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-                  <Network className="h-5 w-5 text-muted-foreground" />
-                  组织拓扑
-                </h2>
-                <div className="premium-panel glass-surface hover-lift overflow-hidden rounded-[var(--radius-panel)] p-6 lg:p-8 h-full shadow-2xl">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                    <MetricCard
-                      title="活跃任务"
-                      value={activeIssues.length}
-                      subtitle="系统执行中"
-                      icon={<Activity className="h-5 w-5" />}
-                    />
-                    <MetricCard
-                      title="受阻节点"
-                      value={blockedIssues}
-                      subtitle="人工接入请求"
-                      kind={blockedIssues > 0 ? "warning" : "primary"}
-                      onClick={() => navigate("/issues")}
-                      icon={<AlertCircle className="h-5 w-5" />}
-                    />
-                    <MetricCard
-                      title="系统成功率"
-                      value={`${successWindow === "24h" ? 98 : 96}%`}
-                      subtitle={`过去 ${successWindow === "24h" ? "24小时" : "7天"}`}
-                      icon={<Activity className="h-5 w-5" />}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <h2 className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-muted-foreground" />
-                  活跃智能体
-                </h2>
-                <div className="premium-panel glass-surface hover-lift overflow-hidden rounded-[var(--radius-panel)] flex flex-col items-stretch divide-y divide-border/50 h-full max-h-[420px] overflow-y-auto scrollbar-auto-hide shadow-2xl">
-                  {companyAgents.slice(0, 5).map((agent) => (
-                    <Link
-                      key={agent.id}
-                      to={agentUrl(agent)}
-                      className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-center h-10 w-10 shrink-0 rounded-full border border-border bg-sidebar-accent overflow-hidden">
-                        <AgentIcon icon={agent.icon} className="h-full w-full" seed={agent.id} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-0.5">
-                          <p className="text-sm font-semibold text-foreground truncate">{agent.name.replace(/\[.*\]\s*/, "")}</p>
-                          <span className={cn(
-                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border",
-                            agent.status === "running" || agent.status === "idle" ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20" :
-                            agent.status === "error" ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" :
-                            "bg-muted text-muted-foreground border-border"
-                          )}>
-                            {tStatus(agent.status)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">{agent.title || agent.role.toUpperCase()}</p>
-                      </div>
-                    </Link>
-                  ))}
-                  {companyAgents.length === 0 && (
-                    <div className="p-8 flex flex-col items-center justify-center text-center">
-                      <Bot className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                      <p className="text-sm text-muted-foreground">暂无活跃智能体</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              animation: "panelRiseIn 0.44s ease both",
-              animationDelay: "120ms",
-            }}
-          >
-            <EventTimeline />
-          </div>
+      <div 
+        className="grid grid-cols-12 gap-8 items-start"
+        style={{ 
+          animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
+          animationDelay: "0.1s"
+        }}
+      >
+        {/* Left Column */}
+        <div className="col-span-12 lg:col-span-7 space-y-8">
+          <MissionControl />
+          <OrgRuntimePanel />
         </div>
-      )}
 
+        {/* Right Column */}
+        <div className="col-span-12 lg:col-span-5 space-y-8">
+          <SystemMetricsPanel />
+          <ActiveAgentsPanel />
+        </div>
+      </div>
+      
+      <section style={{ 
+        animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
+        animationDelay: "0.2s"
+      }}>
+        <EventTimeline />
+      </section>
+
+      {/* Overlays & Modals */}
       <Dialog open={blockedModalOpen} onOpenChange={setBlockedModalOpen}>
-        {" "}
         <DialogContent className="max-w-2xl glass-surface rounded-[var(--radius-panel)] p-8 shadow-3xl border-none">
           <DialogHeader>
             <DialogTitle>阻塞任务列表</DialogTitle>
@@ -2061,7 +1727,6 @@ export function Dashboard() {
             onClick={() => setSelectedFlowNode(null)}
           />
           <aside className="fixed right-0 top-0 z-[90] flex h-full w-full max-w-md flex-col overflow-hidden border-l border-border glass-surface shadow-2xl">
-            {/* status-colored top bar */}
             <div
               className="h-1.5 w-full flex-none"
               style={{
@@ -2075,7 +1740,6 @@ export function Dashboard() {
                     : "#94A3B8",
               }}
             />
-            {/* content fades in when selected node changes */}
             <div
               key={selectedFlowNode.id}
               className="flex-1 overflow-auto p-5"

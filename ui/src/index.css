@@ -50,8 +50,8 @@
   --radius-2xl: 32px;
   --radius-hero: 40px;
   --radius-panel: 32px;
-  --radius-card: 24px;
-  --radius-chip: 12px;
+  --radius-card: 20px;
+  --radius-chip: 999px;
 
   /* Zephyr Nexus Day Mode - Airy & Elegant */
   --background: #fdfdfc;
@@ -66,8 +66,9 @@
   /* Primary & Accent - Deep Indigo / Azure */
   --primary: #1c1c1e;
   --primary-foreground: #ffffff;
-  --accent: #2563eb;
+  --accent: #6366f1; /* Periwinkleish Blue */
   --accent-foreground: #ffffff;
+  --accent-soft: rgba(99, 102, 241, 0.1);
 
   /* Deep Celestial Gradients */
   --celestial-1: #3b82f6;
@@ -130,8 +131,9 @@
   /* Primary & Accent - Astral White / Cyan */
   --primary: #fafafa;
   --primary-foreground: #09090b;
-  --accent: #0ea5e9; 
-  --accent-foreground: #fafafa;
+  --accent: #7dd3fc; /* Soft Astral Blue */
+  --accent-foreground: #0c4a6e;
+  --accent-soft: rgba(125, 211, 252, 0.1);
 
   /* Stellar Gradients */
   --celestial-1: #0ea5e9;
@@ -317,30 +319,44 @@
 }
 
 /* Dashboard premium panel utility (Redesign) */
+.glass-surface {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-surface {
+  background: rgba(15, 15, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
 .premium-panel {
   background: var(--card);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.01);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.03);
   border: 1px solid var(--border);
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark .premium-panel {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.04);
 }
 
 .dark .glass-panel {
-  background: rgba(22, 22, 24, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  background: rgba(18, 18, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .glow-effect {

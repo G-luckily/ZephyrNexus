@@ -80,7 +80,7 @@ Zephyr Nexus utilizes **AetherStack** as its control plane layer to orchestrate 
 
 ## 📜 Technical Attribution
 
-Zephyr Nexus incorporates and builds upon the **Paperclip AI OS** codebase. We retain "Paperclip" as a technical attribution and package namespace (`@paperclipai/*`) to honor its origins while moving forward under the **Zephyr Nexus** brand.
+Zephyr Nexus incorporates and builds upon the **Paperclip AI OS** codebase. We retain "Paperclip" as a technical attribution and have migrated the package namespace to `@zephyr-nexus/*` to move forward under the **Zephyr Nexus** brand.
 
 ---
 
