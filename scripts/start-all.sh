@@ -16,8 +16,19 @@ CONFIG_FILE="${ROOT_DIR}/workspace.config.json"
 
 ENV_PROFILE="${AETHERSTACK_ENV_PROFILE:-wsl}"
 
-RUNTIME_DIR="${AETHERSTACK_RUNTIME_DIR:-${ROOT_DIR}/runtime}"
-LOG_DIR="${AETHERSTACK_LOG_DIR:-${ROOT_DIR}/logs}"
+# 运行态和日志目录：支持相对路径，但统一归一为绝对路径，始终挂在控制平面仓库下
+RUNTIME_DIR="${AETHERSTACK_RUNTIME_DIR:-runtime}"
+LOG_DIR="${AETHERSTACK_LOG_DIR:-logs}"
+
+case "$RUNTIME_DIR" in
+  /*) ;; # 已是绝对路径
+  *) RUNTIME_DIR="${ROOT_DIR}/${RUNTIME_DIR}" ;;
+esac
+
+case "$LOG_DIR" in
+  /*) ;;
+  *) LOG_DIR="${ROOT_DIR}/${LOG_DIR}" ;;
+esac
 
 mkdir -p "$RUNTIME_DIR" "$LOG_DIR"
 
@@ -125,7 +136,7 @@ main() {
   log "runtime 目录：${RUNTIME_DIR}"
   log "log 目录：${LOG_DIR}"
 
-  start_service "paperclip"
+  start_service "zephyr-nexus"
   start_service "openclaw"
   start_service "browser-use"
 
@@ -135,11 +146,11 @@ main() {
     echo "- $item"
   done
 
-  local paperclip_port
-  paperclip_port="$(read_config ".services.\"paperclip\".port // 3000")"
+  local zephyr_port
+  zephyr_port="$(read_config ".services.\"zephyr-nexus\".port // 3000")"
   echo
-  echo "如 paperclip 启动成功，可尝试访问："
-  echo "  http://localhost:${paperclip_port}"
+  echo "如 Zephyr Nexus 启动成功，可尝试访问："
+  echo "  http://localhost:${zephyr_port}"
 }
 
 main "$@"

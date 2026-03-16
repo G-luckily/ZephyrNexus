@@ -29,7 +29,9 @@ set_status() {
       OVERALL_STATUS="FAIL"
       ;;
     WARN)
-      [[ "$OVERALL_STATUS" == "PASS" ]] && OVERALL_STATUS="WARN"
+      if [[ "$OVERALL_STATUS" == "PASS" ]]; then
+        OVERALL_STATUS="WARN"
+      fi
       ;;
   esac
 }
@@ -143,13 +145,13 @@ main() {
 
   echo
   echo "---- 路径与配置检查 ----"
-  check_service_path "paperclip"
+  check_service_path "zephyr-nexus"
   check_service_path "openclaw"
   check_service_path "browser-use"
 
   echo
   echo "---- 服务进程检查（基于 pid 文件） ----"
-  check_service_process "paperclip" || true
+  check_service_process "zephyr-nexus" || true
   check_service_process "openclaw" || true
   check_service_process "browser-use" || true
   # 整体状态输出与退出码在 main 函数结束后统一处理

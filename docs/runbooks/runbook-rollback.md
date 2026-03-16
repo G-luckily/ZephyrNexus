@@ -25,7 +25,7 @@
 1. 在出现问题的环境（通常是 SSH）中执行：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    source .env
    bash scripts/stop-all.sh
    ```
@@ -43,7 +43,7 @@
 1. 在 WSL 上切换到 AetherStack 仓库：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    git fetch origin
    git checkout main
    ```
@@ -76,7 +76,7 @@
 6. PR 合并后，在 SSH 上执行：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    git pull origin main
    source .env
    bash scripts/health-check.sh
@@ -139,7 +139,7 @@
 1. 在 WSL：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    source .env
    bash scripts/health-check.sh
    bash scripts/start-all.sh
@@ -150,7 +150,7 @@
 2. 在 SSH：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    git pull origin main
    source .env
    bash scripts/health-check.sh

@@ -18,7 +18,7 @@
 1. 进入 AetherStack：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    ```
 
 2. 确认 `.env` 存在且大致正确：
@@ -47,7 +47,7 @@
 执行：
 
 ```bash
-cd ~/AetherStack
+cd ~/ZephyrNexus
 source .env
 bash scripts/health-check.sh
 ```
@@ -73,7 +73,7 @@ bash scripts/health-check.sh
 执行：
 
 ```bash
-cd ~/AetherStack
+cd ~/ZephyrNexus
 source .env
 bash scripts/start-all.sh
 ```
@@ -129,7 +129,7 @@ bash scripts/start-all.sh
 示例：
 
 ```bash
-cd ~/AetherStack
+cd ~/ZephyrNexus
 ls runtime
 cat runtime/paperclip.pid
 
@@ -141,7 +141,7 @@ tail -n 100 logs/paperclip.log
 参考 `runbook-rollback.md` 或直接执行：
 
 ```bash
-cd ~/AetherStack
+cd ~/ZephyrNexus
 source .env
 bash scripts/stop-all.sh
 ```

@@ -55,7 +55,7 @@ stop_service() {
 main() {
   log "runtime 目录：${RUNTIME_DIR}"
 
-  stop_service "paperclip"
+  stop_service "zephyr-nexus"
   stop_service "openclaw"
   stop_service "browser-use"
 

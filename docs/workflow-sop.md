@@ -20,7 +20,7 @@
 2. 在 AetherStack 中配置 `.env`（WSL 版本）：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    cp infra/env-templates/env.wsl.example .env
    vi .env
    ```
@@ -45,7 +45,7 @@
 - 在 AetherStack：
 
   ```bash
-  cd ~/AetherStack
+  cd ~/ZephyrNexus
   git checkout -b feat/aetherstack-<短描述>
   ```
 
@@ -69,7 +69,7 @@
 2. 启动与自检：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    source .env
 
    # 健康检查
@@ -93,7 +93,7 @@
 - 对 AetherStack：
 
   ```bash
-  cd ~/AetherStack
+  cd ~/ZephyrNexus
   git status
   git add .
   git commit -m "feat: <简要描述 aetherstack 改动意图>"
@@ -149,7 +149,7 @@
 1. 在 SSH 上更新 AetherStack：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    git pull origin main
    cp infra/env-templates/env.ssh.example .env  # 首次使用时
    vi .env   # 确认 SSH 路径正确

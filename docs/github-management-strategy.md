@@ -1,3 +1,47 @@
+# Quick checklist（for future me）
+
+1. **在 WSL 改代码**
+   - 控制平面相关改动 → 改 `~/ZephyrNexus`（ZephyrNexus 仓库）。
+   - 业务逻辑 / UI 改动 → 改 `~/paperclip`（`G-luckily/paperclip` 仓库）。
+
+2. **本地自测**
+   - 在 `~/ZephyrNexus`：
+     - `bash scripts/health-check.sh`
+     - `bash scripts/start-all.sh`
+   - 打开 `http://localhost:3000`，在 Paperclip 页面上验证本轮改动。
+
+3. **提交到自己的 GitHub 仓库**
+   - ZephyrNexus：
+     - `git commit` → `git push origin <branch>`（或直接 push 到 main）。
+   - paperclip：
+     - `git commit` → `git push origin <branch>`（或直接 push 到 master）。
+
+4. **可选：在自己仓库里开 PR（self-PR）**
+   - 需要多看一眼变更时，用 PR 做分支→主干的合并记录。
+   - 不需要给官方提 PR，一切都在 `G-luckily/*` 名下完成。
+
+5. **WSL → SSH 同步**
+   - 在 SSH 主机：
+     - `cd ~/ZephyrNexus && git pull origin main`
+     - 更新 `.env`（如需要）并执行：
+       - `bash scripts/health-check.sh`
+       - `bash scripts/start-all.sh`
+   - 对 `~/paperclip`：
+     - `cd ~/paperclip && git pull origin master`
+     - 如不是由 ZephyrNexus 统一启动，则按需要手动重启。
+
+6. **只允许 ZephyrNexus 启停**
+   - 不在 SSH 上单独启动散落的服务。
+   - 一切启停/检查都通过：
+     - `bash scripts/start-all.sh`
+     - `bash scripts/stop-all.sh`
+     - `bash scripts/health-check.sh`
+
+7. **出现问题时**
+   - 回到 WSL：
+     - 用 `git revert` / 新 commit 修复问题，再 push 回 `G-luckily/ZephyrNexus` 和 `G-luckily/paperclip`。
+   - SSH 永远只做 `git pull` + ZephyrNexus 脚本，不在 SSH 上直接改代码。
+
 # GitHub 代管与协作策略
 
 ## 1. GitHub 是“最终真相来源”
@@ -96,7 +140,7 @@
 1. 在 SSH 上同步 AetherStack：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    git pull origin main
    source .env   # SSH 专用 .env
    bash scripts/health-check.sh
@@ -183,7 +227,7 @@
    - 在 GitHub 上创建 PR。
 4. PR 合并后：
    - 在 SSH：
-     - `cd ~/AetherStack && git pull origin main`
+     - `cd ~/ZephyrNexus && git pull origin main`
      - `source .env && bash scripts/health-check.sh && bash scripts/start-all.sh`
    - 对相关子仓库重复 `git pull` + 重启。
 5. 记录异常与调整：

@@ -93,7 +93,7 @@ browser-use 代表一类 **辅助功能/浏览器自动化服务**：
 1. 在 WSL/SSH 中执行：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    source .env
    bash scripts/start-all.sh
    ```

@@ -1,14 +1,10 @@
 {
   "version": "1.0.0",
-  "description": "AetherStack control-plane workspace configuration",
+  "description": "ZephyrNexus (AetherStack) control-plane & application workspace configuration",
   "repoInventory": {
     "AetherStack": {
-      "type": "control-plane",
-      "remoteUrl": "git@github.com:your-org/AetherStack.git"
-    },
-    "paperclip": {
-      "type": "application",
-      "remoteUrl": "git@github.com:your-org/paperclip.git"
+      "type": "control-plane-and-app",
+      "remoteUrl": "git@github.com:G-luckily/ZephyrNexus.git"
     },
     "openclaw": {
       "type": "agent-runtime",
@@ -20,8 +16,8 @@
     }
   },
   "services": {
-    "paperclip": {
-      "repo": "paperclip",
+    "zephyr-nexus": {
+      "repo": "AetherStack",
       "enabled": true,
       "port": 3000,
       "start": {
@@ -49,8 +45,8 @@
     "wsl": {
       "description": "WSL Linux 开发环境",
       "pathMappings": {
-        "AetherStack": "~/AetherStack",
-        "paperclip": "${PAPERCLIP_PATH}",
+        "AetherStack": "/home/guo/workspace/ZephyrNexus",
+        "zephyr-nexus": "/home/guo/workspace/ZephyrNexus",
         "openclaw": "${OPENCLAW_WORKSPACE_PATH}",
         "browser-use": "${BROWSER_USE_PATH}"
       }
@@ -58,8 +54,8 @@
     "ssh": {
       "description": "SSH Linux 运行环境",
       "pathMappings": {
-        "AetherStack": "~/AetherStack",
-        "paperclip": "/opt/workspace/paperclip",
+        "AetherStack": "/opt/workspace/ZephyrNexus",
+        "zephyr-nexus": "/opt/workspace/ZephyrNexus",
         "openclaw": "/opt/workspace/openclaw",
         "browser-use": "/opt/workspace/browser-use"
       }
@@ -67,8 +63,8 @@
     "windows": {
       "description": "Windows 编辑环境（主要用于编辑、提交 PR）",
       "pathMappings": {
-        "AetherStack": "C:/dev/AetherStack",
-        "paperclip": "C:/dev/paperclip",
+        "AetherStack": "C:/dev/ZephyrNexus",
+        "zephyr-nexus": "C:/dev/ZephyrNexus",
         "openclaw": "C:/dev/openclaw",
         "browser-use": "C:/dev/browser-use"
       }

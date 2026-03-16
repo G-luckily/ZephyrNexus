@@ -39,7 +39,7 @@ sudo apt-get install -y jq
 安装完成后重新执行：
 
 ```bash
-cd ~/AetherStack
+cd ~/ZephyrNexus
 source .env
 bash scripts/health-check.sh
 ```
@@ -112,7 +112,7 @@ FAIL: 服务 paperclip pid=12345 未在运行。
 1. 查看最近日志：
 
    ```bash
-   cd ~/AetherStack
+   cd ~/ZephyrNexus
    tail -n 100 logs/paperclip.log
    ```
 
