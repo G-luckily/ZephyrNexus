@@ -13,8 +13,8 @@ if [[ -f "${ROOT_DIR}/.env" ]]; then
 fi
 
 CONFIG_FILE="${ROOT_DIR}/workspace.config.json"
-ENV_PROFILE="${AETHERSTACK_ENV_PROFILE:-wsl}"
-RUNTIME_DIR="${AETHERSTACK_RUNTIME_DIR:-${ROOT_DIR}/runtime}"
+ENV_PROFILE="${ZEPHYR_NEXUS_ENV_PROFILE:-wsl}"
+RUNTIME_DIR="${ZEPHYR_NEXUS_RUNTIME_DIR:-${ROOT_DIR}/runtime}"
 
 OVERALL_STATUS="PASS"
 
@@ -68,15 +68,8 @@ check_service_path() {
 
   local repo_path_var
   # 按服务名映射到对应 env 变量
-  case "$service_name" in
-    openclaw)
-      repo_path_var="OPENCLAW_WORKSPACE_PATH"
-      ;;
-    *)
-      # service_name 可能包含 '-'，环境变量名中用 '_' 代替
-      repo_path_var="$(echo "${service_name^^}_PATH" | tr '-' '_')"
-      ;;
-  esac
+  # service_name 可能包含 '-'，环境变量名中用 '_' 代替
+  repo_path_var="$(echo "${service_name^^}_PATH" | tr '-' '_')"
   local repo_path="${!repo_path_var:-}"
 
   if [[ -z "$repo_path" ]]; then
@@ -98,7 +91,7 @@ check_service_process() {
   local service_name="$1"
   local pid_file="${RUNTIME_DIR}/${service_name}.pid"
   if [[ ! -f "$pid_file" ]]; then
-    log "WARN: 未找到服务 ${service_name} 的 pid 文件，可能未由 AetherStack 启动。"
+    log "WARN: 未找到服务 ${service_name} 的 pid 文件，可能未由 ZephyrNexus 控制平面启动。"
     set_status "WARN"
     return 0
   fi
@@ -167,4 +160,3 @@ case "$OVERALL_STATUS" in
   WARN) exit 0 ;;
   FAIL) exit 1 ;;
 esac
-

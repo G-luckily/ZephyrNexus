@@ -12,7 +12,7 @@ curl -sS http://127.0.0.1:3100/api/health | jq
 
 2. Start a clean/stock OpenClaw Docker.
 ```bash
-OPENCLAW_RESET_STATE=1 OPENCLAW_BUILD=1 ./scripts/smoke/openclaw-docker-ui.sh
+OPENCLAW_RESET_STATE=1 OPENCLAW_BUILD=1 OPENCLAW_PROVIDER_AUTH_MODE=oauth ./scripts/smoke/openclaw-docker-ui.sh
 ```
 Open the printed `Dashboard URL` (includes `#token=...`) in your browser.
 

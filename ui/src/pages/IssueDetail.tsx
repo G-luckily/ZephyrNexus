@@ -14,6 +14,7 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { useProjectOrder } from "../hooks/useProjectOrder";
 import { relativeTime, cn, formatTokens } from "../lib/utils";
+import { cleanVisibleAgentName } from "../lib/org-structure";
 import { InlineEditor } from "../components/InlineEditor";
 import { CommentThread } from "../components/CommentThread";
 import { IssueProperties } from "../components/IssueProperties";
@@ -312,11 +313,13 @@ export function IssueDetail() {
     const options: MentionOption[] = [];
     const activeAgents = [...(agents ?? [])]
       .filter((agent) => agent.status !== "terminated")
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) =>
+        cleanVisibleAgentName(a.name).localeCompare(cleanVisibleAgentName(b.name))
+      );
     for (const agent of activeAgents) {
       options.push({
         id: `agent:${agent.id}`,
-        name: agent.name,
+        name: cleanVisibleAgentName(agent.name),
         kind: "agent",
       });
     }
@@ -347,9 +350,14 @@ export function IssueDetail() {
       [];
     const activeAgents = [...(agents ?? [])]
       .filter((agent) => agent.status !== "terminated")
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) =>
+        cleanVisibleAgentName(a.name).localeCompare(cleanVisibleAgentName(b.name))
+      );
     for (const agent of activeAgents) {
-      options.push({ id: `agent:${agent.id}`, label: agent.name });
+      options.push({
+        id: `agent:${agent.id}`,
+        label: cleanVisibleAgentName(agent.name),
+      });
     }
     if (currentUserId) {
       const label = currentUserId === "local-board" ? "Board" : "Me (Board)";
@@ -1049,7 +1057,7 @@ export function IssueDetail() {
         >
           <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-left">
             <span className="text-sm font-medium text-muted-foreground">
-              Cost Summary
+              成本摘要
             </span>
             <ChevronDown
               className={cn(
@@ -1062,7 +1070,7 @@ export function IssueDetail() {
             <div className="border-t border-border px-3 py-2">
               {!issueCostSummary.hasCost && !issueCostSummary.hasTokens ? (
                 <div className="text-xs text-muted-foreground">
-                  No cost data yet.
+                  暂无成本数据。
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -1073,16 +1081,16 @@ export function IssueDetail() {
                   )}
                   {issueCostSummary.hasTokens && (
                     <span>
-                      Tokens {formatTokens(issueCostSummary.totalTokens)}
+                      总令牌 {formatTokens(issueCostSummary.totalTokens)}
                       {issueCostSummary.cached > 0
-                        ? ` (in ${formatTokens(
+                        ? `（输入 ${formatTokens(
                             issueCostSummary.input
-                          )}, out ${formatTokens(
+                          )}，输出 ${formatTokens(
                             issueCostSummary.output
-                          )}, cached ${formatTokens(issueCostSummary.cached)})`
-                        : ` (in ${formatTokens(
+                          )}，缓存 ${formatTokens(issueCostSummary.cached)}）`
+                        : `（输入 ${formatTokens(
                             issueCostSummary.input
-                          )}, out ${formatTokens(issueCostSummary.output)})`}
+                          )}，输出 ${formatTokens(issueCostSummary.output)}）`}
                     </span>
                   )}
                 </div>
@@ -1096,20 +1104,24 @@ export function IssueDetail() {
         <div className="space-y-3 pt-2">
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="h-4 w-4" />
-            <h3 className="text-sm font-semibold italic">最近被拦截的运行 (Blocked Runs)</h3>
+            <h3 className="text-sm font-semibold italic">最近被拦截的执行</h3>
           </div>
           <div className="border border-destructive/20 rounded-lg overflow-hidden divide-y divide-destructive/10 bg-destructive/5 text-destructive">
             {budgetSummary.blockedRuns.map((run: BlockedRunSummary) => (
               <div key={run.id} className="px-3 py-2 text-xs flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{run.agentName || "Unknown Agent"}</span>
+                    <span className="font-medium">
+                      {cleanVisibleAgentName(run.agentName || "未知智能体")}
+                    </span>
                     <Badge variant="outline" className="text-[10px] h-4 border-destructive/30 text-destructive">{run.errorCode}</Badge>
                   </div>
                   <span className="opacity-70">{relativeTime(run.createdAt)}</span>
                 </div>
                 <p className="text-[10px] opacity-80">
-                  {run.errorCode === "issue_budget_exceeded" ? "Blocked by issue budget guard" : "Blocked by agent budget guard"}
+                  {run.errorCode === "issue_budget_exceeded"
+                    ? "触发任务预算守卫，已拦截。"
+                    : "触发智能体预算守卫，已拦截。"}
                 </p>
               </div>
             ))}

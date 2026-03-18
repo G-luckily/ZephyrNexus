@@ -61,7 +61,7 @@ OPENCLAW_IMAGE="${OPENCLAW_IMAGE:-openclaw:local}"
 OPENCLAW_TMP_DIR="${OPENCLAW_TMP_DIR:-${TMPDIR:-/tmp}}"
 OPENCLAW_TMP_DIR="${OPENCLAW_TMP_DIR%/}"
 OPENCLAW_TMP_DIR="${OPENCLAW_TMP_DIR:-/tmp}"
-OPENCLAW_CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$OPENCLAW_TMP_DIR/openclaw-paperclip-smoke}"
+OPENCLAW_CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.zephyr-nexus/openclaw}"
 OPENCLAW_WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$OPENCLAW_CONFIG_DIR/workspace}"
 OPENCLAW_GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-18789}"
 OPENCLAW_BRIDGE_PORT="${OPENCLAW_BRIDGE_PORT:-18790}"
@@ -73,9 +73,10 @@ OPENCLAW_OPEN_BROWSER="${OPENCLAW_OPEN_BROWSER:-0}"
 OPENCLAW_SECRETS_FILE="${OPENCLAW_SECRETS_FILE:-$HOME/.secrets}"
 # Keep default one-command UX: local smoke run should not require manual pairing.
 OPENCLAW_DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-1}"
-OPENCLAW_MODEL_PRIMARY="${OPENCLAW_MODEL_PRIMARY:-openai/gpt-5.2}"
-OPENCLAW_MODEL_FALLBACK="${OPENCLAW_MODEL_FALLBACK:-openai/gpt-5.2-chat-latest}"
-OPENCLAW_RESET_STATE="${OPENCLAW_RESET_STATE:-1}"
+OPENCLAW_PROVIDER_AUTH_MODE="${OPENCLAW_PROVIDER_AUTH_MODE:-auto}"
+OPENCLAW_MODEL_PRIMARY="${OPENCLAW_MODEL_PRIMARY:-openrouter/anthropic/claude-3.5-haiku}"
+OPENCLAW_MODEL_FALLBACK="${OPENCLAW_MODEL_FALLBACK:-openrouter/google/gemini-2.5-flash}"
+OPENCLAW_RESET_STATE="${OPENCLAW_RESET_STATE:-0}"  # 默认保留状态；用 OPENCLAW_RESET_STATE=1 做全量清空重置
 PAPERCLIP_HOST_PORT="${PAPERCLIP_HOST_PORT:-3100}"
 PAPERCLIP_HOST_FROM_CONTAINER="${PAPERCLIP_HOST_FROM_CONTAINER:-host.docker.internal}"
 
@@ -91,14 +92,44 @@ case "$OPENCLAW_DISABLE_DEVICE_AUTH" in
     ;;
 esac
 
-if [[ -z "${OPENAI_API_KEY:-}" && -f "$OPENCLAW_SECRETS_FILE" ]]; then
+if [[ -f "$OPENCLAW_SECRETS_FILE" ]]; then
   set +u
   # shellcheck source=/dev/null
   source "$OPENCLAW_SECRETS_FILE"
   set -u
 fi
 
-[[ -n "${OPENAI_API_KEY:-}" ]] || fail "OPENAI_API_KEY is required (set env var or include it in $OPENCLAW_SECRETS_FILE)"
+OPENCLAW_EFFECTIVE_PROVIDER_AUTH_MODE=""
+case "$OPENCLAW_PROVIDER_AUTH_MODE" in
+  auto)
+    if [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
+      OPENCLAW_EFFECTIVE_PROVIDER_AUTH_MODE="api_key"
+      log "provider auth mode=auto -> api_key (OPENROUTER_API_KEY detected)"
+    elif [[ -n "${OPENAI_API_KEY:-}" ]]; then
+      OPENCLAW_EFFECTIVE_PROVIDER_AUTH_MODE="api_key"
+      log "provider auth mode=auto -> api_key (OPENAI_API_KEY detected)"
+    else
+      OPENCLAW_EFFECTIVE_PROVIDER_AUTH_MODE="oauth"
+      OPENAI_API_KEY=""
+      log "provider auth mode=auto -> oauth (no API key detected; complete login in Control UI)"
+    fi
+    ;;
+  api_key)
+    [[ -n "${OPENROUTER_API_KEY:-}" ]] || [[ -n "${OPENAI_API_KEY:-}" ]] || \
+      fail "api_key mode requires OPENROUTER_API_KEY or OPENAI_API_KEY (set env var or include in $OPENCLAW_SECRETS_FILE)"
+    OPENCLAW_EFFECTIVE_PROVIDER_AUTH_MODE="api_key"
+    ;;
+  oauth)
+    OPENAI_API_KEY="${OPENAI_API_KEY:-}"
+    OPENCLAW_EFFECTIVE_PROVIDER_AUTH_MODE="oauth"
+    log "provider auth mode=oauth (API key not required at startup; complete login in Control UI)"
+    ;;
+  *)
+    fail "OPENCLAW_PROVIDER_AUTH_MODE must be one of: auto, api_key, oauth"
+    ;;
+esac
+
+# Default model is now openrouter/* (set in openclaw.json); no override needed.
 
 log "preparing OpenClaw repo at $OPENCLAW_DOCKER_DIR"
 if [[ -d "$OPENCLAW_DOCKER_DIR/.git" ]]; then
@@ -135,13 +166,46 @@ if [[ "$OPENCLAW_RESET_STATE" == "1" ]]; then
     OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" \
     OPENCLAW_IMAGE="$OPENCLAW_IMAGE" \
     OPENAI_API_KEY="$OPENAI_API_KEY" \
+    OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}" \
     docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" down --remove-orphans >/dev/null 2>&1 || true
   reset_openclaw_state_dir "$OPENCLAW_CONFIG_DIR"
 fi
 mkdir -p "$OPENCLAW_WORKSPACE_DIR" "$OPENCLAW_CONFIG_DIR/identity" "$OPENCLAW_CONFIG_DIR/credentials"
 chmod 700 "$OPENCLAW_CONFIG_DIR" "$OPENCLAW_CONFIG_DIR/credentials"
 
-cat > "$OPENCLAW_CONFIG_DIR/openclaw.json" <<EOF
+if [[ -f "$OPENCLAW_CONFIG_DIR/openclaw.json" ]]; then
+  log "updating existing OpenClaw config at $OPENCLAW_CONFIG_DIR/openclaw.json"
+  export OPENCLAW_DISABLE_DEVICE_AUTH_JSON
+  python3 - <<EOF
+import json, os
+config_file = os.path.join(os.environ['OPENCLAW_CONFIG_DIR'], 'openclaw.json')
+with open(config_file, 'r') as f:
+    cfg = json.load(f)
+
+cfg.setdefault('gateway', {})
+cfg['gateway'].setdefault('port', int(os.environ['OPENCLAW_GATEWAY_PORT']))
+cfg['gateway'].setdefault('bind', os.environ['OPENCLAW_GATEWAY_BIND'])
+cfg['gateway'].setdefault('auth', {"mode": "token", "token": os.environ['OPENCLAW_GATEWAY_TOKEN']})
+
+cfg['gateway'].setdefault('controlUi', {})
+cfg['gateway']['controlUi'].setdefault('enabled', True)
+cfg['gateway']['controlUi'].setdefault('dangerouslyDisableDeviceAuth', os.environ.get('OPENCLAW_DISABLE_DEVICE_AUTH_JSON') == 'true')
+
+if 'allowedOrigins' not in cfg['gateway']['controlUi']:
+    cfg['gateway']['controlUi']['allowedOrigins'] = [
+        f"http://127.0.0.1:{os.environ['OPENCLAW_GATEWAY_PORT']}",
+        f"http://localhost:{os.environ['OPENCLAW_GATEWAY_PORT']}"
+    ]
+
+cfg.setdefault('agents', {}).setdefault('defaults', {})
+cfg['agents']['defaults'].setdefault('workspace', "/home/node/.openclaw/workspace")
+
+with open(config_file, 'w') as f:
+    json.dump(cfg, f, indent=2)
+EOF
+else
+  log "creating new OpenClaw config at $OPENCLAW_CONFIG_DIR/openclaw.json"
+  cat > "$OPENCLAW_CONFIG_DIR/openclaw.json" <<EOF
 {
   "gateway": {
     "mode": "local",
@@ -160,9 +224,6 @@ cat > "$OPENCLAW_CONFIG_DIR/openclaw.json" <<EOF
       ]
     }
   },
-  "env": {
-    "OPENAI_API_KEY": "${OPENAI_API_KEY}"
-  },
   "agents": {
     "defaults": {
       "model": {
@@ -176,6 +237,7 @@ cat > "$OPENCLAW_CONFIG_DIR/openclaw.json" <<EOF
   }
 }
 EOF
+fi
 chmod 600 "$OPENCLAW_CONFIG_DIR/openclaw.json"
 
 cat > "$OPENCLAW_DOCKER_DIR/.env" <<EOF
@@ -186,7 +248,8 @@ OPENCLAW_BRIDGE_PORT=$OPENCLAW_BRIDGE_PORT
 OPENCLAW_GATEWAY_BIND=$OPENCLAW_GATEWAY_BIND
 OPENCLAW_GATEWAY_TOKEN=$OPENCLAW_GATEWAY_TOKEN
 OPENCLAW_IMAGE=$OPENCLAW_IMAGE
-OPENAI_API_KEY=$OPENAI_API_KEY
+OPENAI_API_KEY=${OPENAI_API_KEY:-}
+OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
 EOF
 
 COMPOSE_OVERRIDE="${OPENCLAW_DOCKER_DIR}/.paperclip-openclaw.override.yml"
@@ -197,9 +260,15 @@ services:
       - /tmp:exec,size=512M
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      - OPENAI_API_KEY=\${OPENAI_API_KEY:-}
+      - OPENROUTER_API_KEY=\${OPENROUTER_API_KEY:-}
   openclaw-cli:
     tmpfs:
       - /tmp:exec,size=512M
+    environment:
+      - OPENAI_API_KEY=\${OPENAI_API_KEY:-}
+      - OPENROUTER_API_KEY=\${OPENROUTER_API_KEY:-}
 EOF
 
 compose() {
@@ -255,6 +324,19 @@ OpenClaw gateway is running.
 Dashboard URL:
 $dashboard_url
 EOF
+
+if [[ "$OPENCLAW_EFFECTIVE_PROVIDER_AUTH_MODE" == "oauth" ]]; then
+  cat <<EOF
+Provider auth:
+  OAuth mode enabled. Complete provider login inside OpenClaw Control UI before running real tasks.
+EOF
+  if [[ "$OPENCLAW_RESET_STATE" == "1" ]]; then
+    cat <<EOF
+  Note: OPENCLAW_RESET_STATE=1 resets local auth state on each run.
+  Use OPENCLAW_RESET_STATE=0 to keep OAuth login between restarts.
+EOF
+  fi
+fi
 
 if [[ "$OPENCLAW_DISABLE_DEVICE_AUTH_JSON" == "true" ]]; then
   cat <<EOF

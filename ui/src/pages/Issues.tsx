@@ -11,22 +11,10 @@ import { queryKeys } from "../lib/queryKeys";
 import { EmptyState } from "../components/EmptyState";
 import { IssuesList } from "../components/IssuesList";
 import { CircleDot } from "lucide-react";
-import type { Agent } from "@zephyr-nexus/shared";
-
-function roleDepartment(role: Agent["role"]): string {
-  switch (role) {
-    case "ceo":
-      return "总裁办公室";
-    case "cto":
-      return "技术线";
-    case "pm":
-      return "人力与协调";
-    case "researcher":
-      return "社会研究院";
-    default:
-      return "执行单元";
-  }
-}
+import {
+  deriveOrgDepartmentOptions,
+  resolveAgentDepartment,
+} from "../lib/org-structure";
 
 function presetStatuses(preset: string | null): string[] | undefined {
   if (preset === "active")
@@ -119,13 +107,21 @@ export function Issues() {
       ? projectFilter
       : undefined;
   const urlAssignee = searchParams.get("assignee");
+  const departmentOptions = useMemo(
+    () => deriveOrgDepartmentOptions(agents ?? []),
+    [agents]
+  );
   const scopedAssignees = useMemo(() => {
     if (scopeView !== "department" || departmentFilter === "all")
       return undefined;
     return (agents ?? [])
-      .filter((agent) => roleDepartment(agent.role) === departmentFilter)
+      .filter(
+        (agent) =>
+          resolveAgentDepartment(agent, departmentOptions).label ===
+          departmentFilter
+      )
       .map((agent) => agent.id);
-  }, [agents, scopeView, departmentFilter]);
+  }, [agents, scopeView, departmentFilter, departmentOptions]);
   const initialAssignees = urlAssignee ? [urlAssignee] : scopedAssignees;
   const initialStatuses = presetStatuses(searchParams.get("preset"));
 

@@ -22,6 +22,7 @@ import { tStatus } from "../lib/i18n";
 import { PriorityIcon } from "./PriorityIcon";
 import { Identity } from "./Identity";
 import type { Issue } from "@zephyr-nexus/shared";
+import { cleanVisibleAgentName } from "../lib/org-structure";
 
 const boardStatuses = [
   "backlog",
@@ -124,7 +125,8 @@ function KanbanCard({
 
   const agentName = (id: string | null) => {
     if (!id || !agents) return null;
-    return agents.find((a) => a.id === id)?.name ?? null;
+    const raw = agents.find((a) => a.id === id)?.name;
+    return raw ? cleanVisibleAgentName(raw) : null;
   };
 
   return (

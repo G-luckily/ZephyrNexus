@@ -21,6 +21,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Bot, Plus, List, GitBranch, SlidersHorizontal } from "lucide-react";
 import { AGENT_ROLE_LABELS, type Agent } from "@zephyr-nexus/shared";
+import { cleanVisibleAgentName } from "../lib/org-structure";
 
 const adapterLabels: Record<string, string> = {
   claude_local: "Claude",
@@ -331,7 +332,7 @@ export function Agents() {
             return (
               <EntityRow
                 key={agent.id}
-                title={agent.name}
+                title={cleanVisibleAgentName(agent.name)}
                 subtitle={`${roleLabels[agent.role] ?? agent.role}${
                   agent.title ? ` - ${agent.title}` : ""
                 }`}
@@ -460,7 +461,9 @@ function OrgTreeNode({
           />
         </span>
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-medium">{node.name}</span>
+          <span className="text-sm font-medium">
+            {cleanVisibleAgentName(node.name)}
+          </span>
           <span className="text-xs text-muted-foreground ml-2">
             {roleLabels[node.role] ?? node.role}
             {agent?.title ? ` - ${agent.title}` : ""}

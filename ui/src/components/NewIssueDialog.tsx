@@ -707,8 +707,10 @@ export function NewIssueDialog() {
         showCloseButton={false}
         aria-describedby={undefined}
         className={cn(
-          "glass-panel p-0 gap-0 flex flex-col max-h-[calc(100dvh-2rem)] border-border/80 shadow-[0_24px_48px_rgba(0,0,0,0.12)] overflow-hidden",
-          expanded ? "sm:max-w-2xl h-[calc(100dvh-2rem)]" : "sm:max-w-lg"
+          "task-composer-shell glass-panel p-0 gap-0 flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden",
+          expanded
+            ? "sm:max-w-[980px] h-[calc(100dvh-2rem)]"
+            : "sm:max-w-[860px]"
         )}
         onKeyDown={handleKeyDown}
         onPointerDownOutside={(event) => {
@@ -725,356 +727,413 @@ export function NewIssueDialog() {
           }
         }}
       >
-        {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className={cn(
-                    "px-1.5 py-0.5 rounded text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity",
-                    !dialogCompany?.brandColor && "bg-muted"
-                  )}
-                  style={
-                    dialogCompany?.brandColor
-                      ? {
-                          backgroundColor: dialogCompany.brandColor,
-                          color: getContrastTextColor(dialogCompany.brandColor),
-                        }
-                      : undefined
-                  }
-                >
-                  {(dialogCompany?.name ?? "").slice(0, 3).toUpperCase()}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-1" align="start">
-                {companies
-                  .filter((c) => c.status !== "archived")
-                  .map((c) => (
+        <div className="task-composer-header shrink-0 border-b border-periwinkle-border px-5 py-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="mb-2 flex items-center gap-2">
+                <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
+                  <PopoverTrigger asChild>
                     <button
-                      key={c.id}
                       className={cn(
-                        "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                        c.id === effectiveCompanyId && "bg-accent"
+                        "inline-flex h-6 items-center rounded-full px-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition-opacity hover:opacity-80",
+                        !dialogCompany?.brandColor &&
+                          "border border-periwinkle-border bg-background/65 text-muted-foreground"
                       )}
-                      onClick={() => {
-                        handleCompanyChange(c.id);
-                        setCompanyOpen(false);
-                      }}
+                      style={
+                        dialogCompany?.brandColor
+                          ? {
+                              backgroundColor: dialogCompany.brandColor,
+                              color: getContrastTextColor(dialogCompany.brandColor),
+                            }
+                          : undefined
+                      }
                     >
-                      <span
-                        className={cn(
-                          "px-1 py-0.5 rounded text-[10px] font-semibold leading-none",
-                          !c.brandColor && "bg-muted"
-                        )}
-                        style={
-                          c.brandColor
-                            ? {
-                                backgroundColor: c.brandColor,
-                                color: getContrastTextColor(c.brandColor),
-                              }
-                            : undefined
-                        }
-                      >
-                        {c.name.slice(0, 3).toUpperCase()}
-                      </span>
-                      <span className="truncate">{c.name}</span>
+                      {(dialogCompany?.name ?? "").slice(0, 3).toUpperCase()}
                     </button>
-                  ))}
-              </PopoverContent>
-            </Popover>
-            <span className="text-muted-foreground/60">&rsaquo;</span>
-            <span>新建任务</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="text-muted-foreground"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? (
-                <Minimize2 className="h-3.5 w-3.5" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="text-muted-foreground"
-              onClick={() => closeNewIssue()}
-            >
-              <span className="text-lg leading-none">&times;</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Title */}
-        <div className="px-4 pt-4 pb-2 shrink-0">
-          <textarea
-            className="w-full text-lg font-semibold bg-transparent outline-none resize-none overflow-hidden placeholder:text-muted-foreground/50"
-            placeholder="任务标题"
-            rows={1}
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              e.target.style.height = "auto";
-              e.target.style.height = `${e.target.scrollHeight}px`;
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
-                e.preventDefault();
-                descriptionEditorRef.current?.focus();
-              }
-              if (e.key === "Tab" && !e.shiftKey) {
-                e.preventDefault();
-                assigneeSelectorRef.current?.focus();
-              }
-            }}
-            autoFocus
-          />
-        </div>
-
-        <div className="px-4 pb-2 shrink-0">
-          <div className="overflow-x-auto overscroll-x-contain">
-            <div className="inline-flex items-center gap-2 text-sm text-foreground/80 flex-wrap sm:flex-nowrap sm:min-w-max">
-              <span>分配给</span>
-              <InlineEntitySelector
-                ref={assigneeSelectorRef}
-                value={assigneeId}
-                options={assigneeOptions}
-                placeholder="承办人"
-                disablePortal
-                noneLabel="无承办人"
-                searchPlaceholder="搜索承办人..."
-                emptyMessage="未找到承办人。"
-                onChange={(id) => {
-                  if (id) trackRecentAssignee(id);
-                  setAssigneeId(id);
-                }}
-                onConfirm={() => {
-                  projectSelectorRef.current?.focus();
-                }}
-                renderTriggerValue={(option) =>
-                  option && currentAssignee ? (
-                    <>
-                      <AgentIcon
-                        icon={currentAssignee.icon}
-                        className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-                      />
-                      <span className="truncate">{option.label}</span>
-                    </>
-                  ) : (
-                    <span className="text-foreground/80">承办人</span>
-                  )
-                }
-                renderOption={(option) => {
-                  if (!option.id)
-                    return <span className="truncate">{option.label}</span>;
-                  const assignee = (agents ?? []).find(
-                    (agent) => agent.id === option.id
-                  );
-                  return (
-                    <>
-                      <AgentIcon
-                        icon={assignee?.icon}
-                        className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-                      />
-                      <span className="truncate">{option.label}</span>
-                    </>
-                  );
-                }}
-              />
-              <span className="text-muted-foreground/50">所属</span>
-              <InlineEntitySelector
-                ref={projectSelectorRef}
-                value={projectId}
-                options={projectOptions}
-                placeholder="所属项目"
-                disablePortal
-                noneLabel="无项目"
-                searchPlaceholder="搜索项目..."
-                emptyMessage="未找到项目。"
-                onChange={handleProjectChange}
-                onConfirm={() => {
-                  descriptionEditorRef.current?.focus();
-                }}
-                renderTriggerValue={(option) =>
-                  option && currentProject ? (
-                    <>
-                      <span
-                        className="h-3.5 w-3.5 shrink-0 rounded-sm"
-                        style={{
-                          backgroundColor: currentProject.color ?? "#6366f1",
-                        }}
-                      />
-                      <span className="truncate">{option.label}</span>
-                    </>
-                  ) : (
-                    <span className="text-foreground/80">所属项目</span>
-                  )
-                }
-                renderOption={(option) => {
-                  if (!option.id)
-                    return <span className="truncate">{option.label}</span>;
-                  const project = orderedProjects.find(
-                    (item) => item.id === option.id
-                  );
-                  return (
-                    <>
-                      <span
-                        className="h-3.5 w-3.5 shrink-0 rounded-sm"
-                        style={{ backgroundColor: project?.color ?? "#6366f1" }}
-                      />
-                      <span className="truncate">{option.label}</span>
-                    </>
-                  );
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {currentProjectSupportsExecutionWorkspace && (
-          <div className="px-4 pb-2 shrink-0">
-            <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
-              <div className="space-y-0.5">
-                <div className="text-xs font-medium">
-                  Use isolated issue checkout
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  Create an issue-specific execution workspace instead of using
-                  the project's primary checkout.
-                </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-52 p-1" align="start">
+                    {companies
+                      .filter((c) => c.status !== "archived")
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          className={cn(
+                            "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50",
+                            c.id === effectiveCompanyId && "bg-accent"
+                          )}
+                          onClick={() => {
+                            handleCompanyChange(c.id);
+                            setCompanyOpen(false);
+                          }}
+                        >
+                          <span
+                            className={cn(
+                              "rounded px-1 py-0.5 text-[10px] font-semibold leading-none",
+                              !c.brandColor && "bg-muted"
+                            )}
+                            style={
+                              c.brandColor
+                                ? {
+                                    backgroundColor: c.brandColor,
+                                    color: getContrastTextColor(c.brandColor),
+                                  }
+                                : undefined
+                            }
+                          >
+                            {c.name.slice(0, 3).toUpperCase()}
+                          </span>
+                          <span className="truncate">{c.name}</span>
+                        </button>
+                      ))}
+                  </PopoverContent>
+                </Popover>
+                <span className="rounded-full border border-periwinkle-border bg-background/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.13em] text-muted-foreground">
+                  Task Composer
+                </span>
               </div>
-              <button
-                className={cn(
-                  "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                  useIsolatedExecutionWorkspace ? "bg-green-600" : "bg-muted"
-                )}
-                onClick={() =>
-                  setUseIsolatedExecutionWorkspace((value) => !value)
-                }
-                type="button"
+              <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
+                新建任务
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                创建新的编排任务 / Create a new orchestration task
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="rounded-lg border border-periwinkle-border bg-background/40 text-muted-foreground hover:bg-background/70 hover:text-foreground"
+                onClick={() => setExpanded(!expanded)}
               >
-                <span
-                  className={cn(
-                    "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
-                    useIsolatedExecutionWorkspace
-                      ? "translate-x-4.5"
-                      : "translate-x-0.5"
-                  )}
-                />
-              </button>
+                {expanded ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="rounded-lg border border-periwinkle-border bg-background/40 text-muted-foreground hover:bg-background/70 hover:text-foreground"
+                onClick={() => closeNewIssue()}
+              >
+                <span className="text-lg leading-none">&times;</span>
+              </Button>
             </div>
           </div>
-        )}
+        </div>
 
-        {supportsAssigneeOverrides && (
-          <div className="px-4 pb-2 shrink-0">
-            <button
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setAssigneeOptionsOpen((open) => !open)}
-            >
-              {assigneeOptionsOpen ? (
-                <ChevronDown className="h-3 w-3" />
-              ) : (
-                <ChevronRight className="h-3 w-3" />
-              )}
-              {assigneeOptionsTitle}
-            </button>
-            {assigneeOptionsOpen && (
-              <div className="mt-2 rounded-md border border-border p-3 bg-muted/20 space-y-3">
-                <div className="space-y-1.5">
-                  <div className="text-xs text-muted-foreground">Model</div>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="shrink-0 px-5 pt-4 pb-3">
+            <div className="task-composer-intent px-4 py-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Task Intent
+              </p>
+              <textarea
+                className="task-composer-title-input w-full resize-none overflow-hidden bg-transparent font-semibold text-foreground outline-none placeholder:text-muted-foreground/55"
+                placeholder="任务标题：描述你想启动的编排任务目标"
+                rows={1}
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  e.target.style.height = "auto";
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                    descriptionEditorRef.current?.focus();
+                  }
+                  if (e.key === "Tab" && !e.shiftKey) {
+                    e.preventDefault();
+                    assigneeSelectorRef.current?.focus();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+
+          <div className="shrink-0 px-5 pb-3">
+            <div className="rounded-[18px] border border-periwinkle-border bg-background/45 p-3">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="rounded-full border border-periwinkle-border bg-background/55 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  分配给
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70">
+                  Assignment
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-periwinkle-border bg-background/40 p-2">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    承办人
+                  </p>
                   <InlineEntitySelector
-                    value={assigneeModelOverride}
-                    options={modelOverrideOptions}
-                    placeholder="Default model"
+                    ref={assigneeSelectorRef}
+                    value={assigneeId}
+                    options={assigneeOptions}
+                    placeholder="承办人"
                     disablePortal
-                    noneLabel="Default model"
-                    searchPlaceholder="Search models..."
-                    emptyMessage="No models found."
-                    onChange={setAssigneeModelOverride}
+                    noneLabel="无承办人"
+                    searchPlaceholder="搜索承办人..."
+                    emptyMessage="未找到承办人。"
+                    triggerClassName="task-composer-pill h-8 w-full justify-start px-2.5 text-[13px] font-medium"
+                    contentClassName="w-[min(22rem,calc(100vw-2rem))]"
+                    onChange={(id) => {
+                      if (id) trackRecentAssignee(id);
+                      setAssigneeId(id);
+                    }}
+                    onConfirm={() => {
+                      projectSelectorRef.current?.focus();
+                    }}
+                    renderTriggerValue={(option) =>
+                      option && currentAssignee ? (
+                        <>
+                          <AgentIcon
+                            icon={currentAssignee.icon}
+                            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                          />
+                          <span className="truncate">{option.label}</span>
+                        </>
+                      ) : (
+                        <span className="text-foreground/80">承办人</span>
+                      )
+                    }
+                    renderOption={(option) => {
+                      if (!option.id)
+                        return <span className="truncate">{option.label}</span>;
+                      const assignee = (agents ?? []).find(
+                        (agent) => agent.id === option.id
+                      );
+                      return (
+                        <>
+                          <AgentIcon
+                            icon={assignee?.icon}
+                            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                          />
+                          <span className="truncate">{option.label}</span>
+                        </>
+                      );
+                    }}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <div className="text-xs text-muted-foreground">
-                    Thinking effort
+                <div className="rounded-xl border border-periwinkle-border bg-background/40 p-2">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    所属项目
+                  </p>
+                  <InlineEntitySelector
+                    ref={projectSelectorRef}
+                    value={projectId}
+                    options={projectOptions}
+                    placeholder="所属项目"
+                    disablePortal
+                    noneLabel="无项目"
+                    searchPlaceholder="搜索项目..."
+                    emptyMessage="未找到项目。"
+                    triggerClassName="task-composer-pill h-8 w-full justify-start px-2.5 text-[13px] font-medium"
+                    contentClassName="w-[min(22rem,calc(100vw-2rem))]"
+                    onChange={handleProjectChange}
+                    onConfirm={() => {
+                      descriptionEditorRef.current?.focus();
+                    }}
+                    renderTriggerValue={(option) =>
+                      option && currentProject ? (
+                        <>
+                          <span
+                            className="h-3.5 w-3.5 shrink-0 rounded-sm"
+                            style={{
+                              backgroundColor: currentProject.color ?? "#6366f1",
+                            }}
+                          />
+                          <span className="truncate">{option.label}</span>
+                        </>
+                      ) : (
+                        <span className="text-foreground/80">所属项目</span>
+                      )
+                    }
+                    renderOption={(option) => {
+                      if (!option.id)
+                        return <span className="truncate">{option.label}</span>;
+                      const project = orderedProjects.find(
+                        (item) => item.id === option.id
+                      );
+                      return (
+                        <>
+                          <span
+                            className="h-3.5 w-3.5 shrink-0 rounded-sm"
+                            style={{
+                              backgroundColor: project?.color ?? "#6366f1",
+                            }}
+                          />
+                          <span className="truncate">{option.label}</span>
+                        </>
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {currentProjectSupportsExecutionWorkspace && (
+            <div className="shrink-0 px-5 pb-3">
+              <div className="flex items-center justify-between rounded-[14px] border border-periwinkle-border bg-background/45 px-3 py-2.5">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-medium">
+                    Use isolated issue checkout
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {thinkingEffortOptions.map((option) => (
-                      <button
-                        key={option.value || "default"}
-                        className={cn(
-                          "px-2 py-1 rounded-md text-xs border border-border hover:bg-accent/50 transition-colors",
-                          assigneeThinkingEffort === option.value && "bg-accent"
-                        )}
-                        onClick={() => setAssigneeThinkingEffort(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                  <div className="text-[11px] text-muted-foreground">
+                    Use issue-specific execution workspace for this task.
                   </div>
                 </div>
-                {assigneeAdapterType === "claude_local" && (
-                  <div className="flex items-center justify-between rounded-md border border-border px-2 py-1.5">
-                    <div className="text-xs text-muted-foreground">
-                      Enable Chrome (--chrome)
-                    </div>
-                    <button
-                      className={cn(
-                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                        assigneeChrome ? "bg-green-600" : "bg-muted"
-                      )}
-                      onClick={() => setAssigneeChrome((value) => !value)}
-                    >
-                      <span
-                        className={cn(
-                          "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
-                          assigneeChrome ? "translate-x-4.5" : "translate-x-0.5"
-                        )}
-                      />
-                    </button>
-                  </div>
-                )}
+                <button
+                  className={cn(
+                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                    useIsolatedExecutionWorkspace ? "bg-green-600" : "bg-muted"
+                  )}
+                  onClick={() =>
+                    setUseIsolatedExecutionWorkspace((value) => !value)
+                  }
+                  type="button"
+                >
+                  <span
+                    className={cn(
+                      "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                      useIsolatedExecutionWorkspace
+                        ? "translate-x-4.5"
+                        : "translate-x-0.5"
+                    )}
+                  />
+                </button>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Description */}
-        <div
-          className={cn(
-            "px-4 pb-2 overflow-y-auto min-h-0 border-t border-border/60 pt-3",
-            expanded ? "flex-1" : ""
+            </div>
           )}
-        >
-          <MarkdownEditor
-            ref={descriptionEditorRef}
-            value={description}
-            onChange={setDescription}
-            placeholder="添加详细描述..."
-            bordered={false}
-            mentions={mentionOptions}
-            contentClassName={cn(
-              "text-sm text-muted-foreground pb-12",
-              expanded ? "min-h-[220px]" : "min-h-[120px]"
+
+          {supportsAssigneeOverrides && (
+            <div className="shrink-0 px-5 pb-3">
+              <button
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => setAssigneeOptionsOpen((open) => !open)}
+              >
+                {assigneeOptionsOpen ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
+                {assigneeOptionsTitle}
+              </button>
+              {assigneeOptionsOpen && (
+                <div className="mt-2 space-y-3 rounded-[14px] border border-periwinkle-border bg-background/45 p-3">
+                  <div className="space-y-1.5">
+                    <div className="text-xs text-muted-foreground">Model</div>
+                    <InlineEntitySelector
+                      value={assigneeModelOverride}
+                      options={modelOverrideOptions}
+                      placeholder="Default model"
+                      disablePortal
+                      noneLabel="Default model"
+                      searchPlaceholder="Search models..."
+                      emptyMessage="No models found."
+                      triggerClassName="task-composer-pill h-8 w-full justify-start px-2.5 text-[13px] font-medium"
+                      contentClassName="w-[min(22rem,calc(100vw-2rem))]"
+                      onChange={setAssigneeModelOverride}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="text-xs text-muted-foreground">
+                      Thinking effort
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {thinkingEffortOptions.map((option) => (
+                        <button
+                          key={option.value || "default"}
+                          className={cn(
+                            "task-composer-pill px-2 py-1 text-xs",
+                            assigneeThinkingEffort === option.value &&
+                              "border-zephyr-blue/35 bg-zephyr-blue-soft text-zephyr-blue"
+                          )}
+                          onClick={() => setAssigneeThinkingEffort(option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {assigneeAdapterType === "claude_local" && (
+                    <div className="flex items-center justify-between rounded-md border border-periwinkle-border bg-background/50 px-2 py-1.5">
+                      <div className="text-xs text-muted-foreground">
+                        Enable Chrome (--chrome)
+                      </div>
+                      <button
+                        className={cn(
+                          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                          assigneeChrome ? "bg-green-600" : "bg-muted"
+                        )}
+                        onClick={() => setAssigneeChrome((value) => !value)}
+                        type="button"
+                      >
+                        <span
+                          className={cn(
+                            "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                            assigneeChrome
+                              ? "translate-x-4.5"
+                              : "translate-x-0.5"
+                          )}
+                        />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div
+            className={cn(
+              "min-h-0 px-5 pb-4",
+              expanded ? "flex-1" : "max-h-[360px]"
             )}
-            imageUploadHandler={async (file) => {
-              const asset = await uploadDescriptionImage.mutateAsync(file);
-              return asset.contentPath;
-            }}
-          />
+          >
+            <div className="task-composer-canvas flex h-full min-h-[220px] flex-col p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Description Canvas
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  Markdown / Mentions / Image paste
+                </p>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <MarkdownEditor
+                  ref={descriptionEditorRef}
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="添加详细描述、上下文、验收标准..."
+                  bordered={false}
+                  className="h-full"
+                  mentions={mentionOptions}
+                  contentClassName={cn(
+                    "text-sm text-muted-foreground pb-12",
+                    expanded ? "min-h-[260px]" : "min-h-[160px]"
+                  )}
+                  imageUploadHandler={async (file) => {
+                    const asset = await uploadDescriptionImage.mutateAsync(file);
+                    return asset.contentPath;
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Property chips bar */}
-        <div className="flex items-center gap-1.5 px-4 py-2 border-t border-border flex-wrap shrink-0">
+        <div className="shrink-0 border-t border-periwinkle-border px-5 py-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-1.5">
           {/* Status chip */}
           <Popover open={statusOpen} onOpenChange={setStatusOpen}>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+              <button className="task-composer-footer-chip inline-flex items-center gap-1.5 px-2 py-1 text-xs transition-colors hover:bg-accent/50">
                 <CircleDot className={cn("h-3 w-3", currentStatus.color)} />
                 {currentStatus.label}
               </button>
@@ -1102,7 +1161,7 @@ export function NewIssueDialog() {
           {/* Priority chip */}
           <Popover open={priorityOpen} onOpenChange={setPriorityOpen}>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+              <button className="task-composer-footer-chip inline-flex items-center gap-1.5 px-2 py-1 text-xs transition-colors hover:bg-accent/50">
                 {currentPriority ? (
                   <>
                     <currentPriority.icon
@@ -1141,9 +1200,11 @@ export function NewIssueDialog() {
           {/* Task role chip */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+              <button className="task-composer-footer-chip inline-flex items-center gap-1.5 px-2 py-1 text-xs transition-colors hover:bg-accent/50">
                 <Tag className="h-3 w-3" />
-                <span className="text-foreground/80">{taskRole || "任务职能"}</span>
+                <span className="text-foreground/80">
+                  {taskRole || "任务职能"}
+                </span>
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-44 p-1" align="start">
@@ -1162,7 +1223,7 @@ export function NewIssueDialog() {
             </PopoverContent>
           </Popover>
 
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-foreground/80">
+          <button className="task-composer-footer-chip inline-flex items-center gap-1.5 px-2 py-1 text-xs text-foreground/80 transition-colors hover:bg-accent/50">
             <Tag className="h-3 w-3" />
             标签
           </button>
@@ -1176,7 +1237,7 @@ export function NewIssueDialog() {
             onChange={handleAttachImage}
           />
           <button
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-foreground/80"
+            className="task-composer-footer-chip inline-flex items-center gap-1.5 px-2 py-1 text-xs text-foreground/80 transition-colors hover:bg-accent/50"
             onClick={() => attachInputRef.current?.click()}
             disabled={uploadDescriptionImage.isPending}
           >
@@ -1187,7 +1248,7 @@ export function NewIssueDialog() {
           {/* More (dates) */}
           <Popover open={moreOpen} onOpenChange={setMoreOpen}>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center justify-center rounded-md border border-border p-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground">
+              <button className="task-composer-footer-chip inline-flex items-center justify-center p-1 text-xs text-muted-foreground transition-colors hover:bg-accent/50">
                 <MoreHorizontal className="h-3 w-3" />
               </button>
             </PopoverTrigger>
@@ -1202,26 +1263,27 @@ export function NewIssueDialog() {
               </button>
             </PopoverContent>
           </Popover>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground"
-            onClick={discardDraft}
-            disabled={!hasDraft && !loadDraft()}
-          >
-            丢弃草稿
-          </Button>
-          <Button
-            size="sm"
-            disabled={!title.trim() || createIssue.isPending}
-            onClick={handleSubmit}
-          >
-            {createIssue.isPending ? "创建中..." : "创建任务"}
-          </Button>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:bg-background/70"
+                onClick={discardDraft}
+                disabled={!hasDraft && !loadDraft()}
+              >
+                丢弃草稿
+              </Button>
+              <Button
+                size="sm"
+                className="border border-zephyr-blue bg-zephyr-blue px-4 font-semibold text-white shadow-[0_12px_22px_-14px_var(--zephyr-blue-glow)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-zephyr-blue/95"
+                disabled={!title.trim() || createIssue.isPending}
+                onClick={handleSubmit}
+              >
+                {createIssue.isPending ? "创建中..." : "创建任务"}
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

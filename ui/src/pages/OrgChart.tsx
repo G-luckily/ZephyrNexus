@@ -15,6 +15,10 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { AgentIcon } from "../components/AgentIconPicker";
 import { Network } from "lucide-react";
 import { AGENT_ROLE_LABELS, type Agent } from "@zephyr-nexus/shared";
+import {
+  deriveOrgDepartmentOptions,
+  resolveAgentDepartment,
+} from "../lib/org-structure";
 
 const CARD_W = 220;
 const CARD_H = 110;
@@ -42,9 +46,8 @@ function toFilterStatus(status: string): OrgFilter {
   return "all";
 }
 
-/** Determine whether a node should be shown for the given sidebar unit filter.
- *  unit=ceo means "show the whole company" (CEO is the root of everything). */
-function nodeMatchesUnit(node: OrgNode, unit: string): boolean {
+/** Fallback matching when agent metadata is unavailable. */
+function nodeMatchesUnitByName(node: OrgNode, unit: string): boolean {
   if (unit === "all" || unit === "ceo") return true;
   const name = node.name.toLowerCase();
   if (unit === "cho") return name.includes("人力") || name.includes("cho");
@@ -226,6 +229,18 @@ export function OrgChart() {
     for (const a of agents ?? []) m.set(a.id, a);
     return m;
   }, [agents]);
+  const departmentOptions = useMemo(
+    () => deriveOrgDepartmentOptions(agents ?? []),
+    [agents]
+  );
+  const departmentKeyByAgentId = useMemo(() => {
+    const mapping = new Map<string, string>();
+    for (const agent of agents ?? []) {
+      const dept = resolveAgentDepartment(agent, departmentOptions);
+      mapping.set(agent.id, dept.key);
+    }
+    return mapping;
+  }, [agents, departmentOptions]);
 
   useEffect(() => {
     setBreadcrumbs([{ label: "组织" }]);
@@ -237,15 +252,31 @@ export function OrgChart() {
       return toFilterStatus(node.status) === filter;
     };
 
-    const shouldKeepByUnit = (node: OrgNode): boolean =>
-      nodeMatchesUnit(node, unitFilter);
+    const shouldKeepByUnit = (node: OrgNode): boolean => {
+      if (unitFilter === "all" || unitFilter === "ceo") return true;
+      const deptKey = departmentKeyByAgentId.get(node.id);
+      if (deptKey) return deptKey === unitFilter;
+      return nodeMatchesUnitByName(node, unitFilter);
+    };
 
-    const mapNode = (node: OrgNode): OrgNode | null => {
+    const mapNode = (node: OrgNode, parentUnitMatched = false): OrgNode | null => {
+      const selfUnitMatched = shouldKeepByUnit(node);
+      const withinUnitScope =
+        unitFilter === "all" || unitFilter === "ceo"
+          ? true
+          : parentUnitMatched || selfUnitMatched;
       const children = node.reports
-        .map(mapNode)
+        .map((child) =>
+          mapNode(
+            child,
+            unitFilter === "all" || unitFilter === "ceo"
+              ? false
+              : parentUnitMatched || selfUnitMatched
+          )
+        )
         .filter((n): n is OrgNode => n !== null);
 
-      const selfPass = shouldKeep(node) && shouldKeepByUnit(node);
+      const selfPass = shouldKeep(node) && withinUnitScope;
 
       if (selfPass || children.length > 0) {
         return { ...node, reports: children };
@@ -254,7 +285,7 @@ export function OrgChart() {
     };
 
     const mapped = (orgTree ?? [])
-      .map(mapNode)
+      .map((root) => mapNode(root, false))
       .filter((n): n is OrgNode => n !== null)
       // Remove orphan root nodes that are [V1-PROJECT] bots with no reportsTo.
       // These are standalone project runners, not part of the org hierarchy.
@@ -266,7 +297,7 @@ export function OrgChart() {
       ...root,
       reports: root.reports.map((child) => ({ ...child, reports: [] })),
     }));
-  }, [orgTree, filter, coreOnly, unitFilter]);
+  }, [orgTree, filter, coreOnly, unitFilter, departmentKeyByAgentId]);
 
   const layout = useMemo(() => layoutForest(filteredTree), [filteredTree]);
   const allNodes = useMemo(() => flattenLayout(layout), [layout]);

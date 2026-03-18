@@ -45,7 +45,7 @@ export function SidebarNavItem({
           className={cn(
             "group relative flex items-center gap-2 rounded-[16px] border px-2.5 py-2.5 text-[13px] leading-5 font-medium transition-all duration-150",
             isActive
-              ? "border-sidebar-ring bg-sidebar text-sidebar-foreground shadow-sm bg-sidebar-accent/50"
+              ? "border-sidebar-ring bg-shell-selected text-sidebar-foreground shadow-sm"
               : "border-transparent text-muted-foreground hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
             className
           )}
@@ -63,7 +63,7 @@ export function SidebarNavItem({
             className={cn(
               "relative shrink-0 rounded-md p-1 transition-all duration-150",
               isActive
-                ? "bg-primary/10 text-primary"
+                ? "bg-zephyr-blue-soft text-zephyr-blue"
                 : "bg-sidebar-accent/50 text-muted-foreground group-hover:bg-sidebar-accent group-hover:text-sidebar-accent-foreground"
             )}
           >
@@ -78,7 +78,7 @@ export function SidebarNavItem({
               className={cn(
                 "inline-block h-1.5 w-1.5 rounded-full transition-colors duration-200",
                 isActive
-                  ? "bg-accent shadow-[0_0_8px_var(--ring)]"
+                  ? "bg-zephyr-blue shadow-[0_0_8px_var(--zephyr-blue-glow)]"
                   : "bg-muted-foreground/40 group-hover:bg-muted-foreground/80"
               )}
             />
@@ -86,10 +86,10 @@ export function SidebarNavItem({
           </span>
 
           {liveCount != null && liveCount > 0 && (
-            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-cyan-200">
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-zephyr-blue">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zephyr-blue opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-zephyr-blue" />
               </span>
               执行中
             </span>
@@ -101,7 +101,7 @@ export function SidebarNavItem({
                 "ml-auto inline-flex h-5 items-center rounded-md px-1.5 text-[10px] font-semibold leading-none ring-1 ring-inset",
                 badgeTone === "danger"
                   ? "bg-rose-500/12 text-rose-600 dark:text-rose-200 ring-rose-300/30 dark:ring-rose-300/15"
-                  : "bg-blue-500/10 text-blue-600 dark:text-cyan-200 ring-blue-300/35 dark:ring-cyan-300/15"
+                  : "bg-zephyr-blue-soft text-zephyr-blue ring-zephyr-blue/25"
               )}
             >
               {badge}

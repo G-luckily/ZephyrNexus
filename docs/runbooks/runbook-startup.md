@@ -1,11 +1,11 @@
 # Runbook：平台启动（start-all）
 
-本 Runbook 说明如何在不同环境下，通过 AetherStack 一键启动整个平台，并快速判断是否成功。
+本 Runbook 说明如何在不同环境下，通过 ZephyrNexus 一键启动整个平台，并快速判断是否成功。
 
 ## 1. 前提条件
 
 - 已在当前环境（WSL / SSH）完成：
-  - AetherStack 仓库 clone 或更新到最新 main
+  - ZephyrNexus 仓库 clone 或更新到最新 main
   - `.env` 配置正确
   - `workspace.config.json` 中服务配置与路径映射大致正确
 - 基础工具：
@@ -15,7 +15,7 @@
 
 ## 2. 步骤一：确认环境变量
 
-1. 进入 AetherStack：
+1. 进入 ZephyrNexus：
 
    ```bash
    cd ~/ZephyrNexus
@@ -29,12 +29,12 @@
 
    关键字段：
 
-   - `AETHERSTACK_ENV_PROFILE`（例如：`wsl` / `ssh`）
+   - `ZEPHYR_NEXUS_ENV_PROFILE`（例如：`wsl` / `ssh`）
    - `PAPERCLIP_PATH`
    - `OPENCLAW_WORKSPACE_PATH`（如暂未使用，可先不填）
    - `BROWSER_USE_PATH`（如暂未使用，可先不填）
-   - `AETHERSTACK_RUNTIME_DIR`
-   - `AETHERSTACK_LOG_DIR`
+   - `ZEPHYR_NEXUS_RUNTIME_DIR`
+   - `ZEPHYR_NEXUS_LOG_DIR`
 
 3. 加载环境变量：
 
@@ -83,7 +83,7 @@ bash scripts/start-all.sh
 - 读取 `workspace.config.json` 中的 `services` 列表。
 - 对 `enabled = true` 的服务尝试启动。
 - 使用 env + `environmentProfiles[profile].pathMappings` 解析服务路径。
-- 在 `AETHERSTACK_RUNTIME_DIR` 下写入 `.pid` 文件，在 `AETHERSTACK_LOG_DIR` 下写日志。
+- 在 `ZEPHYR_NEXUS_RUNTIME_DIR` 下写入 `.pid` 文件，在 `ZEPHYR_NEXUS_LOG_DIR` 下写日志。
 
 关注输出中的“启动总结”段落，例如：
 
@@ -149,7 +149,7 @@ bash scripts/stop-all.sh
 脚本会：
 
 - 读取 `runtime/*.pid`
-- 仅尝试停止由 AetherStack 启动的服务
+- 仅尝试停止由 ZephyrNexus 启动的服务
 - 清理对应 pid 文件
 
 如果有进程停不下来，脚本会输出 WARN，之后可以根据 PID 手动排查。

@@ -118,7 +118,7 @@ function SortableCompanyItem({
             {/* Selection indicator pill */}
             <div
               className={cn(
-                "absolute left-[-14px] w-1 rounded-r-full bg-primary transition-[height] duration-150",
+                "absolute left-[-14px] w-1 rounded-r-full bg-zephyr-blue transition-[height] duration-150",
                 isSelected ? "h-5" : "h-0 group-hover:h-2"
               )}
             />
@@ -141,8 +141,8 @@ function SortableCompanyItem({
               {hasLiveAgents && (
                 <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-80" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-background" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zephyr-blue opacity-80" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-zephyr-blue ring-2 ring-background" />
                   </span>
                 </span>
               )}
@@ -276,10 +276,15 @@ export function CompanyRail() {
 
   return (
     <div className="relative flex h-full w-[72px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(29,78,216,0.04),transparent_40%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(58,105,240,0.06),transparent_40%)]" />
-      {/* Paperclip icon - aligned with top sections (implied line, no visible border) */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% -6%, color-mix(in oklab, var(--zephyr-blue-soft) 72%, transparent) 0%, transparent 42%), linear-gradient(180deg, color-mix(in oklab, var(--shell-pane-bg) 90%, transparent) 0%, transparent 65%)",
+        }}
+      />
       <div className="relative z-[1] flex h-14 w-full shrink-0 flex-col items-center justify-center gap-1">
-        <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-sidebar-border bg-sidebar-accent/50 shadow-sm text-primary">
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-sidebar-border bg-sidebar-accent shadow-sm text-zephyr-blue">
           <Wind className="h-4.5 w-4.5" />
         </div>
         <span className="text-[8px] font-semibold uppercase tracking-[0.18em] text-muted-foreground p-1">

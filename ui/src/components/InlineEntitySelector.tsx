@@ -30,6 +30,8 @@ interface InlineEntitySelectorProps {
   onChange: (id: string) => void;
   onConfirm?: () => void;
   className?: string;
+  triggerClassName?: string;
+  contentClassName?: string;
   renderTriggerValue?: (option: InlineEntityOption | null) => ReactNode;
   renderOption?: (option: InlineEntityOption, isSelected: boolean) => ReactNode;
   /** Skip the Portal so the popover stays in the DOM tree (fixes scroll inside Dialogs). */
@@ -50,6 +52,8 @@ export const InlineEntitySelector = forwardRef<
     onChange,
     onConfirm,
     className,
+    triggerClassName,
+    contentClassName,
     renderTriggerValue,
     renderOption,
     disablePortal,
@@ -116,6 +120,7 @@ export const InlineEntitySelector = forwardRef<
           type="button"
           className={cn(
             "inline-flex min-w-0 items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1 text-sm font-medium text-foreground transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            triggerClassName,
             className
           )}
           onPointerDown={() => {
@@ -137,7 +142,7 @@ export const InlineEntitySelector = forwardRef<
         align="start"
         side="bottom"
         collisionPadding={16}
-        className="w-[min(20rem,calc(100vw-2rem))] p-1"
+        className={cn("w-[min(20rem,calc(100vw-2rem))] p-1", contentClassName)}
         disablePortal={disablePortal}
         onOpenAutoFocus={(event) => {
           event.preventDefault();

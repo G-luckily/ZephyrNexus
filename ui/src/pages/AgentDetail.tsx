@@ -95,6 +95,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { AgentIcon, AgentIconPicker } from "../components/AgentIconPicker";
 import { agentRouteRef } from "../lib/utils";
+import { cleanVisibleAgentName } from "../lib/org-structure";
 
 const runStatusIcons: Record<
   string,
@@ -578,7 +579,9 @@ export function AgentDetail() {
     const crumbs: { label: string; href?: string }[] = [
       { label: "智能体", href: "/agents" },
     ];
-    const agentName = agent?.name ?? routeAgentRef ?? "Agent";
+    const agentName = agent
+      ? cleanVisibleAgentName(agent.name)
+      : routeAgentRef ?? "智能体";
     if (activeView === "dashboard" && !urlRunId) {
       crumbs.push({ label: agentName });
     } else {
@@ -651,7 +654,9 @@ export function AgentDetail() {
             </button>
           </AgentIconPicker>
           <div className="min-w-0">
-            <h2 className="text-2xl font-bold truncate">{agent.name}</h2>
+            <h2 className="text-2xl font-bold truncate">
+              {cleanVisibleAgentName(agent.name)}
+            </h2>
             <p className="text-sm text-muted-foreground truncate">
               {roleLabels[agent.role] ?? agent.role}
               {agent.title ? ` - ${agent.title}` : ""}
@@ -1100,7 +1105,7 @@ function AgentOverview({
 
       {/* Costs */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium">Costs</h3>
+        <h3 className="text-sm font-medium">成本</h3>
         <CostsSection runtimeState={runtimeState} runs={runs} />
       </div>
 
@@ -1135,7 +1140,7 @@ function CostsSection({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <span className="text-xs text-muted-foreground block">
-                输入 tokens
+                输入令牌
               </span>
               <span className="text-lg font-semibold">
                 {formatTokens(runtimeState.totalInputTokens)}
@@ -1143,7 +1148,7 @@ function CostsSection({
             </div>
             <div>
               <span className="text-xs text-muted-foreground block">
-                输出 tokens
+                输出令牌
               </span>
               <span className="text-lg font-semibold">
                 {formatTokens(runtimeState.totalOutputTokens)}
@@ -1151,7 +1156,7 @@ function CostsSection({
             </div>
             <div>
               <span className="text-xs text-muted-foreground block">
-                缓存 tokens
+                缓存令牌
               </span>
               <span className="text-lg font-semibold">
                 {formatTokens(runtimeState.totalCachedInputTokens)}
@@ -1174,19 +1179,19 @@ function CostsSection({
             <thead>
               <tr className="border-b border-border bg-accent/20">
                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                  Date
+                  日期
                 </th>
                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                  Run
+                  执行
                 </th>
                 <th className="text-right px-3 py-2 font-medium text-muted-foreground">
-                  Input
+                  输入
                 </th>
                 <th className="text-right px-3 py-2 font-medium text-muted-foreground">
-                  Output
+                  输出
                 </th>
                 <th className="text-right px-3 py-2 font-medium text-muted-foreground">
-                  Cost
+                  成本
                 </th>
               </tr>
             </thead>
@@ -2011,25 +2016,25 @@ function RunDetail({
           {hasMetrics && (
             <div className="border-t sm:border-t-0 sm:border-l border-border p-4 grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-3 content-center">
               <div>
-                <div className="text-xs text-muted-foreground">Input</div>
+                <div className="text-xs text-muted-foreground">输入</div>
                 <div className="text-sm font-medium font-mono">
                   {formatTokens(metrics.input)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Output</div>
+                <div className="text-xs text-muted-foreground">输出</div>
                 <div className="text-sm font-medium font-mono">
                   {formatTokens(metrics.output)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Cached</div>
+                <div className="text-xs text-muted-foreground">缓存</div>
                 <div className="text-sm font-medium font-mono">
                   {formatTokens(metrics.cached)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Cost</div>
+                <div className="text-xs text-muted-foreground">成本</div>
                 <div className="text-sm font-medium font-mono">
                   {metrics.cost > 0 ? `$${metrics.cost.toFixed(4)}` : "-"}
                 </div>

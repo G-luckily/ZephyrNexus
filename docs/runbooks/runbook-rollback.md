@@ -1,12 +1,12 @@
 # Runbook：回滚与停机策略
 
-本 Runbook 说明在出现问题时，如何安全地回滚控制平面（AetherStack）和业务仓库（paperclip 等），以及如何使用停机脚本保护成本与稳定性。
+本 Runbook 说明在出现问题时，如何安全地回滚控制平面（ZephyrNexus）和业务仓库（paperclip 等），以及如何使用停机脚本保护成本与稳定性。
 
 ## 1. 判定何时需要回滚
 
 典型触发条件：
 
-- AetherStack 的脚本/配置变更导致：
+- ZephyrNexus 的脚本/配置变更导致：
   - `start-all` / `health-check` 无法通过
   - 关键服务无法启动或频繁崩溃
 - paperclip / openclaw / browser-use 的变更导致：
@@ -34,13 +34,13 @@
    - 关键服务（paperclip / openclaw / browser-use 等）都已被杀掉。
    - 对于无法停止的 PID，脚本会给出 WARN，可手动进一步排查。
 
-3. 根据需要，可以停更广范围的服务（数据库、队列等），但这些不由 AetherStack 直接管理。
+3. 根据需要，可以停更广范围的服务（数据库、队列等），但这些不由 ZephyrNexus 直接管理。
 
-## 3. 回滚 AetherStack 控制平面改动（WSL 端）
+## 3. 回滚 ZephyrNexus 控制平面改动（WSL 端）
 
 > 所有结构性回滚都建议在 WSL 进行，再通过 GitHub 同步到 SSH。
 
-1. 在 WSL 上切换到 AetherStack 仓库：
+1. 在 WSL 上切换到 ZephyrNexus 仓库：
 
    ```bash
    cd ~/ZephyrNexus
@@ -64,8 +64,8 @@
 4. 创建新的回滚分支并推送：
 
    ```bash
-   git checkout -b fix/aetherstack-rollback-<简短原因>
-   git push -u origin fix/aetherstack-rollback-<简短原因>
+   git checkout -b fix/zephyr-nexus-rollback-<简短原因>
+   git push -u origin fix/zephyr-nexus-rollback-<简短原因>
    ```
 
 5. 在 GitHub 上发起回滚 PR，描述：
@@ -111,7 +111,7 @@
    ```bash
    cd ${PAPERCLIP_PATH}
    git pull origin main
-   # 重启服务（可通过 AetherStack：stop-all + start-all）
+   # 重启服务（可通过 ZephyrNexus：stop-all + start-all）
    ```
 
 ## 5. 避免 SSH 上直接改历史

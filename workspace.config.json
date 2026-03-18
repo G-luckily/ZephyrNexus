@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "description": "ZephyrNexus (AetherStack) control-plane & application workspace configuration",
+  "description": "ZephyrNexus control-plane & application workspace configuration",
   "repoInventory": {
-    "AetherStack": {
+    "zephyr-nexus": {
       "type": "control-plane-and-app",
       "remoteUrl": "git@github.com:G-luckily/ZephyrNexus.git"
     },
@@ -17,7 +17,7 @@
   },
   "services": {
     "zephyr-nexus": {
-      "repo": "AetherStack",
+      "repo": "zephyr-nexus",
       "enabled": true,
       "port": 3000,
       "start": {
@@ -25,11 +25,11 @@
       }
     },
     "openclaw": {
-      "repo": "openclaw",
-      "enabled": false,
-      "port": 4000,
+      "repo": "zephyr-nexus",
+      "enabled": true,
+      "port": 18789,
       "start": {
-        "command": "pnpm install --silent && pnpm dev"
+        "command": "pnpm smoke:openclaw-docker-ui"
       }
     },
     "browser-use": {
@@ -45,7 +45,6 @@
     "wsl": {
       "description": "WSL Linux 开发环境",
       "pathMappings": {
-        "AetherStack": "/home/guo/workspace/ZephyrNexus",
         "zephyr-nexus": "/home/guo/workspace/ZephyrNexus",
         "openclaw": "${OPENCLAW_WORKSPACE_PATH}",
         "browser-use": "${BROWSER_USE_PATH}"
@@ -54,7 +53,6 @@
     "ssh": {
       "description": "SSH Linux 运行环境",
       "pathMappings": {
-        "AetherStack": "/opt/workspace/ZephyrNexus",
         "zephyr-nexus": "/opt/workspace/ZephyrNexus",
         "openclaw": "/opt/workspace/openclaw",
         "browser-use": "/opt/workspace/browser-use"
@@ -63,7 +61,6 @@
     "windows": {
       "description": "Windows 编辑环境（主要用于编辑、提交 PR）",
       "pathMappings": {
-        "AetherStack": "C:/dev/ZephyrNexus",
         "zephyr-nexus": "C:/dev/ZephyrNexus",
         "openclaw": "C:/dev/openclaw",
         "browser-use": "C:/dev/browser-use"
@@ -71,4 +68,3 @@
     }
   }
 }
-

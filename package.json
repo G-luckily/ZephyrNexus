@@ -4,6 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-runner.mjs watch",
+    "platform:start": "./scripts/start-all.sh",
+    "platform:stop": "./scripts/stop-all.sh",
+    "platform:doctor": "./scripts/health-check.sh",
+    "doctor": "pnpm platform:doctor",
     "dev:watch": "node scripts/dev-runner.mjs watch",
     "dev:once": "node scripts/dev-runner.mjs dev",
     "dev:server": "pnpm --filter @zephyr-nexus/server dev",
@@ -29,6 +33,7 @@
     "docs:dev": "cd docs && npx mintlify dev",
     "smoke:openclaw-join": "./scripts/smoke/openclaw-join.sh",
     "smoke:openclaw-docker-ui": "./scripts/smoke/openclaw-docker-ui.sh",
+    "smoke:openclaw-docker-ui:oauth": "OPENCLAW_PROVIDER_AUTH_MODE=oauth ./scripts/smoke/openclaw-docker-ui.sh",
     "smoke:openclaw-sse-standalone": "./scripts/smoke/openclaw-sse-standalone.sh",
     "test:e2e": "npx playwright test --config tests/e2e/playwright.config.ts",
     "test:e2e:headed": "npx playwright test --config tests/e2e/playwright.config.ts --headed"

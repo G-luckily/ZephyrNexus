@@ -217,8 +217,22 @@ export function Layout() {
   );
 
   return (
-    <div className="relative flex h-dvh overflow-hidden bg-background text-foreground pt-[env(safe-area-inset-top)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(29,78,216,0.03),transparent_40%),radial-gradient(circle_at_top_right,rgba(29,78,216,0.02),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(58,105,240,0.08),transparent_35%),radial-gradient(circle_at_top_right,rgba(58,105,240,0.05),transparent_25%)]" />
+    <div className="relative flex h-dvh overflow-hidden bg-shell-page text-foreground pt-[env(safe-area-inset-top)]">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 12% -4%, color-mix(in oklab, var(--zephyr-blue-soft) 70%, transparent) 0%, transparent 45%), radial-gradient(circle at 82% 0%, color-mix(in oklab, var(--violet-mist) 80%, transparent) 0%, transparent 36%), linear-gradient(180deg, color-mix(in oklab, var(--shell-page-bg) 80%, var(--background)) 0%, var(--background) 65%, color-mix(in oklab, var(--shell-page-bg) 72%, var(--background)) 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 hidden md:block"
+        style={{
+          width: "32rem",
+          background:
+            "linear-gradient(90deg, color-mix(in oklab, var(--periwinkle-dim) 72%, transparent) 0%, color-mix(in oklab, var(--zephyr-blue-soft) 42%, transparent) 46%, transparent 100%)",
+        }}
+      />
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
         style={{
@@ -237,7 +251,11 @@ export function Layout() {
       {isMobile && sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-slate-900/20 dark:bg-black/65 backdrop-blur-[1px] dark:backdrop-blur-sm"
+          className="fixed inset-0 z-40 backdrop-blur-[1px] dark:backdrop-blur-sm"
+          style={{
+            background:
+              "color-mix(in oklab, var(--background) 45%, transparent)",
+          }}
           onClick={() => setSidebarOpen(false)}
           aria-label="关闭侧边栏"
         />
@@ -255,7 +273,7 @@ export function Layout() {
             <CompanyRail />
             <Sidebar />
           </div>
-          <div className="border-t border-r border-border bg-sidebar px-3 py-2">
+          <div className="border-t border-r border-sidebar-border bg-sidebar px-3 py-2">
             <div className="flex items-center gap-1">
               <SidebarNavItem
                 to="/docs"
@@ -267,7 +285,7 @@ export function Layout() {
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-white"
+                className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
@@ -296,7 +314,7 @@ export function Layout() {
               <Sidebar />
             </div>
           </div>
-          <div className="border-t border-r border-border bg-sidebar px-3 py-2">
+          <div className="border-t border-r border-sidebar-border bg-sidebar px-3 py-2">
             <div className="flex items-center gap-1">
               <SidebarNavItem
                 to="/docs"
@@ -308,7 +326,7 @@ export function Layout() {
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-white"
+                className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
@@ -328,13 +346,20 @@ export function Layout() {
 
       {/* Main content */}
       <div className="relative z-[1] flex h-full min-w-0 flex-1 flex-col">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-0 w-px"
+          style={{
+            background:
+              "linear-gradient(180deg, transparent 0%, var(--shell-border) 16%, var(--shell-border) 84%, transparent 100%)",
+          }}
+        />
         <BreadcrumbBar />
         <div className="flex flex-1 min-h-0">
           <main
             id="main-content"
             tabIndex={-1}
             className={cn(
-              "flex-1 overflow-auto px-4 py-5 md:px-6 md:py-6 xl:px-8 xl:py-7",
+              "relative z-[1] flex-1 overflow-auto px-4 py-5 md:px-6 md:py-6 xl:px-8 xl:py-7",
               isMobile && "pb-[calc(5rem+env(safe-area-inset-bottom))]"
             )}
             onScroll={handleMainScroll}

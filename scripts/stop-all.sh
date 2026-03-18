@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-RUNTIME_DIR="${AETHERSTACK_RUNTIME_DIR:-${ROOT_DIR}/runtime}"
+RUNTIME_DIR="${ZEPHYR_NEXUS_RUNTIME_DIR:-${ROOT_DIR}/runtime}"
 
 log() {
   echo "[stop-all] $*"
@@ -15,7 +15,7 @@ stop_service() {
   local pid_file="${RUNTIME_DIR}/${service_name}.pid"
 
   if [[ ! -f "$pid_file" ]]; then
-    log "服务 ${service_name} 无 pid 文件，可能未由 AetherStack 启动，跳过。"
+    log "服务 ${service_name} 无 pid 文件，可能未由 ZephyrNexus 控制平面启动，跳过。"
     return 0
   fi
 
@@ -63,4 +63,3 @@ main() {
 }
 
 main "$@"
-

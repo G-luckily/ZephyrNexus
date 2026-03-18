@@ -7,7 +7,7 @@
 
 - **name**: 仓库名称（唯一）
 - **type**:
-  - `control-plane`：控制平面仓库（例如 AetherStack）
+  - `control-plane`：控制平面仓库（例如 ZephyrNexus）
   - `application`：业务/应用仓库（例如 paperclip）
   - `agent-runtime`：Agent 运行时 / 后端服务（例如 openclaw）
   - `auxiliary`：辅助服务（例如 browser-use）
@@ -23,15 +23,15 @@
 
 ## 注册表
 
-### 1. AetherStack（本仓库）
+### 1. ZephyrNexus（本仓库）
 
-- **name**: `AetherStack`
+- **name**: `ZephyrNexus`
 - **type**: `control-plane`
 - **localPathTemplate**:
-  - 通常为 `~/AetherStack`
-  - 也可以通过环境变量 `AETHERSTACK_PATH` 指向其它位置
+  - 通常为 `~/ZephyrNexus`
+  - 也可以通过环境变量 `ZEPHYR_NEXUS_PATH` 指向其它位置
 - **remoteUrl**:
-  - 示例：`git@github.com:your-org/AetherStack.git`
+  - 示例：`git@github.com:your-org/ZephyrNexus.git`
 - **role**:
   - 控制平面仓库，负责架构文档、脚本、配置、env 模板等
 - **startCommand**:
@@ -95,12 +95,12 @@
 ## 控制仓库 vs 业务仓库
 
 - **控制仓库**
-  - AetherStack
+  - ZephyrNexus
   - 只承载控制定义（脚本、配置、运行流程文档）
 - **业务仓库**
   - paperclip（前台 UI + 调度）
   - openclaw（Agent runtime）
   - browser-use（辅助服务）
 
-AetherStack 不会托管这些业务仓库的源码，只通过注册表 + 配置知道它们的存在与启动方式。
+ZephyrNexus 不会托管这些业务仓库的源码，只通过注册表 + 配置知道它们的存在与启动方式。
 

@@ -34,13 +34,13 @@ export function BreadcrumbBar() {
   // Single breadcrumb = page title (uppercase)
   if (breadcrumbs.length === 1) {
     return (
-      <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-border bg-background px-4 md:px-6">
+      <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-shell-border bg-background/70 px-4 md:px-6 backdrop-blur-sm">
         {menuButton}
         <h1 className="relative z-[1] truncate text-base font-semibold tracking-tight text-foreground">
           {breadcrumbs[0].label}
         </h1>
-        <div className="relative z-[1] ml-auto hidden items-center gap-2 rounded-full border border-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground md:flex">
-          <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-success" />
+        <div className="relative z-[1] ml-auto hidden items-center gap-2 rounded-full border border-shell-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground md:flex">
+          <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-zephyr-blue" />
           Route Live
         </div>
       </div>
@@ -49,7 +49,7 @@ export function BreadcrumbBar() {
 
   // Multiple breadcrumbs = breadcrumb trail
   return (
-    <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-border bg-background px-4 md:px-6">
+    <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-shell-border bg-background/70 px-4 md:px-6 backdrop-blur-sm">
       {menuButton}
       <Breadcrumb className="relative z-[1] min-w-0 overflow-hidden">
         <BreadcrumbList className="flex-nowrap">
@@ -74,8 +74,8 @@ export function BreadcrumbBar() {
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="relative z-[1] ml-auto hidden items-center gap-2 rounded-full border border-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground md:flex">
-        <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-success" />
+      <div className="relative z-[1] ml-auto hidden items-center gap-2 rounded-full border border-shell-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground md:flex">
+        <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-zephyr-blue" />
         Route Live
       </div>
     </div>

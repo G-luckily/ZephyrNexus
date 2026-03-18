@@ -558,6 +558,7 @@ export function agentService(db: Db) {
         .from(agents)
         .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
       const normalizedRows = rows.map(normalizeAgentRow);
+      const agentIds = new Set(normalizedRows.map((row) => row.id));
       const byManager = new Map<string | null, typeof normalizedRows>();
       for (const row of normalizedRows) {
         const key = row.reportsTo ?? null;
@@ -566,15 +567,20 @@ export function agentService(db: Db) {
         byManager.set(key, group);
       }
 
-      const build = (managerId: string | null): Array<Record<string, unknown>> => {
-        const members = byManager.get(managerId) ?? [];
-        return members.map((member) => ({
-          ...member,
-          reports: build(member.id),
-        }));
-      };
+      const buildNode = (
+        member: (typeof normalizedRows)[number]
+      ): Record<string, unknown> => ({
+        ...member,
+        reports: (byManager.get(member.id) ?? []).map(buildNode),
+      });
 
-      return build(null);
+      // Treat agents whose manager is missing/terminated as root nodes,
+      // so they remain visible in the org chart instead of disappearing.
+      const rootMembers = normalizedRows.filter(
+        (row) => row.reportsTo === null || !agentIds.has(row.reportsTo)
+      );
+
+      return rootMembers.map(buildNode);
     },
 
     getChainOfCommand: async (agentId: string) => {

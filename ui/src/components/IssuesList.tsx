@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { KanbanBoard } from "./KanbanBoard";
 import type { Issue } from "@zephyr-nexus/shared";
+import { cleanVisibleAgentName } from "../lib/org-structure";
 
 /* ── Helpers ── */
 
@@ -297,7 +298,8 @@ export function IssuesList({
   const agentName = useCallback(
     (id: string | null) => {
       if (!id || !agents) return null;
-      return agents.find((a) => a.id === id)?.name ?? null;
+      const raw = agents.find((a) => a.id === id)?.name;
+      return raw ? cleanVisibleAgentName(raw) : null;
     },
     [agents]
   );
@@ -348,7 +350,7 @@ export function IssuesList({
       key,
       label:
         key === "__unassigned"
-          ? "Unassigned"
+          ? "未分配"
           : agentName(key) ?? key.slice(0, 8),
       items: groups[key]!,
     }));
@@ -614,7 +616,9 @@ export function IssuesList({
                                     })
                                   }
                                 />
-                                <span className="text-sm">{agent.name}</span>
+                                <span className="text-sm">
+                                  {cleanVisibleAgentName(agent.name)}
+                                </span>
                               </label>
                             ))}
                           </div>
@@ -944,7 +948,7 @@ export function IssuesList({
                               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
                                 <User className="h-3 w-3" />
                               </span>
-                              Assignee
+                              负责人
                             </span>
                           )}
                         </button>
@@ -957,7 +961,7 @@ export function IssuesList({
                       >
                         <input
                           className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
-                          placeholder="Search agents..."
+                          placeholder="搜索智能体..."
                           value={assigneeSearch}
                           onChange={(e) => setAssigneeSearch(e.target.value)}
                           autoFocus
@@ -974,12 +978,15 @@ export function IssuesList({
                               assignIssue(issue.id, null);
                             }}
                           >
-                            No assignee
+                            未分配
                           </button>
                           {(agents ?? [])
                             .filter((agent) => {
                               if (!assigneeSearch.trim()) return true;
-                              return agent.name
+                              const visibleName = cleanVisibleAgentName(
+                                agent.name
+                              );
+                              return visibleName
                                 .toLowerCase()
                                 .includes(assigneeSearch.toLowerCase());
                             })
@@ -998,7 +1005,7 @@ export function IssuesList({
                                 }}
                               >
                                 <Identity
-                                  name={agent.name}
+                                  name={cleanVisibleAgentName(agent.name)}
                                   size="sm"
                                   className="min-w-0"
                                 />

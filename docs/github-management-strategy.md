@@ -47,7 +47,7 @@
 ## 1. GitHub 是“最终真相来源”
 
 - 所有关键定义与代码的“真相版本”都以 GitHub 为准：
-  - AetherStack：控制平面定义、脚本、配置、Runbook、SOP
+  - ZephyrNexus：控制平面定义、脚本、配置、Runbook、SOP
   - paperclip：前台控制台业务逻辑
   - openclaw / browser-use：各自的业务与运行时代码
 - WSL / SSH / Windows 环境都是这些仓库的 **clone 或工作副本**：
@@ -62,7 +62,7 @@
   - 主要开发环境：
     - 写代码
     - 跑本地测试
-    - 修改 AetherStack 的脚本与配置
+    - 修改 ZephyrNexus 的脚本与配置
   - 输出：高质量 commit 与 PR。
 
 - **SSH Linux**
@@ -73,7 +73,7 @@
 
 - **Windows 编辑环境**
   - 主要用于编辑文件、使用 IDE（包括 Cursor）提升开发体验：
-    - 可以在 Windows + WSL 组合下使用 AetherStack/paperclip 等仓库
+    - 可以在 Windows + WSL 组合下使用 ZephyrNexus/paperclip 等仓库
   - 真正运行依托 WSL/SSH，不需要在 “纯 Windows” 上直接跑所有脚本。
 
 - **GitHub**
@@ -82,9 +82,9 @@
     - PR 审查、合并、历史记录与回滚点
     - 权限控制与协作审计
 
-## 3. 哪些改动进 AetherStack，哪些进 paperclip
+## 3. 哪些改动进 ZephyrNexus，哪些进 paperclip
 
-- **进 AetherStack 的改动**
+- **进 ZephyrNexus 的改动**
   - 平台级架构文档调整（`docs/architecture.md`, `docs/repo-registry.md`）
   - 启动/停机/健康检查脚本的修改（`scripts/*.sh`）
   - `workspace.config.json`（服务映射、仓库清单、环境 profile）
@@ -100,13 +100,13 @@
 ## 4. PR 管理改动的流程
 
 1. **在 WSL 创建 feature 分支**
-   - AetherStack：
-     - `git checkout -b feat/aetherstack-<短描述>`
+   - ZephyrNexus：
+     - `git checkout -b feat/zephyr-nexus-<短描述>`
    - paperclip：
      - `git checkout -b feat/paperclip-<短描述>`
 
 2. **本地修改并测试**
-   - AetherStack：
+   - ZephyrNexus：
      - `source .env`
      - `bash scripts/health-check.sh`
      - `bash scripts/start-all.sh`
@@ -115,16 +115,16 @@
      - 启动本地 dev 服务器，并在浏览器中验证关键用例
 
 3. **提交到 GitHub**
-   - AetherStack：
+   - ZephyrNexus：
      - `git status`
      - `git add .`
-     - `git commit -m "feat: <简要描述 aetherstack 改动意图>"`
-     - `git push -u origin feat/aetherstack-<短描述>`
+     - `git commit -m "feat: <简要描述 zephyr-nexus 改动意图>"`
+     - `git push -u origin feat/zephyr-nexus-<短描述>`
    - paperclip 同理。
 
 4. **在 GitHub 上创建 PR**
    - 标题示例：
-     - AetherStack：`feat: improve AetherStack startup and healthcheck`
+     - ZephyrNexus：`feat: improve ZephyrNexus startup and healthcheck`
      - paperclip：`feat: new agent dashboard in paperclip`
    - 描述中必须写明：
      - 变更内容概述
@@ -137,7 +137,7 @@
 
 ## 5. merge 后如何同步到 SSH
 
-1. 在 SSH 上同步 AetherStack：
+1. 在 SSH 上同步 ZephyrNexus：
 
    ```bash
    cd ~/ZephyrNexus
@@ -178,10 +178,10 @@
 
 ## 7. 分支策略（建议）
 
-- **AetherStack**
+- **ZephyrNexus**
   - `main`：稳定可运行的控制平面定义，SSH 优先跟随此分支。
   - `develop`（可选）：大改动缓冲区。
-  - `feat/*`：新功能，比如 `feat/aetherstack-healthcheck-openclaw`。
+  - `feat/*`：新功能，比如 `feat/zephyr-nexus-healthcheck-openclaw`。
   - `fix/*`：缺陷修复，比如 `fix/start-all-handle-missing-paths`。
   - `chore/*`：杂项（CI、格式化、脚手架等）。
   - `docs/*`：只改文档。
@@ -192,7 +192,7 @@
 
 ## 8. 回滚策略（概要）
 
-- **回滚 AetherStack 控制平面改动**
+- **回滚 ZephyrNexus 控制平面改动**
   - 在 WSL：
     1. 找到引入问题的 commit 或 PR。
     2. 使用 `git revert <commit>` 或基于 tag 回退。
@@ -217,7 +217,7 @@
 
 1. 在 WSL 开发：
    - 从 main 切 feature 分支。
-   - 修改 AetherStack / paperclip / openclaw / browser-use 等。
+   - 修改 ZephyrNexus / paperclip / openclaw / browser-use 等。
 2. 本地验证：
    - `source .env`
    - `bash scripts/health-check.sh`

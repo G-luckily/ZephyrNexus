@@ -49,7 +49,8 @@ What this command does:
 
 Environment knobs:
 
-- `OPENAI_API_KEY` (required; loaded from env or `~/.secrets`)
+- `OPENCLAW_PROVIDER_AUTH_MODE` (`auto` default, supports `api_key` / `oauth`)
+- `OPENAI_API_KEY` (required only when `OPENCLAW_PROVIDER_AUTH_MODE=api_key`; loaded from env or `~/.secrets`)
 - `OPENCLAW_DOCKER_DIR` (default `/tmp/openclaw-docker`)
 - `OPENCLAW_GATEWAY_PORT` (default `18789`)
 - `OPENCLAW_GATEWAY_TOKEN` (default random)
@@ -63,6 +64,19 @@ Environment knobs:
 - `OPENCLAW_RESET_STATE=1` (default) resets smoke agent state on each run to avoid stale auth/session drift
 - `PAPERCLIP_HOST_PORT` (default `3100`)
 - `PAPERCLIP_HOST_FROM_CONTAINER` (default `host.docker.internal`)
+
+OAuth-only startup (no API key):
+
+```bash
+OPENCLAW_PROVIDER_AUTH_MODE=oauth pnpm smoke:openclaw-docker-ui
+# or
+pnpm smoke:openclaw-docker-ui:oauth
+```
+
+Model/auth note:
+
+- OAuth mode is intended for `openai-codex/*` models (ChatGPT/Codex sign-in).
+- Direct `openai/*` models (for example `openai/gpt-5.2`) require `OPENAI_API_KEY`.
 
 ### Authenticated mode
 
@@ -97,7 +111,9 @@ pnpm paperclipai allowed-hostname <host>
 
 - **Docker Desktop v29+** (with Docker Sandbox support)
 - **2 GB+ RAM** available for the Docker image build
-- **API keys** in `~/.secrets` (at minimum `OPENAI_API_KEY`)
+- Provider credentials:
+  - OAuth flow: no local API key required at startup
+  - API-key flow: keep keys in `~/.secrets` (at minimum `OPENAI_API_KEY`)
 
 ## Option A: Docker Sandbox (Recommended)
 
@@ -336,9 +352,9 @@ Config file: `~/.openclaw/openclaw.json` (JSON5 format)
 Key settings:
 - `gateway.auth.token` — the auth token for the web UI and API
 - `agents.defaults.model.primary` — the AI model (use `openai/gpt-5.2` or newer)
-- `env.OPENAI_API_KEY` — references the `OPENAI_API_KEY` env var (Compose approach)
+- `env.OPENAI_API_KEY` — used in API-key mode; can be blank in OAuth mode
 
-API keys are stored in `~/.secrets` and passed into containers via env vars.
+In API-key mode, keys are stored in `~/.secrets` and passed via env vars.
 
 ## Reference
 

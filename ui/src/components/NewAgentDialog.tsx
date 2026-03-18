@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@/lib/router";
 import { useDialog } from "../context/DialogContext";
@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OpenCodeLogoIcon } from "./OpenCodeLogoIcon";
+import {
+  departmentLabelFromKey,
+  deriveOrgDepartmentOptions,
+} from "../lib/org-structure";
 
 type AdvancedAdapterType =
   | "claude_local"
@@ -78,6 +82,7 @@ export function NewAgentDialog() {
   const { selectedCompanyId } = useCompany();
   const navigate = useNavigate();
   const [showAdvancedCards, setShowAdvancedCards] = useState(false);
+  const [requestedDepartmentKey, setRequestedDepartmentKey] = useState("");
 
   const { data: agents } = useQuery({
     queryKey: queryKeys.agents.list(selectedCompanyId!),
@@ -86,13 +91,43 @@ export function NewAgentDialog() {
   });
 
   const ceoAgent = (agents ?? []).find((a) => a.role === "ceo");
+  const departmentOptions = useMemo(
+    () => deriveOrgDepartmentOptions(agents ?? []),
+    [agents]
+  );
+  const selectedDepartmentLabel = useMemo(
+    () =>
+      requestedDepartmentKey
+        ? departmentLabelFromKey(requestedDepartmentKey, departmentOptions)
+        : "公共责任部",
+    [requestedDepartmentKey, departmentOptions]
+  );
+
+  useEffect(() => {
+    if (!newAgentOpen) return;
+    if (requestedDepartmentKey) return;
+    if (departmentOptions.length === 0) return;
+    setRequestedDepartmentKey(departmentOptions[0]?.key ?? "");
+  }, [newAgentOpen, requestedDepartmentKey, departmentOptions]);
+
+  function ensureRequestedDepartmentKey() {
+    if (requestedDepartmentKey) return requestedDepartmentKey;
+    const fallback = departmentOptions[0]?.key ?? "public-affairs";
+    setRequestedDepartmentKey(fallback);
+    return fallback;
+  }
 
   function handleAskCeo() {
+    const departmentKey = ensureRequestedDepartmentKey();
+    const departmentLabel = departmentLabelFromKey(
+      departmentKey,
+      departmentOptions
+    );
     closeNewAgent();
     openNewIssue({
       assigneeAgentId: ceoAgent?.id,
-      title: "Create a new agent",
-      description: "(type in what kind of agent you want here)",
+      title: `新增智能体 · ${departmentLabel}`,
+      description: `请新增一个智能体并归属到 ${departmentLabel}。\n\n请补全以下字段：\n- 智能体名称：\n- 所属层级（总监层/专员层）：\n- 所属部门：${departmentLabel}\n- 岗位角色：\n- 工作职责：\n- 是否直属老板智能体：\n- 接入方式 / 网关类型：`,
     });
   }
 
@@ -101,9 +136,12 @@ export function NewAgentDialog() {
   }
 
   function handleAdvancedAdapterPick(adapterType: AdvancedAdapterType) {
+    const departmentKey = ensureRequestedDepartmentKey();
     closeNewAgent();
     setShowAdvancedCards(false);
-    navigate(`/agents/new?adapterType=${encodeURIComponent(adapterType)}`);
+    navigate(
+      `/agents/new?adapterType=${encodeURIComponent(adapterType)}&departmentKey=${encodeURIComponent(departmentKey)}`
+    );
   }
 
   return (
@@ -113,6 +151,10 @@ export function NewAgentDialog() {
         if (!open) {
           setShowAdvancedCards(false);
           closeNewAgent();
+          return;
+        }
+        if (!requestedDepartmentKey && departmentOptions.length > 0) {
+          setRequestedDepartmentKey(departmentOptions[0]?.key ?? "");
         }
       }}
     >
@@ -122,7 +164,7 @@ export function NewAgentDialog() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-          <span className="text-sm text-muted-foreground">Add a new agent</span>
+          <span className="text-sm text-muted-foreground">新增智能体</span>
           <Button
             variant="ghost"
             size="icon-xs"
@@ -145,15 +187,35 @@ export function NewAgentDialog() {
                   <Sparkles className="h-6 w-6 text-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  We recommend letting your CEO handle agent setup — they know
-                  the org structure and can configure reporting, permissions,
-                  and adapters.
+                  建议由老板智能体发起组织扩编，它会结合组织架构自动处理汇报关系、权限与接入配置。
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  目标部门
+                </p>
+                <select
+                  value={requestedDepartmentKey || departmentOptions[0]?.key || ""}
+                  onChange={(event) =>
+                    setRequestedDepartmentKey(event.target.value)
+                  }
+                  className="h-9 w-full rounded-md border border-border bg-transparent px-2 text-sm outline-none transition-colors focus-visible:border-primary/40"
+                >
+                  {departmentOptions.map((item) => (
+                    <option key={item.key} value={item.key}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted-foreground">
+                  当前分配：{selectedDepartmentLabel}
                 </p>
               </div>
 
               <Button className="w-full" size="lg" onClick={handleAskCeo}>
                 <Bot className="h-4 w-4 mr-2" />
-                Ask the CEO to create a new agent
+                让老板智能体新增智能体
               </Button>
 
               {/* Advanced link */}
@@ -162,7 +224,7 @@ export function NewAgentDialog() {
                   className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                   onClick={handleAdvancedConfig}
                 >
-                  I want advanced configuration myself
+                  我自己进行高级配置
                 </button>
               </div>
             </>
@@ -174,10 +236,10 @@ export function NewAgentDialog() {
                   onClick={() => setShowAdvancedCards(false)}
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Back
+                  返回
                 </button>
                 <p className="text-sm text-muted-foreground">
-                  Choose your adapter type for advanced setup.
+                  选择接入方式并继续完成高级配置。
                 </p>
               </div>
 
@@ -192,7 +254,7 @@ export function NewAgentDialog() {
                   >
                     {opt.recommended && (
                       <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
-                        Recommended
+                        推荐
                       </span>
                     )}
                     <opt.icon className="h-4 w-4" />

@@ -5,7 +5,7 @@
 整个系统可以简单拆成两层：
 
 - **控制平面（Control Plane）**
-  - AetherStack 仓库本身
+  - ZephyrNexus 仓库本身
   - 提供：架构定义、仓库注册表、环境模板、启动/停机/健康检查脚本、Runbook/SOP
   - 不直接承载业务代码与运行态
 - **执行平面（Execution Plane）**
@@ -16,7 +16,7 @@
 
 两者通过 **配置（workspace.config.json + .env）** 和 **脚本（scripts/*.sh）** 产生连接。
 
-## 2. AetherStack 的定位
+## 2. ZephyrNexus 的定位
 
 - 控制平面仓库（control-plane repository）
 - 统一入口：
@@ -33,7 +33,7 @@
   - 业务逻辑实现（UI、后端、Agent 代码）
   - runtime 数据、日志、数据库文件
 
-> 简化理解：AetherStack 决定“有哪些服务、怎么连起来、怎么启动/停机”，但不关心这些服务内部如何实现具体业务。
+> 简化理解：ZephyrNexus 决定“有哪些服务、怎么连起来、怎么启动/停机”，但不关心这些服务内部如何实现具体业务。
 
 ## 3. paperclip 的定位
 
@@ -47,14 +47,14 @@
 
 控制平面与 paperclip 的关系：
 
-- AetherStack 负责：
+- ZephyrNexus 负责：
   - 知道 paperclip 仓库在本机（WSL/SSH/Windows）哪里
   - 知道如何启动 / 停止 / 健康检查 paperclip
 - 一旦 `start-all.sh` 启动成功：
   - 你就可以在浏览器中打开 paperclip 页面
   - 后续所有调度动作都在 paperclip 内完成
 
-**paperclip 是主要操作界面，AetherStack 是统一入口。**
+**paperclip 是主要操作界面，ZephyrNexus 是统一入口。**
 
 ## 4. openclaw 的定位
 
@@ -67,7 +67,7 @@
 在架构中的关系：
 
 - paperclip 可以通过 HTTP/gRPC/队列等方式调用 openclaw
-- AetherStack 只负责：
+- ZephyrNexus 只负责：
   - 在 `repo-registry` 和 `workspace.config.json` 中注册 openclaw
   - 提供统一的启动/停机/健康检查入口
   - 不关心内部业务细节
@@ -82,11 +82,11 @@ browser-use 代表一类 **辅助功能/浏览器自动化服务**：
 在架构中的关系：
 
 - paperclip 或其他服务通过 API 调用 browser-use
-- AetherStack：
+- ZephyrNexus：
   - 注册其仓库与服务信息
   - 统一启动/停机/健康检查
 
-## 6. 启动链路：AetherStack → paperclip 页面
+## 6. 启动链路：ZephyrNexus → paperclip 页面
 
 从你执行一条命令，到打开 paperclip 页面，中间发生了什么：
 
@@ -99,7 +99,7 @@ browser-use 代表一类 **辅助功能/浏览器自动化服务**：
    ```
 
 2. `start-all.sh` 会：
-   - 读取 `workspace.config.json` 与 `AETHERSTACK_ENV_PROFILE`（wsl / ssh / windows）
+   - 读取 `workspace.config.json` 与 `ZEPHYR_NEXUS_ENV_PROFILE`（wsl / ssh / windows）
    - 解析当前环境下的路径映射（`environmentProfiles[profile].pathMappings`）
    - 找到 paperclip 仓库，并执行配置好的启动命令（例如 `pnpm dev`）
    - 将 paperclip 的 pid 写入 `runtime/paperclip.pid`，日志写入 `logs/paperclip.log`
@@ -113,16 +113,16 @@ browser-use 代表一类 **辅助功能/浏览器自动化服务**：
 
 总结：
 
-- **AetherStack**：负责“按统一规范拉起/关闭所有必要服务”。
+- **ZephyrNexus**：负责“按统一规范拉起/关闭所有必要服务”。
 - **paperclip 页面**：负责“在统一 UI 内调度 Agent、查看 Issue/Cost、进行前台编排”。
 
 ## 7. GitHub 在整体中的角色
 
-- GitHub 是各仓库（AetherStack、paperclip、openclaw、browser-use 等）的 **唯一真相来源（source of truth）**。
+- GitHub 是各仓库（ZephyrNexus、paperclip、openclaw、browser-use 等）的 **唯一真相来源（source of truth）**。
 - WSL / SSH / Windows 上的仓库只是这些真相的不同工作副本：
   - 在 WSL 开发和验证
   - 在 GitHub 通过 PR 管理变更
-  - 在 SSH 执行 `git pull`，然后跑 AetherStack 脚本启动服务
+  - 在 SSH 执行 `git pull`，然后跑 ZephyrNexus 脚本启动服务
 - 所有结构性变更（脚本、配置、架构文档）都应：
   1. 在 WSL 上开发、测试
   2. 通过 GitHub PR 合入 main

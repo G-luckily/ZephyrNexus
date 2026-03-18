@@ -7,7 +7,7 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { formatCents, formatTokens, cn } from "../lib/utils";
+import { formatCents, formatTokens } from "../lib/utils";
 import { Identity } from "../components/Identity";
 import { StatusBadge } from "../components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,17 +15,18 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, AlertTriangle, ArrowRight } from "lucide-react";
 import { Link } from "@/lib/router";
 import { Badge } from "@/components/ui/badge";
-import { type IssueBudgetSummary, type CostByAgent, type BlockedRunSummary } from "@zephyr-nexus/shared";
+import { type IssueBudgetSummary, type CostByAgent } from "@zephyr-nexus/shared";
+import { cleanVisibleAgentName } from "../lib/org-structure";
 
 type DatePreset = "mtd" | "7d" | "30d" | "ytd" | "all" | "custom";
 
 const PRESET_LABELS: Record<DatePreset, string> = {
-  mtd: "Month to Date",
-  "7d": "Last 7 Days",
-  "30d": "Last 30 Days",
-  ytd: "Year to Date",
-  all: "All Time",
-  custom: "Custom",
+  mtd: "本月至今",
+  "7d": "最近 7 天",
+  "30d": "最近 30 天",
+  ytd: "年初至今",
+  all: "全部时间",
+  custom: "自定义",
 };
 
 function computeRange(preset: DatePreset): { from: string; to: string } {
@@ -109,7 +110,7 @@ export function Costs() {
 
   if (!selectedCompanyId) {
     return (
-      <EmptyState icon={DollarSign} message="Select a company to view costs." />
+      <EmptyState icon={DollarSign} message="请先选择公司后查看成本。" />
     );
   }
 
@@ -141,7 +142,7 @@ export function Costs() {
               onChange={(e) => setCustomFrom(e.target.value)}
               className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
             />
-            <span className="text-sm text-muted-foreground">to</span>
+            <span className="text-sm text-muted-foreground">至</span>
             <input
               type="date"
               value={customTo}
@@ -165,7 +166,7 @@ export function Costs() {
                 </p>
                 {data.summary.budgetCents > 0 && (
                   <p className="text-sm text-muted-foreground">
-                    {data.summary.utilizationPercent}% utilized
+                    已使用 {data.summary.utilizationPercent}%
                   </p>
                 )}
               </div>
@@ -174,7 +175,7 @@ export function Costs() {
                 <span className="text-base font-normal text-muted-foreground">
                   {data.summary.budgetCents > 0
                     ? `/ ${formatCents(data.summary.budgetCents)}`
-                    : "Unlimited budget"}
+                    : "不限预算"}
                 </span>
               </p>
               {data.summary.budgetCents > 0 && (
@@ -204,7 +205,7 @@ export function Costs() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <h3 className="text-sm font-semibold">预算超支最显著任务 (Top Overshooting Issues)</h3>
+                <h3 className="text-sm font-semibold">预算超支任务</h3>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {data.overshooting.map((issue: IssueBudgetSummary) => {
@@ -228,7 +229,9 @@ export function Costs() {
                         </div>
                         <div className="flex items-end justify-between">
                           <div className="space-y-0.5">
-                            <p className="text-[10px] text-destructive/70 uppercase font-mono">Cost Exceeded</p>
+                            <p className="text-[10px] text-destructive/70 uppercase font-mono">
+                              超支金额
+                            </p>
                             <p className="text-lg font-bold text-destructive leading-tight">
                               +{formatCents(exceededCents)}
                             </p>
@@ -237,7 +240,7 @@ export function Costs() {
                             to={`/issues/${issue.issueIdentifier ?? issue.issueId}`}
                             className="text-[10px] flex items-center gap-0.5 text-destructive/80 hover:text-destructive no-underline"
                           >
-                            Details <ArrowRight className="h-2.5 w-2.5" />
+                            查看详情 <ArrowRight className="h-2.5 w-2.5" />
                           </Link>
                         </div>
                         <div className="w-full h-1 bg-destructive/20 rounded-full overflow-hidden">
@@ -256,10 +259,10 @@ export function Costs() {
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
               <CardContent className="p-4">
-                <h3 className="text-sm font-semibold mb-3">By Agent</h3>
+                <h3 className="text-sm font-semibold mb-3">按智能体</h3>
                 {data.byAgent.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No cost events yet.
+                    暂无成本事件。
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -270,7 +273,9 @@ export function Costs() {
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <Identity
-                            name={row.agentName ?? row.agentId}
+                            name={cleanVisibleAgentName(
+                              row.agentName ?? row.agentId
+                            )}
                             size="sm"
                           />
                           {row.agentStatus === "terminated" && (
@@ -282,27 +287,27 @@ export function Costs() {
                             {formatCents(row.costCents)}
                           </span>
                           <span className="text-xs text-muted-foreground block">
-                            in {formatTokens(row.inputTokens)} / out{" "}
-                            {formatTokens(row.outputTokens)} tok
+                            输入 {formatTokens(row.inputTokens)} / 输出{" "}
+                            {formatTokens(row.outputTokens)} 令牌
                           </span>
                           {(row.apiRunCount > 0 ||
                             row.subscriptionRunCount > 0) && (
                             <span className="text-xs text-muted-foreground block">
                               {row.apiRunCount > 0
-                                ? `api runs: ${row.apiRunCount}`
+                                ? `API 执行: ${row.apiRunCount}`
                                 : null}
                               {row.apiRunCount > 0 &&
                               row.subscriptionRunCount > 0
                                 ? " | "
                                 : null}
                               {row.subscriptionRunCount > 0
-                                ? `subscription runs: ${
+                                ? `订阅执行: ${
                                     row.subscriptionRunCount
-                                  } (${formatTokens(
+                                  }（输入 ${formatTokens(
                                     row.subscriptionInputTokens
-                                  )} in / ${formatTokens(
+                                  )} / 输出 ${formatTokens(
                                     row.subscriptionOutputTokens
-                                  )} out tok)`
+                                  )} 令牌）`
                                 : null}
                             </span>
                           )}
@@ -316,10 +321,10 @@ export function Costs() {
 
             <Card>
               <CardContent className="p-4">
-                <h3 className="text-sm font-semibold mb-3">By Project</h3>
+                <h3 className="text-sm font-semibold mb-3">按项目</h3>
                 {data.byProject.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No project-attributed run costs yet.
+                    暂无归属项目的执行成本。
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -329,7 +334,7 @@ export function Costs() {
                         className="flex items-center justify-between text-sm"
                       >
                         <span className="truncate">
-                          {row.projectName ?? row.projectId ?? "Unattributed"}
+                          {row.projectName ?? row.projectId ?? "未归属"}
                         </span>
                         <span className="font-medium">
                           {formatCents(row.costCents)}

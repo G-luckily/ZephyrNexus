@@ -14,11 +14,11 @@ fi
 
 CONFIG_FILE="${ROOT_DIR}/workspace.config.json"
 
-ENV_PROFILE="${AETHERSTACK_ENV_PROFILE:-wsl}"
+ENV_PROFILE="${ZEPHYR_NEXUS_ENV_PROFILE:-wsl}"
 
 # 运行态和日志目录：支持相对路径，但统一归一为绝对路径，始终挂在控制平面仓库下
-RUNTIME_DIR="${AETHERSTACK_RUNTIME_DIR:-runtime}"
-LOG_DIR="${AETHERSTACK_LOG_DIR:-logs}"
+RUNTIME_DIR="${ZEPHYR_NEXUS_RUNTIME_DIR:-runtime}"
+LOG_DIR="${ZEPHYR_NEXUS_LOG_DIR:-runtime/logs}"
 
 case "$RUNTIME_DIR" in
   /*) ;; # 已是绝对路径
@@ -154,4 +154,3 @@ main() {
 }
 
 main "$@"
-

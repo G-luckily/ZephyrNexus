@@ -8,8 +8,8 @@
 
    ```bash
    cd ~
-   # AetherStack（如果还没 clone）
-   git clone git@github.com:your-org/AetherStack.git
+   # ZephyrNexus（如果还没 clone）
+   git clone git@github.com:your-org/ZephyrNexus.git
 
    # paperclip / openclaw / browser-use 等业务仓库
    git clone git@github.com:your-org/paperclip.git
@@ -17,7 +17,7 @@
    # git clone git@github.com:your-org/browser-use.git
    ```
 
-2. 在 AetherStack 中配置 `.env`（WSL 版本）：
+2. 在 ZephyrNexus 中配置 `.env`（WSL 版本）：
 
    ```bash
    cd ~/ZephyrNexus
@@ -26,12 +26,12 @@
    ```
 
    - 设置：
-     - `AETHERSTACK_ENV_PROFILE=wsl`
+     - `ZEPHYR_NEXUS_ENV_PROFILE=wsl`
      - `PAPERCLIP_PATH=~/paperclip`（按实际路径修改）
      - `OPENCLAW_WORKSPACE_PATH=~/openclaw-workspace`（如有）
      - `BROWSER_USE_PATH=~/browser-use`（如有）
-     - `AETHERSTACK_RUNTIME_DIR=./runtime`
-     - `AETHERSTACK_LOG_DIR=./logs`
+     - `ZEPHYR_NEXUS_RUNTIME_DIR=./runtime`
+     - `ZEPHYR_NEXUS_LOG_DIR=./logs`
 
 3. 运行健康检查，确认基础环境没大问题：
 
@@ -40,13 +40,13 @@
    bash scripts/health-check.sh
    ```
 
-## 2. 新建分支（AetherStack + 子仓库）
+## 2. 新建分支（ZephyrNexus + 子仓库）
 
-- 在 AetherStack：
+- 在 ZephyrNexus：
 
   ```bash
   cd ~/ZephyrNexus
-  git checkout -b feat/aetherstack-<短描述>
+  git checkout -b feat/zephyr-nexus-<短描述>
   ```
 
 - 在 paperclip：
@@ -56,11 +56,11 @@
   git checkout -b feat/paperclip-<短描述>
   ```
 
-> 约定：AetherStack 的控制平面变更和 paperclip 的业务变更可以分开提 PR，但要在 PR 描述中相互引用。
+> 约定：ZephyrNexus 的控制平面变更和 paperclip 的业务变更可以分开提 PR，但要在 PR 描述中相互引用。
 
 ## 3. 本地修改与验证
 
-1. 修改 AetherStack 的配置/脚本/文档：
+1. 修改 ZephyrNexus 的配置/脚本/文档：
 
    - `workspace.config.json`
    - `scripts/start-all.sh` / `scripts/stop-all.sh` / `scripts/health-check.sh`
@@ -90,14 +90,14 @@
 
 ## 4. 提交与推送到 GitHub
 
-- 对 AetherStack：
+- 对 ZephyrNexus：
 
   ```bash
   cd ~/ZephyrNexus
   git status
   git add .
-  git commit -m "feat: <简要描述 aetherstack 改动意图>"
-  git push -u origin feat/aetherstack-<短描述>
+  git commit -m "feat: <简要描述 zephyr-nexus 改动意图>"
+  git push -u origin feat/zephyr-nexus-<短描述>
   ```
 
 - 对 paperclip：
@@ -112,11 +112,11 @@
 
 ## 5. 在 GitHub 上开 PR
 
-1. AetherStack PR 标题示例：
-   - `feat: bootstrap AetherStack control-plane repository`
-   - `feat: improve AetherStack start/stop/healthcheck scripts`
+1. ZephyrNexus PR 标题示例：
+   - `feat: bootstrap ZephyrNexus control-plane repository`
+   - `feat: improve ZephyrNexus start/stop/healthcheck scripts`
 
-2. AetherStack PR 描述建议结构：
+2. ZephyrNexus PR 描述建议结构：
 
    ```markdown
    ## 背景
@@ -142,11 +142,11 @@
    ```
 
 3. paperclip PR 按自身仓库要求书写，注意：
-   - 在“关联改动”中引用对应的 AetherStack PR。
+   - 在“关联改动”中引用对应的 ZephyrNexus PR。
 
 ## 6. PR merge 后在 SSH 上拉最新并验证
 
-1. 在 SSH 上更新 AetherStack：
+1. 在 SSH 上更新 ZephyrNexus：
 
    ```bash
    cd ~/ZephyrNexus
@@ -163,11 +163,11 @@
    ```bash
    cd ${PAPERCLIP_PATH}
    git pull origin main
-   # 按需重启 paperclip 服务（如果不是由 AetherStack 启动）
+   # 按需重启 paperclip 服务（如果不是由 ZephyrNexus 启动）
 
    cd ${OPENCLAW_WORKSPACE_PATH}
    git pull origin main
-   # 重启 openclaw（如由 AetherStack 启动，可通过 stop-all + start-all）
+   # 重启 openclaw（如由 ZephyrNexus 启动，可通过 stop-all + start-all）
    ```
 
 3. 在 SSH 环境打开 paperclip 页面验证：
@@ -181,7 +181,7 @@
 
 详细见 `docs/runbooks/runbook-rollback.md`，这里只给大纲：
 
-- 控制平面（AetherStack）：
+- 控制平面（ZephyrNexus）：
   - 在 WSL 上通过 `git revert` 回滚问题 commit 或 PR。
   - 提交新的“回滚 PR”，描述原因与影响。
   - 合并后，让 SSH 上 `git pull` 回到安全版本。

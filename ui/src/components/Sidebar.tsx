@@ -35,17 +35,22 @@ import { Button } from "@/components/ui/button";
 function orgUnitToDept(unitKey: string): string {
   switch (unitKey) {
     case "ceo":
+      return "总裁 / CEO";
     case "executive-assistant":
-      return "总裁办公室";
-    case "cto":
-      return "技术线";
+      return "总裁助理";
+    case "cho":
     case "pm":
-      return "人力与协调";
+      return "人力总监";
+    case "cto":
+      return "技术总监";
     case "research":
-    case "public-affairs":
       return "社会研究院";
+    case "public-affairs":
+      return "公共责任部";
+    case "media":
+      return "新媒体中心";
     default:
-      return "执行单元";
+      return "公共责任部";
   }
 }
 
@@ -93,7 +98,8 @@ export function Sidebar() {
   });
 
   const liveRunCount = liveRuns?.length ?? 0;
-  const { setScopeView, setDepartmentFilter } = useWorkspaceScope();
+  const { setScopeView, setProjectFilter, setDepartmentFilter } =
+    useWorkspaceScope();
 
   const projectItems = useMemo(
     () => buildProjectNav(projects ?? []),
@@ -124,21 +130,27 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full min-h-0 w-72 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="shrink-0 border-b border-sidebar-border bg-sidebar px-3.5 py-3 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-sidebar via-sidebar to-transparent opacity-50 pointer-events-none" />
-        <div className="glass-panel glow-effect relative rounded-[22px] px-3 py-3 hover:border-sidebar-ring transition-colors duration-200">
+    <aside className="relative flex h-full min-h-0 w-72 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% -10%, color-mix(in oklab, var(--zephyr-blue-soft) 65%, transparent) 0%, transparent 36%), linear-gradient(180deg, color-mix(in oklab, var(--shell-pane-bg) 92%, transparent) 0%, transparent 62%)",
+        }}
+      />
+      <div className="relative shrink-0 border-b border-sidebar-border bg-sidebar px-3.5 py-3">
+        <div className="glass-panel glow-effect relative rounded-[22px] px-3 py-3 transition-colors duration-200 hover:border-sidebar-ring">
           <div className="flex items-center gap-2">
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] bg-primary text-[11px] font-bold text-primary-foreground shadow-sm dark:bg-slate-800 dark:text-slate-100 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_4px_rgba(0,0,0,0.4)] transition-colors">
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-sidebar-border bg-sidebar-accent text-[11px] font-bold text-zephyr-blue shadow-sm transition-colors">
               <span className="absolute inset-[1px] rounded-[16px] border border-white/10 dark:border-white/5" />
-              <span className="relative">AI</span>
+              <span className="relative">灵枢</span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
                 {selectedCompany?.name ?? "请选择公司"}
               </p>
               <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-mono">
-                Zephyr Nexus
+                风之灵枢
               </p>
             </div>
             <Button
@@ -157,7 +169,7 @@ export function Sidebar() {
       <nav className="scrollbar-auto-hide flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2.5 py-3">
         <button
           onClick={() => openNewIssue()}
-          className="flex items-center gap-2 rounded-[16px] border border-sidebar-border bg-sidebar px-3 py-2.5 text-[13px] font-semibold text-sidebar-foreground shadow-sm transition-all duration-150 hover:border-sidebar-ring hover:bg-sidebar-accent"
+          className="flex items-center gap-2 rounded-[16px] border border-sidebar-border bg-sidebar-accent px-3 py-2.5 text-[13px] font-semibold text-sidebar-foreground shadow-sm transition-all duration-150 hover:border-sidebar-ring hover:bg-sidebar-accent/80"
         >
           <SquarePen className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">分配任务</span>
@@ -169,6 +181,11 @@ export function Sidebar() {
             label="总览指挥台"
             icon={LayoutDashboard}
             liveCount={liveRunCount}
+            onClick={() => {
+              setScopeView("company");
+              setProjectFilter("all");
+              setDepartmentFilter("all");
+            }}
           />
           <SidebarNavItem
             to="/inbox"
