@@ -25,7 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { User, Hexagon, ArrowUpRight, Tag, Plus, Trash2 } from "lucide-react";
+import { User, Hexagon, ArrowUpRight, Tag, Plus, Trash2, Link2 } from "lucide-react";
 import { AgentIcon } from "./AgentIconPicker";
 
 // TODO(issue-worktree-support): re-enable this UI once the workflow is ready to ship.
@@ -141,6 +141,8 @@ export function IssueProperties({
   const [labelSearch, setLabelSearch] = useState("");
   const [newLabelName, setNewLabelName] = useState("");
   const [newLabelColor, setNewLabelColor] = useState("#6366f1");
+  const [dependsOnOpen, setDependsOnOpen] = useState(false);
+  const [dependsOnInput, setDependsOnInput] = useState("");
 
   const { data: session } = useQuery({
     queryKey: queryKeys.auth.session,
@@ -169,6 +171,12 @@ export function IssueProperties({
     queryKey: queryKeys.issues.labels(companyId!),
     queryFn: () => issuesApi.listLabels(companyId!),
     enabled: !!companyId,
+  });
+
+  const { data: dependencies } = useQuery({
+    queryKey: queryKeys.issues.dependencies(issue.id),
+    queryFn: () => issuesApi.getDependencies(issue.id),
+    enabled: (issue.dependsOn ?? []).length > 0,
   });
 
   const createLabel = useMutation({
@@ -681,6 +689,80 @@ export function IssueProperties({
             </Link>
           </PropertyRow>
         )}
+
+        <PropertyPicker
+          inline={inline}
+          label="Depends On"
+          open={dependsOnOpen}
+          onOpenChange={(open) => {
+            setDependsOnOpen(open);
+            if (open && dependencies) {
+              setDependsOnInput(dependencies.map(d => d.identifier).join(", "));
+            }
+          }}
+          triggerContent={
+            (issue.dependsOn ?? []).length > 0 ? (
+              <div className="flex items-center gap-1.5">
+                <Link2 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-sm text-primary font-medium">
+                  {issue.dependsOn!.length} issue{issue.dependsOn!.length > 1 ? "s" : ""}
+                </span>
+                {dependencies && dependencies.some(d => d.status !== "done") && (
+                  <span className="ml-1 flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">None</span>
+              </>
+            )
+          }
+          popoverClassName="w-64"
+        >
+          <div className="flex flex-col p-1 space-y-3">
+            <div className="space-y-1.5">
+              <div className="text-[11px] text-muted-foreground px-1 font-medium tracking-wide uppercase">
+                Add Issue Identifiers
+              </div>
+              <input
+                className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border rounded border-border placeholder:text-muted-foreground/50 transition-colors focus:border-primary/50"
+                placeholder="e.g. ZN-1, ZN-2"
+                value={dependsOnInput}
+                onChange={(e) => setDependsOnInput(e.target.value)}
+                autoFocus={!inline}
+              />
+            </div>
+            {dependencies && dependencies.length > 0 && (
+              <div className="space-y-1.5 px-1 py-1 rounded bg-muted/30">
+                {dependencies.map(d => (
+                  <div key={d.id} className="flex items-center justify-between text-xs py-0.5">
+                    <span className="font-mono text-muted-foreground">{d.identifier}</span>
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded text-[10px] font-medium tracking-wide uppercase",
+                      d.status === "done" ? "bg-green-500/10 text-green-500" : "bg-amber-500/10 text-amber-500"
+                    )}>
+                      {d.status === "done" ? "Done" : "Pending"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              className="flex items-center justify-center w-full px-2 py-1.5 text-xs rounded border border-border bg-background hover:bg-accent/50 transition-colors mt-1 font-medium"
+              onClick={() => {
+                const identifiers = dependsOnInput.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+                onUpdate({ dependsOnIdentifiers: identifiers });
+                setDependsOnOpen(false);
+              }}
+            >
+              Save Dependencies
+            </button>
+          </div>
+        </PropertyPicker>
 
         {issue.requestDepth > 0 && (
           <PropertyRow label="Depth">

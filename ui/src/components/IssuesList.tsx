@@ -40,8 +40,10 @@ import {
   Columns3,
   User,
   Search,
+  Zap,
 } from "lucide-react";
 import { KanbanBoard } from "./KanbanBoard";
+import { ActionQueueSheet } from "./ActionQueueSheet";
 import type { Issue } from "@zephyr-nexus/shared";
 import { cleanVisibleAgentName } from "../lib/org-structure";
 
@@ -404,6 +406,18 @@ export function IssuesList({
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+            {/* Action Queue */}
+            <ActionQueueSheet>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mr-1 rounded-full border border-amber-500/20 bg-amber-500/5 px-3 text-xs text-amber-600 dark:text-amber-500 transition-all duration-150 hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-400 font-medium whitespace-nowrap hidden sm:flex"
+              >
+                <Zap className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1.5 text-amber-500" />
+                <span>Action Queue</span>
+              </Button>
+            </ActionQueueSheet>
+
             {/* View mode toggle */}
             <div className="mr-1 flex items-center rounded-full border border-border bg-background p-0.5">
               <button

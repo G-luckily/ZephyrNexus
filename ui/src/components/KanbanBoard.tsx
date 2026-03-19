@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Lock, FileLock, BellRing } from "lucide-react";
 import { Link } from "@/lib/router";
 import {
   DndContext,
@@ -172,6 +173,24 @@ function KanbanCard({
                 </span>
               );
             })()}
+          <div className="flex items-center gap-1.5 ml-auto">
+            {issue.healthSummary?.isBlocked && (
+              <div title="Blocked by dependencies" className="flex items-center justify-center bg-amber-500/10 text-amber-500 rounded p-0.5">
+                <Lock className="w-3.5 h-3.5" />
+              </div>
+            )}
+            {issue.healthSummary?.contractSatisfied === false && (
+              <div title="Has output contract requirements" className="flex items-center justify-center bg-primary/10 text-primary rounded p-0.5">
+                <FileLock className="w-3.5 h-3.5" />
+              </div>
+            )}
+            {issue.healthSummary?.unreadNotificationCount && issue.healthSummary.unreadNotificationCount > 0 ? (
+              <div title="New unread events" className="flex items-center justify-center bg-destructive/10 text-destructive rounded p-0.5 relative">
+                <BellRing className="w-3.5 h-3.5 animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-destructive rounded-full" />
+              </div>
+            ) : null}
+          </div>
         </div>
       </Link>
     </div>

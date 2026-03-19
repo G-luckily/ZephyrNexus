@@ -5,6 +5,7 @@ import type {
   IssueComment,
   IssueLabel,
   IssueBudgetSummary,
+  ActionQueueResponse,
 } from "@zephyr-nexus/shared";
 import { api } from "./client";
 
@@ -46,6 +47,10 @@ export const issuesApi = {
     api.post<IssueLabel>(`/companies/${companyId}/labels`, data),
   deleteLabel: (id: string) => api.delete<IssueLabel>(`/labels/${id}`),
   get: (id: string) => api.get<Issue>(`/issues/${id}`),
+  getDependencies: (id: string) =>
+    api.get<Pick<Issue, "id" | "identifier" | "title" | "status">[]>(
+      `/issues/${id}/dependencies`
+    ),
   markRead: (id: string) =>
     api.post<{ id: string; lastReadAt: Date }>(`/issues/${id}/read`, {}),
   create: (companyId: string, data: Record<string, unknown>) =>
@@ -93,6 +98,7 @@ export const issuesApi = {
   deleteAttachment: (id: string) =>
     api.delete<{ ok: true }>(`/attachments/${id}`),
   listApprovals: (id: string) => api.get<Approval[]>(`/issues/${id}/approvals`),
+  listDeliverables: (id: string) => api.get<any[]>(`/issues/${id}/deliverables`),
   linkApproval: (id: string, approvalId: string) =>
     api.post<Approval[]>(`/issues/${id}/approvals`, { approvalId }),
   unlinkApproval: (id: string, approvalId: string) =>
@@ -101,4 +107,6 @@ export const issuesApi = {
     api.get<IssueBudgetSummary>(`/companies/${companyId}/issues/${id}/budget-summary`),
   overshootingIssues: (companyId: string) =>
     api.get<IssueBudgetSummary[]>(`/companies/${companyId}/issues/overshooting-top`),
+  getActionQueue: (companyId: string) =>
+    api.get<ActionQueueResponse>(`/companies/${companyId}/issues/action-queue`),
 };

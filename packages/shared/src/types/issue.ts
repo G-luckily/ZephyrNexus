@@ -50,6 +50,17 @@ export interface IssueAssigneeAdapterOverrides {
   useProjectWorkspace?: boolean;
 }
 
+export interface HealthSummary {
+  isBlocked: boolean;
+  blockingDependencyCount: number;
+  contractSatisfied: boolean | null;
+  missingSummary: boolean;
+  missingFileCount: number;
+  summaryDeliverableCount: number;
+  fileDeliverableCount: number;
+  unreadNotificationCount: number;
+}
+
 export interface Issue {
   id: string;
   companyId: string;
@@ -75,6 +86,8 @@ export interface Issue {
   billingCode: string | null;
   assigneeAdapterOverrides: IssueAssigneeAdapterOverrides | null;
   executionWorkspaceSettings: IssueExecutionWorkspaceSettings | null;
+  outputContract?: { requiresSummary: boolean; minFileDeliverables: number } | null;
+  dependsOn?: string[] | null;
   startedAt: Date | null;
   completedAt: Date | null;
   cancelledAt: Date | null;
@@ -87,6 +100,7 @@ export interface Issue {
   myLastTouchAt?: Date | null;
   lastExternalCommentAt?: Date | null;
   isUnreadForMe?: boolean;
+  healthSummary?: HealthSummary;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -145,5 +159,15 @@ export interface IssueBudgetSummary {
   status: "UNDER_LIMIT" | "OVER_LIMIT" | "UNCONFIGURED";
   recentEvents: RecentCostEvent[];
   blockedRuns: BlockedRunSummary[];
+}
+
+export interface ActionQueueItem {
+  issue: Issue;
+  reason: string;
+}
+
+export interface ActionQueueResponse {
+  attention: ActionQueueItem[];
+  ready: ActionQueueItem[];
 }
 

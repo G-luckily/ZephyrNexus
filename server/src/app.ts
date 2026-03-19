@@ -24,6 +24,7 @@ import { sidebarBadgeRoutes } from "./routes/sidebar-badges.js";
 import { llmRoutes } from "./routes/llms.js";
 import { assetRoutes } from "./routes/assets.js";
 import { accessRoutes } from "./routes/access.js";
+import createNotificationsRouter from "./routes/notifications.js";
 import { applyUiBranding } from "./ui-branding.js";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
 
@@ -122,6 +123,7 @@ export async function createApp(
       allowedHostnames: opts.allowedHostnames,
     }),
   );
+  api.use(createNotificationsRouter(db));
   app.use("/api", api);
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found" });

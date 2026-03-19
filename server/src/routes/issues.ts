@@ -1,7 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import { agents, costEvents, heartbeatRuns, issues, type Db } from "@zephyr-nexus/db";
+import { agents, costEvents, heartbeatRuns, issues, issueDeliverables, notifications, type Db } from "@zephyr-nexus/db";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { buildExecutionTelemetry } from "@zephyr-nexus/shared";
 import {
   addIssueCommentSchema,
   createIssueAttachmentMetadataSchema,
@@ -196,7 +197,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       : contextBase;
   }
 
-  async function maybeCreateChiefOfStaffSynthesis(params: {
+  async function maybeTriggerDeliverableRollup(params: {
     issueId: string;
     companyId: string;
     actor: ReturnType<typeof getActorInfo>;
@@ -207,17 +208,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     if (issue.status !== "done" && issue.status !== "cancelled") return;
 
     const parent = await svc.getById(issue.parentId);
-    if (!parent) return;
-
-    const chiefOfStaff = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.companyId, params.companyId))
-      .then((rows) => rows.find((row) => row.name === CHIEF_OF_STAFF_AGENT_NAME) ?? null);
-    if (!chiefOfStaff || chiefOfStaff.status === "terminated" || chiefOfStaff.status === "pending_approval") return;
-    if (chiefOfStaff.status === "paused") {
-      await agentsSvc.resume(chiefOfStaff.id);
-    }
+    if (!parent || parent.status === "done" || parent.status === "cancelled") return;
 
     const children = await svc.list(params.companyId, { parentId: parent.id });
     const nonSynthesisChildren = children.filter((child) => !child.title.startsWith(SYNTHESIS_TITLE_PREFIX));
@@ -227,12 +218,16 @@ export function issueRoutes(db: Db, storage: StorageService) {
     const anyDone = nonSynthesisChildren.some((child) => child.status === "done");
     if (!allTerminal || !anyDone) return;
 
-    const existingSynthesis = children.find(
-      (child) =>
-        child.title.startsWith(SYNTHESIS_TITLE_PREFIX) ||
-        child.assigneeAgentId === chiefOfStaff.id,
-    );
+    const existingSynthesis = children.find((child) => child.title.startsWith(SYNTHESIS_TITLE_PREFIX));
     if (existingSynthesis) return;
+
+    const possibleAgents = await db.select().from(agents).where(eq(agents.companyId, params.companyId));
+    let assigneeId = parent.assigneeAgentId;
+    if (!assigneeId) {
+      const synthesisAgent = possibleAgents.find(a => a.role?.toLowerCase()?.includes("chief_of_staff") || a.role?.toLowerCase()?.includes("synthesis")) || possibleAgents[0];
+      if (!synthesisAgent) return;
+      assigneeId = synthesisAgent.id;
+    }
 
     const childLines = nonSynthesisChildren
       .map((child) => `- ${child.identifier} | ${child.title} | 状态: ${child.status}`)
@@ -260,7 +255,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       goalId: parent.goalId ?? undefined,
       priority: parent.priority,
       status: "todo",
-      assigneeAgentId: chiefOfStaff.id,
+      assigneeAgentId: assigneeId,
       createdByAgentId: params.actor.agentId,
       createdByUserId: params.actor.actorType === "user" ? params.actor.actorId : null,
     });
@@ -277,22 +272,21 @@ export function issueRoutes(db: Db, storage: StorageService) {
       details: {
         synthesisIssueId: synthesisIssue.id,
         synthesisIssueIdentifier: synthesisIssue.identifier,
-        assigneeAgentId: chiefOfStaff.id,
+        assigneeAgentId: assigneeId,
       },
     });
 
     await svc.addComment(parent.id, [
       "## Update",
       "",
-      "所有直属子任务已完成，已自动创建汇总任务。",
+      "所有直属子任务已完成，已自动创建最终交付汇总任务。",
       `- 汇总任务: ${synthesisIssue.identifier} ${synthesisIssue.title}`,
-      `- 汇总负责人: ${CHIEF_OF_STAFF_AGENT_NAME}`,
     ].join("\n"), {
       agentId: params.actor.agentId ?? undefined,
       userId: params.actor.actorType === "user" ? params.actor.actorId : undefined,
     });
 
-    await heartbeat.wakeup(chiefOfStaff.id, {
+    await heartbeat.wakeup(assigneeId, {
       source: "assignment",
       triggerDetail: "system",
       reason: "issue_assigned",
@@ -372,8 +366,71 @@ export function issueRoutes(db: Db, storage: StorageService) {
       parentId: req.query.parentId as string | undefined,
       labelId: req.query.labelId as string | undefined,
       q: req.query.q as string | undefined,
+      contextUserId: req.actor.type === "board" ? req.actor.userId : undefined,
     });
     res.json(result);
+  });
+
+  router.get("/companies/:companyId/issues/action-queue", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    
+    const contextUserId = req.actor.type === "board" ? req.actor.userId : undefined;
+    
+    // Fetch all active issues for the queue analysis
+    const allIssues = await svc.list(companyId, {
+      status: "todo,in_progress,in_review,blocked",
+      contextUserId, 
+    });
+
+    const attention: any[] = [];
+    const ready: any[] = [];
+
+    for (const issue of allIssues) {
+      if (issue.status === "cancelled" || issue.status === "done") continue;
+
+      const health = issue.healthSummary;
+      let reason: string | null = null;
+      let isAttention = false;
+      let isReady = false;
+
+      // 1. Needs Attention Rules (Highest Priority)
+      if (health?.unreadNotificationCount && health.unreadNotificationCount > 0) {
+        reason = `${health.unreadNotificationCount} unread events`;
+        isAttention = true;
+      } else if (issue.status === "in_review") {
+        reason = "Ready for review";
+        isAttention = true;
+      } else if (issue.status === "in_progress" && health?.contractSatisfied === false) {
+        if (health.missingSummary) {
+          reason = "Missing summary";
+        } else if (health.missingFileCount && health.missingFileCount > 0) {
+          reason = `Missing ${health.missingFileCount} file deliverables`;
+        } else {
+          reason = "Missing deliverables";
+        }
+        isAttention = true;
+      }
+
+      // 2. Ready to Go Rules
+      if (!isAttention) {
+        if (issue.dependsOn && issue.dependsOn.length > 0 && health?.isBlocked === false) {
+          reason = "Dependencies satisfied & Unblocked";
+          isReady = true;
+        } else if (issue.status === "todo" && health?.isBlocked === false && (!issue.dependsOn || issue.dependsOn.length === 0)) {
+          reason = "Ready to pick up";
+          isReady = true;
+        }
+      }
+
+      if (isAttention && reason) {
+        attention.push({ issue, reason });
+      } else if (isReady && reason) {
+        ready.push({ issue, reason });
+      }
+    }
+
+    res.json({ attention, ready });
   });
   
   router.get("/companies/:companyId/issues/overshooting-top", async (req, res) => {
@@ -575,6 +632,61 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json(approvals);
   });
 
+  router.get("/issues/:id/deliverables", async (req, res) => {
+    const id = req.params.id as string;
+    const issue = await svc.getById(id);
+    if (!issue) {
+      res.status(404).json({ error: "Issue not found" });
+      return;
+    }
+    assertCompanyAccess(req, issue.companyId);
+    
+    const deliverables = await db
+      .select({
+        id: issueDeliverables.id,
+        issueId: issueDeliverables.issueId,
+        title: issueDeliverables.title,
+        summary: issueDeliverables.summary,
+        kind: issueDeliverables.kind,
+        payload: issueDeliverables.payload,
+        producerId: issueDeliverables.producerId,
+        producerName: agents.name,
+        createdAt: issueDeliverables.createdAt,
+        updatedAt: issueDeliverables.updatedAt,
+      })
+      .from(issueDeliverables)
+      .leftJoin(agents, eq(issueDeliverables.producerId, agents.id))
+      .where(eq(issueDeliverables.issueId, id))
+      .orderBy(desc(issueDeliverables.createdAt));
+      
+    res.json(deliverables);
+  });
+
+  router.get("/issues/:id/dependencies", async (req, res) => {
+    const id = req.params.id as string;
+    const issue = await svc.getById(id);
+    if (!issue) {
+      res.status(404).json({ error: "Issue not found" });
+      return;
+    }
+    assertCompanyAccess(req, issue.companyId);
+    
+    const dependsOn = (issue.dependsOn as string[]) ?? [];
+    if (dependsOn.length === 0) {
+      res.json([]);
+      return;
+    }
+    
+    const deps = await db.select({
+      id: issues.id,
+      identifier: issues.identifier,
+      title: issues.title,
+      status: issues.status,
+    }).from(issues).where(inArray(issues.id, dependsOn));
+    
+    res.json(deps);
+  });
+
   router.post("/issues/:id/approvals", validate(linkIssueApprovalSchema), async (req, res) => {
     const id = req.params.id as string;
     const issue = await svc.getById(id);
@@ -646,6 +758,10 @@ export function issueRoutes(db: Db, storage: StorageService) {
       ...req.body,
       createdByAgentId: actor.agentId,
       createdByUserId: actor.actorType === "user" ? actor.actorId : null,
+      outputContract: {
+        requiresSummary: true,
+        minFileDeliverables: 0,
+      },
     });
 
     await logActivity(db, {
@@ -709,9 +825,132 @@ export function issueRoutes(db: Db, storage: StorageService) {
     if (hiddenAtRaw !== undefined) {
       updateFields.hiddenAt = hiddenAtRaw ? new Date(hiddenAtRaw) : null;
     }
+
+    if (updateFields.dependsOn) {
+      const nextDependsOn = updateFields.dependsOn as string[];
+      if (nextDependsOn.includes(id)) {
+        res.status(400).json({ error: "任务不能将自身设为依赖。" });
+        return;
+      }
+    }
+
+    // Dependency Gate Check
+    if (updateFields.status && updateFields.status !== existing.status && ["in_progress", "in_review", "done"].includes(updateFields.status as string)) {
+      const dependsOn = (updateFields.dependsOn as string[] | undefined) ?? (existing.dependsOn as string[] | null) ?? [];
+      if (dependsOn.length > 0) {
+        const incompleteDeps = await db
+          .select({ identifier: issues.identifier })
+          .from(issues)
+          .where(and(inArray(issues.id, dependsOn), sql`status != 'done'`));
+        if (incompleteDeps.length > 0) {
+          const blockedBy = incompleteDeps.map(d => d.identifier).join(", ");
+          
+          if (req.actor.userId) {
+            await db.insert(notifications).values({
+              companyId: existing.companyId,
+              userId: req.actor.userId,
+              title: "依赖未满足 (Dependency Blocked)",
+              body: `任务 ${existing.identifier ?? existing.id.slice(0, 8)} 在推进状态时被关联的前置任务阻塞。`,
+              type: "dependency_blocked",
+              relatedIssueId: existing.id,
+            });
+          }
+
+          res.status(400).json({ error: `未满足前置依赖 (Dependency Gate)：当前任务状态流转被阻塞。\n请先完成依赖任务：${blockedBy}` });
+          return;
+        }
+      }
+    }
+
     let issue;
     try {
+      if (updateFields.status === "done" && existing.status !== "done") {
+        const contract = existing.outputContract as { requiresSummary?: boolean; minFileDeliverables?: number } | null;
+        if (contract) {
+          const hasSummary = !!(commentBody || updateFields.description || existing.description);
+          let fileCount = 0;
+
+          const attachments = await svc.listAttachments(existing.id);
+          fileCount += attachments.length;
+
+          const latestRunRow = await db
+            .select({ run: heartbeatRuns })
+            .from(heartbeatRuns)
+            .where(sql`${heartbeatRuns.contextSnapshot}->>'issueId' = ${existing.id}`)
+            .orderBy(desc(heartbeatRuns.createdAt))
+            .limit(1)
+            .then(res => res[0]);
+
+          if (latestRunRow) {
+            const tel = buildExecutionTelemetry({
+              runId: latestRunRow.run.id,
+              runStatus: latestRunRow.run.status,
+              runError: latestRunRow.run.error,
+              contextSnapshot: latestRunRow.run.contextSnapshot as Record<string, unknown> | null,
+              resultJson: latestRunRow.run.resultJson as Record<string, unknown> | null,
+            });
+            fileCount += tel.outputArtifacts?.length ?? 0;
+          }
+
+          if (contract.requiresSummary && !hasSummary) {
+            if (req.actor.userId) {
+              await db.insert(notifications).values({
+                companyId: existing.companyId,
+                userId: req.actor.userId,
+                title: "交付契约未满足",
+                body: `任务 ${existing.identifier ?? existing.id.slice(0, 8)} 尝试标记完成，但缺乏必要的文字摘要。`,
+                type: "output_contract_failed",
+                relatedIssueId: existing.id,
+              });
+            }
+            res.status(400).json({ error: "未满足交付契约：必须提供至少一份概要描述 (Summary Deliverable) 才可完成任务。" });
+            return;
+          }
+          if ((contract.minFileDeliverables ?? 0) > 0 && fileCount < contract.minFileDeliverables!) {
+            if (req.actor.userId) {
+              await db.insert(notifications).values({
+                companyId: existing.companyId,
+                userId: req.actor.userId,
+                title: "交付契约未满足",
+                body: `任务 ${existing.identifier ?? existing.id.slice(0, 8)} 尝试标记完成，但提交的文件数量不足（需 ${contract.minFileDeliverables} 份）。`,
+                type: "output_contract_failed",
+                relatedIssueId: existing.id,
+              });
+            }
+            res.status(400).json({ error: `未满足交付契约：必须产出至少 ${contract.minFileDeliverables} 个文件或附件成果 (File Deliverables)，当前仅发现 ${fileCount} 个。` });
+            return;
+          }
+        }
+      }
+
       issue = await svc.update(id, updateFields);
+      
+      if (issue && updateFields.status === "done" && existing.status !== "done") {
+        const dependants = await db
+          .select()
+          .from(issues)
+          .where(and(eq(issues.companyId, existing.companyId), sql`${issues.dependsOn} @> ${JSON.stringify([issue.id])}::jsonb`));
+          
+        for (const dep of dependants) {
+          if ((dep.dependsOn as string[]).length > 0) {
+             const incompleteDeps = await db
+                .select({ id: issues.id })
+                .from(issues)
+                .where(and(inArray(issues.id, dep.dependsOn as string[]), sql`status != 'done'`));
+                
+             if (incompleteDeps.length === 0 && dep.assigneeUserId) {
+                await db.insert(notifications).values({
+                  companyId: existing.companyId,
+                  userId: dep.assigneeUserId,
+                  title: "依赖已解除",
+                  body: `前置任务全部完结！任务 ${dep.identifier ?? dep.id.slice(0, 8)} 现在已无阻塞，可以开始推进。`,
+                  type: "dependency_unblocked",
+                  relatedIssueId: dep.id,
+                });
+             }
+          }
+        }
+      }
     } catch (err) {
       if (err instanceof HttpError && err.status === 422) {
         logger.warn(
@@ -802,6 +1041,80 @@ export function issueRoutes(db: Db, storage: StorageService) {
       req.body.status !== undefined;
 
     // Merge all wakeups from this update into one enqueue per agent to avoid duplicate runs.
+    if (updateFields.status === "done" && existing.status !== "done") {
+      const deliverableSummary = commentBody || updateFields.description || existing.description || "Task completed";
+      await db.insert(issueDeliverables).values({
+        companyId: issue.companyId,
+        issueId: issue.id,
+        title: `Deliverable: ${issue.title}`,
+        summary: deliverableSummary.substring(0, 5000),
+        kind: "summary",
+        producerId: actor.agentId ?? null,
+      });
+
+      // Extract real files from issue attachments
+      const attachments = await svc.listAttachments(issue.id);
+      for (const att of attachments) {
+        await db.insert(issueDeliverables).values({
+          companyId: issue.companyId,
+          issueId: issue.id,
+          title: att.originalFilename ?? "Attachment",
+          summary: `上传的附件产物文件：${att.originalFilename}`,
+          kind: "file",
+          producerId: actor.agentId ?? null,
+          payload: {
+            filename: att.originalFilename,
+            contentType: att.contentType,
+            size: att.byteSize,
+            url: `/api/attachments/${att.id}/content`
+          }
+        });
+      }
+
+      // Extract outputArtifacts from latest heartbeatRun
+      const latestRunRow = await db
+        .select({
+          run: heartbeatRuns,
+          agentName: agents.name,
+        })
+        .from(heartbeatRuns)
+        .leftJoin(agents, eq(heartbeatRuns.agentId, agents.id))
+        .where(sql`${heartbeatRuns.contextSnapshot}->>'issueId' = ${issue.id}`)
+        .orderBy(desc(heartbeatRuns.createdAt))
+        .limit(1)
+        .then(res => res[0]);
+
+      if (latestRunRow) {
+        const latestRun = latestRunRow.run;
+        const tel = buildExecutionTelemetry({
+          runId: latestRun.id,
+          runStatus: latestRun.status,
+          runError: latestRun.error,
+          contextSnapshot: latestRun.contextSnapshot as Record<string, unknown> | null,
+          resultJson: latestRun.resultJson as Record<string, unknown> | null,
+          fallbackAgentName: latestRunRow.agentName,
+        });
+        if (tel.outputArtifacts && tel.outputArtifacts.length > 0) {
+          for (const art of tel.outputArtifacts) {
+            await db.insert(issueDeliverables).values({
+              companyId: issue.companyId,
+              issueId: issue.id,
+              title: art.name ?? "Execution Artifact",
+              summary: `执行流产生的工作区文件：${art.path}`,
+              kind: "file",
+              producerId: latestRun.agentId ?? actor.agentId ?? null,
+              payload: {
+                filename: art.name,
+                filePath: art.path,
+                version: art.version,
+                source: "workspace_artifact"
+              }
+            });
+          }
+        }
+      }
+    }
+
     void (async () => {
       const wakeups = new Map<string, Parameters<typeof heartbeat.wakeup>[1]>();
 
@@ -876,7 +1189,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
       if (existing.parentId && (issue.status === "done" || issue.status === "cancelled")) {
         try {
-          await maybeCreateChiefOfStaffSynthesis({
+          await maybeTriggerDeliverableRollup({
             issueId: issue.id,
             companyId: issue.companyId,
             actor,

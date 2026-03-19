@@ -2,6 +2,7 @@ import { Link } from "@/lib/router";
 import { Menu } from "lucide-react";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useSidebar } from "../context/SidebarContext";
+import { NotificationBell } from "./NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -39,9 +40,12 @@ export function BreadcrumbBar() {
         <h1 className="relative z-[1] truncate text-base font-semibold tracking-tight text-foreground">
           {breadcrumbs[0].label}
         </h1>
-        <div className="relative z-[1] ml-auto hidden items-center gap-2 rounded-full border border-shell-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground md:flex">
-          <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-zephyr-blue" />
-          Route Live
+        <div className="relative z-[1] ml-auto hidden items-center gap-2 md:flex">
+          <NotificationBell />
+          <div className="flex items-center gap-2 rounded-full border border-shell-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-zephyr-blue" />
+            Route Live
+          </div>
         </div>
       </div>
     );
@@ -74,9 +78,12 @@ export function BreadcrumbBar() {
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="relative z-[1] ml-auto hidden items-center gap-2 rounded-full border border-shell-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground md:flex">
-        <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-zephyr-blue" />
-        Route Live
+      <div className="relative z-[1] ml-auto hidden items-center gap-2 md:flex">
+        <NotificationBell />
+        <div className="flex items-center gap-2 rounded-full border border-shell-border bg-sidebar-accent px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="h-1.5 w-1.5 animate-subtle-pulse rounded-full bg-zephyr-blue" />
+          Route Live
+        </div>
       </div>
     </div>
   );

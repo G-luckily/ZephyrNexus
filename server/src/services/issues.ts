@@ -11,8 +11,10 @@ import {
   issueLabels,
   issueComments,
   issueReadStates,
+  issueDeliverables,
   issues,
   labels,
+  notifications,
   projectWorkspaces,
   projects,
 } from "@zephyr-nexus/db";
@@ -56,6 +58,7 @@ export interface IssueFilters {
   assigneeUserId?: string;
   touchedByUserId?: string;
   unreadForUserId?: string;
+  contextUserId?: string;
   projectId?: string;
   parentId?: string;
   labelId?: string;
@@ -178,6 +181,135 @@ function unreadForUserCondition(companyId: string, userId: string) {
       )
     )
   `;
+}
+
+async function withHealthSummaries(
+  dbOrTx: any,
+  companyId: string,
+  contextUserId: string | undefined,
+  rows: any[]
+): Promise<any[]> {
+  if (rows.length === 0) return [];
+  
+  const issueIds = rows.map((r: any) => r.id);
+  
+  // 1. Dependencies status
+  const allDependencyIds = new Set<string>();
+  for (const r of rows) {
+    if (r.dependsOn && Array.isArray(r.dependsOn)) {
+      for (const d of r.dependsOn) {
+        allDependencyIds.add(d);
+      }
+    }
+  }
+  
+  const dependencyStatusMap = new Map<string, string>();
+  if (allDependencyIds.size > 0) {
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    const uuidDeps: string[] = [];
+    const idDeps: string[] = [];
+    for (const d of allDependencyIds) {
+      if (uuidRegex.test(d)) uuidDeps.push(d);
+      else idDeps.push(d);
+    }
+    
+    const depConditions = [];
+    if (uuidDeps.length > 0) depConditions.push(inArray(issues.id, uuidDeps));
+    if (idDeps.length > 0) depConditions.push(inArray(issues.identifier, idDeps));
+
+    if (depConditions.length > 0) {
+      const depRows = await dbOrTx
+        .select({ id: issues.id, identifier: issues.identifier, status: issues.status })
+        .from(issues)
+        .where(and(eq(issues.companyId, companyId), or(...depConditions)));
+        
+      for (const r of depRows) {
+        dependencyStatusMap.set(r.id, r.status);
+        if (r.identifier) dependencyStatusMap.set(r.identifier, r.status);
+      }
+    }
+  }
+
+  // 2. Deliverables
+  const delivRows = await dbOrTx
+    .select({ issueId: issueDeliverables.issueId, kind: issueDeliverables.kind })
+    .from(issueDeliverables)
+    .where(and(eq(issueDeliverables.companyId, companyId), inArray(issueDeliverables.issueId, issueIds)));
+    
+  const deliverablesByIssue = new Map<string, { summary: number; file: number }>();
+  for (const r of delivRows) {
+    const counts = deliverablesByIssue.get(r.issueId) ?? { summary: 0, file: 0 };
+    if (r.kind === "summary") counts.summary += 1;
+    if (r.kind === "file") counts.file += 1;
+    deliverablesByIssue.set(r.issueId, counts);
+  }
+
+  // 3. Notifications
+  const unreadCountsByIssue = new Map<string, number>();
+  if (contextUserId) {
+    const notifRows = await dbOrTx
+      .select({ issueId: notifications.relatedIssueId, count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.companyId, companyId),
+        inArray(notifications.relatedIssueId, issueIds),
+        eq(notifications.userId, contextUserId),
+        isNull(notifications.readAt)
+      ))
+      .groupBy(notifications.relatedIssueId);
+    for (const r of notifRows) {
+      if (r.issueId) unreadCountsByIssue.set(r.issueId, Number(r.count));
+    }
+  }
+
+  // 4. Build summaries
+  return rows.map((row) => {
+    let isBlocked = false;
+    let blockingDependencyCount = 0;
+    if (row.dependsOn && Array.isArray(row.dependsOn)) {
+      for (const d of row.dependsOn) {
+        const s = dependencyStatusMap.get(d);
+        if (s && s !== "done" && s !== "cancelled") {
+          isBlocked = true;
+          blockingDependencyCount += 1;
+        }
+      }
+    }
+    
+    let contractSatisfied: boolean | null = null;
+    let missingSummary = false;
+    let missingFileCount = 0;
+    const c = row.outputContract as any;
+    const delivs = deliverablesByIssue.get(row.id) ?? { summary: 0, file: 0 };
+    
+    if (c && (c.requiresSummary || (c.minFileDeliverables && c.minFileDeliverables > 0))) {
+      contractSatisfied = true;
+      if (c.requiresSummary && delivs.summary < 1) {
+        missingSummary = true;
+        contractSatisfied = false;
+      }
+      if (c.minFileDeliverables && delivs.file < c.minFileDeliverables) {
+        missingFileCount = c.minFileDeliverables - delivs.file;
+        contractSatisfied = false;
+      }
+    }
+    
+    const unreadNotificationCount = unreadCountsByIssue.get(row.id) ?? 0;
+    
+    return {
+      ...row,
+      healthSummary: {
+        isBlocked,
+        blockingDependencyCount,
+        contractSatisfied,
+        missingSummary,
+        missingFileCount,
+        summaryDeliverableCount: delivs.summary,
+        fileDeliverableCount: delivs.file,
+        unreadNotificationCount
+      }
+    };
+  });
 }
 
 export function deriveIssueUserContext(
@@ -426,7 +558,7 @@ export function issueService(db: Db) {
       const conditions = [eq(issues.companyId, companyId)];
       const touchedByUserId = filters?.touchedByUserId?.trim() || undefined;
       const unreadForUserId = filters?.unreadForUserId?.trim() || undefined;
-      const contextUserId = unreadForUserId ?? touchedByUserId;
+      const contextUserId = filters?.contextUserId?.trim() || unreadForUserId || touchedByUserId;
       const rawSearch = filters?.q?.trim() ?? "";
       const hasSearch = rawSearch.length > 0;
       const escapedSearch = hasSearch ? escapeLikePattern(rawSearch) : "";
@@ -548,7 +680,7 @@ export function issueService(db: Db) {
       const statsByIssueId = new Map(statsRows.map((row) => [row.issueId, row]));
       const readByIssueId = new Map(readRows.map((row) => [row.issueId, row.myLastReadAt]));
 
-      return withRuns.map((row) => ({
+      const userEnriched = withRuns.map((row) => ({
         ...row,
         ...deriveIssueUserContext(row, contextUserId, {
           myLastCommentAt: statsByIssueId.get(row.id)?.myLastCommentAt ?? null,
@@ -556,6 +688,7 @@ export function issueService(db: Db) {
           lastExternalCommentAt: statsByIssueId.get(row.id)?.lastExternalCommentAt ?? null,
         }),
       }));
+      return await withHealthSummaries(db, companyId, contextUserId, userEnriched);
     },
 
     countUnreadTouchedByUser: async (companyId: string, userId: string, status?: string) => {
@@ -609,7 +742,8 @@ export function issueService(db: Db) {
         .then((rows) => rows[0] ?? null);
       if (!row) return null;
       const [enriched] = await withIssueLabels(db, [row]);
-      return enriched;
+      const [healthEnriched] = await withHealthSummaries(db, enriched.companyId, undefined, [enriched]);
+      return healthEnriched;
     },
 
     getByIdentifier: async (identifier: string) => {
@@ -620,7 +754,8 @@ export function issueService(db: Db) {
         .then((rows) => rows[0] ?? null);
       if (!row) return null;
       const [enriched] = await withIssueLabels(db, [row]);
-      return enriched;
+      const [healthEnriched] = await withHealthSummaries(db, enriched.companyId, undefined, [enriched]);
+      return healthEnriched;
     },
 
     create: async (
@@ -685,7 +820,8 @@ export function issueService(db: Db) {
           await syncIssueLabels(issue.id, companyId, inputLabelIds, tx);
         }
         const [enriched] = await withIssueLabels(tx, [issue]);
-        return enriched;
+        const [healthEnriched] = await withHealthSummaries(tx, enriched.companyId, undefined, [enriched]);
+        return healthEnriched;
       });
     },
 
@@ -755,7 +891,8 @@ export function issueService(db: Db) {
           await syncIssueLabels(updated.id, existing.companyId, nextLabelIds, tx);
         }
         const [enriched] = await withIssueLabels(tx, [updated]);
-        return enriched;
+        const [healthEnriched] = await withHealthSummaries(tx, enriched.companyId, undefined, [enriched]);
+        return healthEnriched;
       });
     },
 
@@ -780,7 +917,8 @@ export function issueService(db: Db) {
 
         if (!removedIssue) return null;
         const [enriched] = await withIssueLabels(tx, [removedIssue]);
-        return enriched;
+        const [healthEnriched] = await withHealthSummaries(tx, enriched.companyId, undefined, [enriched]);
+        return healthEnriched;
       }),
 
     checkout: async (id: string, agentId: string, expectedStatuses: string[], checkoutRunId: string | null) => {

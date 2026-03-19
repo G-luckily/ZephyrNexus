@@ -53,6 +53,7 @@ import {
   ChevronDown,
   ChevronRight,
   EyeOff,
+  FileText,
   Hexagon,
   ListTree,
   MessageSquare,
@@ -60,6 +61,9 @@ import {
   Paperclip,
   SlidersHorizontal,
   Trash2,
+  Lock,
+  FileLock,
+  BellRing,
 } from "lucide-react";
 import { 
   type ActivityEvent, 
@@ -199,6 +203,7 @@ export function IssueDetail() {
     cost: false,
   });
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [deliverableError, setDeliverableError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastMarkedReadIssueIdRef = useRef<string | null>(null);
 
@@ -255,6 +260,12 @@ export function IssueDetail() {
     queryFn: () => heartbeatsApi.activeRunForIssue(issueId!),
     enabled: !!issueId,
     refetchInterval: 3000,
+  });
+
+  const { data: deliverables } = useQuery({
+    queryKey: [...queryKeys.issues.detail(issueId!), "deliverables"],
+    queryFn: () => issuesApi.listDeliverables(issueId!),
+    enabled: !!issueId,
   });
 
   const { data: budgetSummary, isLoading: isBudgetLoading } = useQuery({
@@ -461,6 +472,9 @@ export function IssueDetail() {
     queryClient.invalidateQueries({
       queryKey: queryKeys.issues.activeRun(issueId!),
     });
+    queryClient.invalidateQueries({
+      queryKey: [...queryKeys.issues.detail(issueId!), "deliverables"],
+    });
     if (selectedCompanyId) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.issues.list(selectedCompanyId),
@@ -498,7 +512,12 @@ export function IssueDetail() {
     mutationFn: (data: Record<string, unknown>) =>
       issuesApi.update(issueId!, data),
     onSuccess: () => {
+      setDeliverableError(null);
       invalidateIssue();
+    },
+    onError: (err: any) => {
+      setDeliverableError(err instanceof Error ? err.message : String(err));
+      setTimeout(() => setDeliverableError(null), 10000);
     },
   });
 
@@ -666,6 +685,15 @@ export function IssueDetail() {
         </div>
       )}
 
+      {deliverableError && (
+        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive shadow-sm animate-in fade-in slide-in-from-top-1">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="flex-1 whitespace-pre-wrap leading-relaxed">
+            {deliverableError}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon
@@ -679,6 +707,26 @@ export function IssueDetail() {
           <span className="text-sm font-mono text-muted-foreground shrink-0">
             {issue.identifier ?? issue.id.slice(0, 8)}
           </span>
+
+          {issue.healthSummary?.isBlocked && (
+            <div title="Blocked by dependencies" className="flex items-center justify-center bg-amber-500/10 text-amber-500 rounded px-1.5 py-0.5 text-xs gap-1 shrink-0">
+              <Lock className="w-3 h-3" />
+              <span>Blocked ({issue.healthSummary.blockingDependencyCount})</span>
+            </div>
+          )}
+          {issue.healthSummary?.contractSatisfied === false && (
+            <div title="Has unmet output contract requirements" className="flex items-center justify-center bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs gap-1 shrink-0">
+              <FileLock className="w-3 h-3" />
+              <span>Missing Deliverables</span>
+            </div>
+          )}
+          {issue.healthSummary?.unreadNotificationCount && issue.healthSummary.unreadNotificationCount > 0 ? (
+            <div title={`You have ${issue.healthSummary.unreadNotificationCount} unread events`} className="flex items-center justify-center bg-destructive/10 text-destructive rounded px-1.5 py-0.5 text-xs gap-1 shrink-0 relative">
+              <BellRing className="w-3 h-3 animate-pulse" />
+              <span>{issue.healthSummary.unreadNotificationCount} New</span>
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-destructive rounded-full" />
+            </div>
+          ) : null}
 
           {hasLiveRuns && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-medium text-cyan-600 dark:text-cyan-400 shrink-0">
@@ -803,6 +851,81 @@ export function IssueDetail() {
           }}
         />
       </div>
+
+      {(issue.outputContract || (deliverables && deliverables.length > 0)) && (
+        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-primary font-medium">
+              <Hexagon className="h-5 w-5" />
+              <h3 className="text-base tracking-tight">最终交付成果 (Deliverables)</h3>
+            </div>
+            {issue.outputContract && (
+              <div className="flex items-center gap-2 text-[11px] font-medium px-2 py-0.5 rounded border border-primary/20 bg-background text-primary/80">
+                <span className="opacity-70">交付契约：</span>
+                {issue.outputContract.requiresSummary && <span>📝 概要说明</span>}
+                {issue.outputContract.minFileDeliverables > 0 && <span>📎 {issue.outputContract.minFileDeliverables}个文件或附件</span>}
+              </div>
+            )}
+          </div>
+          <div className="space-y-3">
+            {(!deliverables || deliverables.length === 0) ? (
+              <div className="text-sm text-muted-foreground italic px-2 py-4 text-center border border-dashed border-border rounded-md bg-background/50">
+                尚未产出交付成果。当任务完结 (Done) 时，系统将严格依据上方契约从工作区和附件中校验提取。
+              </div>
+            ) : (
+              deliverables.map((del) => (
+                <div key={del.id} className="bg-background rounded-md border border-border p-3 space-y-2 relative overflow-hidden shadow-sm">
+                <div className="absolute top-0 right-0 w-1 bg-primary/80 h-full"></div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {del.kind === "file" ? <FileText className="h-4 w-4 text-primary" /> : <Hexagon className="h-4 w-4 text-primary" />}
+                    <h4 className="font-semibold text-sm text-foreground">{del.title}</h4>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">{relativeTime(del.createdAt)}</span>
+                </div>
+                {del.summary && (
+                  <p className="text-[13px] text-muted-foreground whitespace-pre-wrap leading-relaxed rounded-md bg-accent/30 p-2 mt-1 border border-border/50">
+                    {del.summary}
+                  </p>
+                )}
+                {del.kind === "file" && del.payload && (
+                  <div className="flex items-center bg-accent/30 rounded border border-border mt-2 text-xs divide-x divide-border">
+                    {del.payload.url ? (
+                      <a href={del.payload.url} target="_blank" rel="noreferrer" className="flex-1 p-2 text-primary hover:underline truncate flex items-center gap-2">
+                        <FileText className="h-3.5 w-3.5" />
+                        {del.payload.filename || del.title}
+                      </a>
+                    ) : (
+                      <span className="flex-1 p-2 text-foreground truncate font-mono flex items-center gap-2" title={del.payload.filePath}>
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                        {del.payload.filePath || del.payload.filename || del.title}
+                      </span>
+                    )}
+                    {del.payload.size && (
+                      <span className="p-2 text-muted-foreground whitespace-nowrap">
+                        {(del.payload.size / 1024).toFixed(1)} KB
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 pt-2 border-t border-border mt-2">
+                  <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold">
+                    {del.kind}
+                  </span>
+                  {del.producerName ? (
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-1.5 ml-1">
+                      由 <Identity name={del.producerName} size="sm" /> 产出
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground ml-1">由系统判定</span>
+                  )}
+                </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
