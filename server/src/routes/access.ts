@@ -1610,6 +1610,8 @@ export function accessRoutes(
   router.get("/skills/index", (_req, res) => {
     res.json({
       skills: [
+        // Architecture Note: Hardcoded to only expose internal agents to client.
+        // Do not dynamically fetch from skills/ here to prevent exposing CI/CD scripts.
         { name: "paperclip", path: "/api/skills/paperclip" },
         {
           name: "paperclip-create-agent",
