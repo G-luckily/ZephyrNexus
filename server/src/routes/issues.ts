@@ -25,9 +25,10 @@ import {
   logActivity,
   projectService,
 } from "../services/index.js";
+import { BUILT_IN_TEMPLATES } from "../services/templates.js";
 import { logger } from "../middleware/logger.js";
 import { forbidden, HttpError, unauthorized } from "../errors.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCompanyAccess, assertCompanyRole, getActorInfo } from "./authz.js";
 import { shouldWakeAssigneeOnCheckout } from "./issues-checkout-wakeup.js";
 import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
 
@@ -431,6 +432,59 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
 
     res.json({ attention, ready });
+  });
+
+  router.get("/companies/:companyId/issues/templates", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    res.json(BUILT_IN_TEMPLATES);
+  });
+
+  router.post("/companies/:companyId/issues/templates/:templateId/instantiate", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    
+    const templateId = req.params.templateId as string;
+    const template = BUILT_IN_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) {
+      res.status(404).json({ error: "Template not found" });
+      return;
+    }
+
+    const { baseTitle, projectId } = req.body;
+    const prefix = baseTitle ? `${baseTitle} - ` : "";
+
+    // Two-pass generation
+    const keyToId = new Map<string, string>();
+    const createdIssues: Array<{ templateTask: any; issue: any }> = [];
+
+    // Pass 1: Create all issues stripped of dependencies
+    for (const task of template.tasks) {
+      const issue = await svc.create(companyId, {
+        title: `${prefix}${task.title}`,
+        status: task.initialStatus,
+        outputContract: task.outputContract,
+        projectId: projectId ?? undefined,
+        dependsOn: [], 
+      });
+      
+      keyToId.set(task.key, issue.id);
+      createdIssues.push({ templateTask: task, issue });
+    }
+
+    // Pass 2: Wire up dependencies matching keys
+    for (const item of createdIssues) {
+      const { templateTask, issue } = item;
+      const resolvedDependsOn = templateTask.dependsOnKeys
+        .map((k: string) => keyToId.get(k))
+        .filter(Boolean) as string[];
+
+      if (resolvedDependsOn.length > 0) {
+        await svc.update(issue.id, { dependsOn: resolvedDependsOn });
+      }
+    }
+
+    res.json({ ok: true, createdCount: createdIssues.length });
   });
   
   router.get("/companies/:companyId/issues/overshooting-top", async (req, res) => {
@@ -1210,7 +1264,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    assertCompanyRole(req, existing.companyId, ["org_admin", "project_manager"]);
     const attachments = await svc.listAttachments(id);
 
     const issue = await svc.remove(id);

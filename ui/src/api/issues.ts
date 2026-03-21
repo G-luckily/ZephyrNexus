@@ -6,6 +6,7 @@ import type {
   IssueLabel,
   IssueBudgetSummary,
   ActionQueueResponse,
+  WorkflowTemplate,
 } from "@zephyr-nexus/shared";
 import { api } from "./client";
 
@@ -109,4 +110,15 @@ export const issuesApi = {
     api.get<IssueBudgetSummary[]>(`/companies/${companyId}/issues/overshooting-top`),
   getActionQueue: (companyId: string) =>
     api.get<ActionQueueResponse>(`/companies/${companyId}/issues/action-queue`),
+  getTemplates: (companyId: string) =>
+    api.get<WorkflowTemplate[]>(`/companies/${companyId}/issues/templates`),
+  instantiateTemplate: (
+    companyId: string,
+    templateId: string,
+    data: { baseTitle: string; projectId?: string }
+  ) =>
+    api.post<{ ok: true; createdCount: number }>(
+      `/companies/${companyId}/issues/templates/${templateId}/instantiate`,
+      data
+    ),
 };

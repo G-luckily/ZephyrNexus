@@ -171,3 +171,21 @@ export interface ActionQueueResponse {
   ready: ActionQueueItem[];
 }
 
+export interface WorkflowTemplateTask {
+  key: string;
+  title: string;
+  initialStatus: IssueStatus;
+  outputContract: any | null; 
+  dependsOnKeys: string[];
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  useCase?: string;
+  maybeExpectedOutcome?: string;
+  tasks: WorkflowTemplateTask[];
+}
+
+

@@ -298,6 +298,9 @@ export type LiveEventType = (typeof LIVE_EVENT_TYPES)[number];
 export const PRINCIPAL_TYPES = ["user", "agent"] as const;
 export type PrincipalType = (typeof PRINCIPAL_TYPES)[number];
 
+export const MEMBERSHIP_ROLES = ["org_admin", "project_manager", "member"] as const;
+export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
+
 export const MEMBERSHIP_STATUSES = ["pending", "active", "suspended"] as const;
 export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
 

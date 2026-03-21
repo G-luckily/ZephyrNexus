@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { KanbanBoard } from "./KanbanBoard";
 import { ActionQueueSheet } from "./ActionQueueSheet";
+import { IssuesTemplateMenu } from "./IssuesTemplateMenu";
 import type { Issue } from "@zephyr-nexus/shared";
 import { cleanVisibleAgentName } from "../lib/org-structure";
 
@@ -390,6 +391,7 @@ export function IssuesList({
               <Plus className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">新建任务</span>
             </Button>
+            <IssuesTemplateMenu projectId={projectId} />
             <div className="relative w-48 sm:w-64 md:w-80">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input

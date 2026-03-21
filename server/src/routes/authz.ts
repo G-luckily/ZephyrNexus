@@ -22,6 +22,20 @@ export function assertCompanyAccess(req: Request, companyId: string) {
   }
 }
 
+export function assertCompanyRole(req: Request, companyId: string, allowedRoles: string[]) {
+  assertCompanyAccess(req, companyId);
+  
+  if (req.actor.type === "board") {
+    if (req.actor.isInstanceAdmin || req.actor.source === "local_implicit") {
+      return; // super admin bypass
+    }
+    const mem = req.actor.memberships?.find((m) => m.companyId === companyId);
+    if (!mem || !allowedRoles.includes(mem.role)) {
+      throw forbidden(`Requires one of roles: ${allowedRoles.join(", ")}`);
+    }
+  }
+}
+
 export function getActorInfo(req: Request) {
   if (req.actor.type === "none") {
     throw unauthorized();

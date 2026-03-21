@@ -175,7 +175,7 @@ chmod 700 "$OPENCLAW_CONFIG_DIR" "$OPENCLAW_CONFIG_DIR/credentials"
 
 if [[ -f "$OPENCLAW_CONFIG_DIR/openclaw.json" ]]; then
   log "updating existing OpenClaw config at $OPENCLAW_CONFIG_DIR/openclaw.json"
-  export OPENCLAW_DISABLE_DEVICE_AUTH_JSON
+  export OPENCLAW_DISABLE_DEVICE_AUTH_JSON OPENCLAW_CONFIG_DIR OPENCLAW_GATEWAY_PORT OPENCLAW_GATEWAY_BIND OPENCLAW_GATEWAY_TOKEN
   python3 - <<EOF
 import json, os
 config_file = os.path.join(os.environ['OPENCLAW_CONFIG_DIR'], 'openclaw.json')

@@ -10,6 +10,7 @@ import { assetsApi } from "../api/assets";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { usePermissions } from "../hooks/usePermissions";
 import { queryKeys } from "../lib/queryKeys";
 import {
   ProjectProperties,
@@ -225,6 +226,7 @@ export function ProjectDetail() {
   const { companies, selectedCompanyId, setSelectedCompanyId } = useCompany();
   const { closePanel } = usePanel();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { canEditProjects } = usePermissions();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -445,17 +447,25 @@ export function ProjectDetail() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="h-7 flex items-center">
-          <ColorPicker
-            currentColor={project.color ?? "#6366f1"}
-            onSelect={(color) => updateProject.mutate({ color })}
-          />
+          {canEditProjects ? (
+            <ColorPicker
+              currentColor={project.color ?? "#6366f1"}
+              onSelect={(color) => updateProject.mutate({ color })}
+            />
+          ) : (
+            <div className="shrink-0 h-5 w-5 rounded-md" style={{ backgroundColor: project.color ?? "#6366f1" }} />
+          )}
         </div>
-        <InlineEditor
-          value={project.name}
-          onSave={(name) => updateProject.mutate({ name })}
-          as="h2"
-          className="text-xl font-bold"
-        />
+        {canEditProjects ? (
+          <InlineEditor
+            value={project.name}
+            onSave={(name) => updateProject.mutate({ name })}
+            as="h2"
+            className="text-xl font-bold"
+          />
+        ) : (
+          <h2 className="text-xl font-bold px-1.5 py-0.5">{project.name}</h2>
+        )}
       </div>
 
       <Tabs
@@ -496,8 +506,8 @@ export function ProjectDetail() {
         <div className="max-w-4xl">
           <ProjectProperties
             project={project}
-            onUpdate={(data) => updateProject.mutate(data)}
-            onFieldUpdate={updateProjectField}
+            onUpdate={canEditProjects ? (data) => updateProject.mutate(data) : undefined}
+            onFieldUpdate={canEditProjects ? updateProjectField : undefined}
             getFieldSaveState={(field) => fieldSaveStates[field] ?? "idle"}
           />
         </div>

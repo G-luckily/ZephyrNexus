@@ -613,14 +613,16 @@ export function ProjectProperties({
                       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
                         {workspace.cwd}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => clearLocalWorkspace(workspace)}
-                        aria-label="Delete local folder"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {(onUpdate || onFieldUpdate) && (
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => clearLocalWorkspace(workspace)}
+                          aria-label="Delete local folder"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   ) : null}
                   {workspace.repoUrl ? (
@@ -637,14 +639,16 @@ export function ProjectProperties({
                         </span>
                         <ExternalLink className="h-3 w-3 shrink-0" />
                       </a>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => clearRepoWorkspace(workspace)}
-                        aria-label="Delete workspace repo"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {(onUpdate || onFieldUpdate) && (
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => clearRepoWorkspace(workspace)}
+                          aria-label="Delete workspace repo"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   ) : null}
                   {workspace.runtimeServices &&
@@ -699,30 +703,32 @@ export function ProjectProperties({
               ))}
             </div>
           )}
-          <div className="flex flex-col items-start gap-2">
-            <Button
-              variant="outline"
-              size="xs"
-              className="h-7 px-2.5"
-              onClick={() => {
-                setWorkspaceMode("local");
-                setWorkspaceError(null);
-              }}
-            >
-              Add workspace local folder
-            </Button>
-            <Button
-              variant="outline"
-              size="xs"
-              className="h-7 px-2.5"
-              onClick={() => {
-                setWorkspaceMode("repo");
-                setWorkspaceError(null);
-              }}
-            >
-              Add workspace repo
-            </Button>
-          </div>
+          {(onUpdate || onFieldUpdate) && (
+            <div className="flex flex-col items-start gap-2">
+              <Button
+                variant="outline"
+                size="xs"
+                className="h-7 px-2.5"
+                onClick={() => {
+                  setWorkspaceMode("local");
+                  setWorkspaceError(null);
+                }}
+              >
+                Add workspace local folder
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                className="h-7 px-2.5"
+                onClick={() => {
+                  setWorkspaceMode("repo");
+                  setWorkspaceError(null);
+                }}
+              >
+                Add workspace repo
+              </Button>
+            </div>
+          )}
           {workspaceMode === "local" && (
             <div className="space-y-1.5 rounded-md border border-border p-2">
               <div className="flex items-center gap-2">

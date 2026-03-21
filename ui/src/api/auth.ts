@@ -1,6 +1,7 @@
 export type AuthSession = {
   session: { id: string; userId: string };
-  user: { id: string; email: string | null; name: string | null };
+  user: { id: string; email: string | null; name: string | null; isInstanceAdmin?: boolean };
+  memberships: { companyId: string; role: string }[];
 };
 
 function toSession(value: unknown): AuthSession | null {
@@ -15,13 +16,24 @@ function toSession(value: unknown): AuthSession | null {
   if (typeof session.id !== "string" || typeof session.userId !== "string")
     return null;
   if (typeof user.id !== "string") return null;
+
+  const rawMemberships = Array.isArray(record.memberships) ? record.memberships : [];
+  const memberships = rawMemberships
+    .filter((m) => m && typeof m === "object" && typeof (m as any).companyId === "string")
+    .map((m) => ({
+      companyId: String((m as any).companyId),
+      role: String((m as any).role || "member"),
+    }));
+
   return {
     session: { id: session.id, userId: session.userId },
     user: {
       id: user.id,
       email: typeof user.email === "string" ? user.email : null,
       name: typeof user.name === "string" ? user.name : null,
+      isInstanceAdmin: Boolean(user.isInstanceAdmin),
     },
+    memberships,
   };
 }
 

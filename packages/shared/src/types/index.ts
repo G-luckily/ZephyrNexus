@@ -35,6 +35,8 @@ export type {
   BlockedRunSummary,
   ActionQueueItem,
   ActionQueueResponse,
+  WorkflowTemplateTask,
+  WorkflowTemplate,
 } from "./issue.js";
 export type { Goal } from "./goal.js";
 export type { Approval, ApprovalComment } from "./approval.js";

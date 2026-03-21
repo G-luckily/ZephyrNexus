@@ -30,7 +30,7 @@ import {
   secretService,
 } from "../services/index.js";
 import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertBoard, assertCompanyAccess, assertCompanyRole, getActorInfo } from "./authz.js";
 import { findServerAdapter, listAdapterModels } from "../adapters/index.js";
 import { redactEventPayload } from "../redaction.js";
 import { runClaudeLogin } from "@zephyr-nexus/adapter-claude-local/server";
@@ -104,8 +104,11 @@ export function agentRoutes(db: Db) {
   }
 
   async function assertCanUpdateAgent(req: Request, targetAgent: { id: string; companyId: string }) {
+    if (req.actor.type === "board") {
+      assertCompanyRole(req, targetAgent.companyId, ["org_admin"]);
+      return;
+    }
     assertCompanyAccess(req, targetAgent.companyId);
-    if (req.actor.type === "board") return;
     if (!req.actor.agentId) throw forbidden("Agent authentication required");
 
     const actorAgent = await svc.getById(req.actor.agentId);

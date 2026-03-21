@@ -38,6 +38,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { usePermissions } from "../hooks/usePermissions";
 import { queryKeys } from "../lib/queryKeys";
 import { AgentConfigForm } from "../components/AgentConfigForm";
 import { PageTabBar } from "../components/PageTabBar";
@@ -300,6 +301,7 @@ export function AgentDetail() {
   const { closePanel } = usePanel();
   const { openNewIssue } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { canManageAgents } = usePermissions();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -636,7 +638,7 @@ export function AgentDetail() {
     return <Navigate to={`/agents/${canonicalAgentRef}/dashboard`} replace />;
   }
   const isPendingApproval = agent.status === "pending_approval";
-  const showConfigActionBar = activeView === "configuration" && configDirty;
+  const showConfigActionBar = activeView === "configuration" && configDirty && canManageAgents;
 
   return (
     <div
@@ -648,8 +650,12 @@ export function AgentDetail() {
           <AgentIconPicker
             value={agent.icon}
             onChange={(icon) => updateIcon.mutate(icon)}
+            disabled={!canManageAgents}
           >
-            <button className="shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-accent hover:bg-accent/80 transition-colors overflow-hidden">
+            <button 
+              disabled={!canManageAgents}
+              className={cn("shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-accent hover:bg-accent/80 transition-colors overflow-hidden", !canManageAgents && "cursor-not-allowed opacity-80 hover:bg-accent")}
+            >
               <AgentIcon icon={agent.icon} className="h-full w-full" seed={agent.id} />
             </button>
           </AgentIconPicker>
@@ -739,8 +745,10 @@ export function AgentDetail() {
                 Copy Agent ID
               </button>
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!canManageAgents}
                 onClick={() => {
+                  if (!canManageAgents) return;
                   resetTaskSession.mutate(null);
                   setMoreOpen(false);
                 }}
@@ -749,8 +757,10 @@ export function AgentDetail() {
                 Reset Sessions
               </button>
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!canManageAgents}
                 onClick={() => {
+                  if (!canManageAgents) return;
                   agentAction.mutate("terminate");
                   setMoreOpen(false);
                 }}
@@ -773,7 +783,7 @@ export function AgentDetail() {
           <PageTabBar
             items={[
               { value: "dashboard", label: "总览" },
-              { value: "configuration", label: "配置" },
+              ...(canManageAgents ? [{ value: "configuration", label: "配置" }] : []),
             ]}
             value={
               activeView === "configuration" ? "configuration" : "dashboard"
@@ -1381,7 +1391,9 @@ function ConfigurationTab({
     isPending: boolean;
   };
 }) {
+}) {
   const queryClient = useQueryClient();
+  const { canManageAgents } = usePermissions();
 
   const { data: adapterModels } = useQuery({
     queryKey: companyId
@@ -1413,7 +1425,13 @@ function ConfigurationTab({
 
   return (
     <div className="space-y-6">
-      <AgentConfigForm
+      {!canManageAgents ? (
+        <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-accent/30 p-4 text-center mt-8 mx-auto max-w-[800px]">
+          <span className="text-sm text-muted-foreground">You do not have permission to view or edit this agent's configuration.</span>
+        </div>
+      ) : (
+      <>
+        <AgentConfigForm
         mode="edit"
         agent={agent}
         onSave={(patch) => updateAgent.mutate(patch)}
@@ -1438,6 +1456,18 @@ function ConfigurationTab({
               size="sm"
               className="h-7 px-2.5 text-xs"
               onClick={() =>
+                updatePermissions.mutate(!agent.permissions?.canCreateAgents)
+              }
+            >
+              {agent.permissions?.canCreateAgents ? "Enabled" : "Disabled"}
+            </Button>
+          </div>
+        </div>
+      </div>
+      </>
+      )}
+    </div>
+  );
                 updatePermissions.mutate(
                   !Boolean(agent.permissions?.canCreateAgents)
                 )
