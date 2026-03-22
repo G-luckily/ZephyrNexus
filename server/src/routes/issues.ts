@@ -91,8 +91,12 @@ export function issueRoutes(db: Db, storage: StorageService) {
     assertCompanyAccess(req, companyId);
     if (req.actor.type === "board") {
       if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) return;
+      // Check new RBAC membershipRole first
+      const mem = req.actor.memberships?.find((m) => m.companyId === companyId);
+      if (mem && (mem.role === "org_admin" || mem.role === "project_manager")) return;
+      // Fall back to legacy fine-grained grants
       const allowed = await access.canUser(companyId, req.actor.userId, "tasks:assign");
-      if (!allowed) throw forbidden("Missing permission: tasks:assign");
+      if (!allowed) throw forbidden("Requires role: org_admin or project_manager");
       return;
     }
     if (req.actor.type === "agent") {

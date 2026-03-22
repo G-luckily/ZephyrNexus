@@ -31,7 +31,7 @@ export function assertCompanyRole(req: Request, companyId: string, allowedRoles:
     }
     const mem = req.actor.memberships?.find((m) => m.companyId === companyId);
     if (!mem || !allowedRoles.includes(mem.role)) {
-      throw forbidden(`Requires one of roles: ${allowedRoles.join(", ")}`);
+      throw forbidden(`Insufficient permissions. Requires one of: ${allowedRoles.join(", ")}. Your current role: ${mem?.role ?? "none"}`);
     }
   }
 }

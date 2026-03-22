@@ -670,19 +670,21 @@ export function AgentDetail() {
           </div>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openNewIssue({ assigneeAgentId: agent.id })}
-          >
-            <Plus className="h-3.5 w-3.5 sm:mr-1" />
-            <span className="hidden sm:inline">分配任务</span>
-          </Button>
+          {canManageAgents && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openNewIssue({ assigneeAgentId: agent.id })}
+            >
+              <Plus className="h-3.5 w-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">分配任务</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
             onClick={() => agentAction.mutate("invoke")}
-            disabled={agentAction.isPending || isPendingApproval}
+            disabled={!canManageAgents || agentAction.isPending || isPendingApproval}
           >
             <Play className="h-3.5 w-3.5 sm:mr-1" />
             <span className="hidden sm:inline">触发心跳</span>
@@ -692,7 +694,7 @@ export function AgentDetail() {
               variant="outline"
               size="sm"
               onClick={() => agentAction.mutate("resume")}
-              disabled={agentAction.isPending || isPendingApproval}
+              disabled={!canManageAgents || agentAction.isPending || isPendingApproval}
             >
               <Play className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">继续执行</span>
@@ -702,7 +704,7 @@ export function AgentDetail() {
               variant="outline"
               size="sm"
               onClick={() => agentAction.mutate("pause")}
-              disabled={agentAction.isPending || isPendingApproval}
+              disabled={!canManageAgents || agentAction.isPending || isPendingApproval}
             >
               <Pause className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">暂停</span>
@@ -1391,7 +1393,6 @@ function ConfigurationTab({
     isPending: boolean;
   };
 }) {
-}) {
   const queryClient = useQueryClient();
   const { canManageAgents } = usePermissions();
 
@@ -1466,19 +1467,6 @@ function ConfigurationTab({
       </div>
       </>
       )}
-    </div>
-  );
-                updatePermissions.mutate(
-                  !Boolean(agent.permissions?.canCreateAgents)
-                )
-              }
-              disabled={updatePermissions.isPending}
-            >
-              {agent.permissions?.canCreateAgents ? "Enabled" : "Disabled"}
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
