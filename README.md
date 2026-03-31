@@ -1,112 +1,206 @@
-# ZephyrNexus（风之灵枢）
+# 🌪️ ZephyrNexus（风之灵枢）
 
-> AI Orchestration System
+> **AI 智能体编排系统 · 现场演示指南**
+>
+> AI 公司级控制平面——统一管理智能体、任务、组织与运行监控。
 
-ZephyrNexus 是一个面向“智能体公司化协作”的控制平面与应用系统，用于统一管理组织结构、任务编排、运行监控、治理策略与多适配器执行。
+---
 
-## 项目定位
+## 📋 前置条件
 
-- 产品名：`Zephyr Nexus`
-- 中文显示名：`风之灵枢`
-- 系统描述：`AI Orchestration System`
-- 仓库名：`ZephyrNexus`
-- 主服务名：`zephyr-nexus`
+在启动前，请确认以下环境已准备好：
 
-## 核心能力
+| 依赖项 | 最低版本 | 检查命令 |
+|--------|---------|---------|
+| Node.js | >= 20 | `node -v` |
+| pnpm | >= 9 | `pnpm -v` |
+| Git | 任意 | `git --version` |
 
-- 多组织/多部门智能体编排与治理
-- 仪表盘级运行态观测（任务链、系统指标、组织运行、活跃智能体）
-- Issue/任务驱动的执行闭环
-- 成本、预算、权限、审计与策略约束
-- 多适配器协同（OpenClaw / Codex / Cursor / Claude Code 等）
+> **推荐运行环境：WSL（Linux）或 macOS**。Windows 原生环境下，数据库将由系统自动管理（embedded-postgres），建议在 WSL 终端中执行以下所有命令。
 
-## 仓库结构（Monorepo）
+---
 
-- `ui/`：前端应用（Dashboard、任务、智能体、组织视图）
-- `server/`：后端 API、调度、适配器编排、业务路由
-- `packages/`：共享包（db、adapters、utils 等）
-- `scripts/`：启动、停止、健康检查、烟测脚本
-- `docs/` / `doc/`：运行手册、架构与开发文档
-- `workspace.config.json`：服务与环境映射配置
-
-## 快速启动
-
-### 1. 安装依赖
+## 🚀 一键启动（首次 / 现场演示）
 
 ```bash
-cd /home/guo/workspace/ZephyrNexus
+# 第一步：进入项目目录
+cd ~/workspace/ZephyrNexus   # Linux/WSL
+# 或
+cd C:\Users\Guo\Documents\GitHub\ZephyrNexus   # Windows PowerShell
+
+# 第二步：安装依赖（首次运行，约 30 秒）
 pnpm install
-```
 
-### 2. 应用开发模式
-
-```bash
+# 第三步：启动开发服务器
 pnpm dev
 ```
 
-- UI: `http://localhost:3000`
-- API: `http://localhost:3100`
+启动成功后，终端将打印类似如下内容：
 
-## 平台统一入口 (Unified Control Entry)
+```
+[Zephyr Nexus] ✨ Server ready
+  API:  http://127.0.0.1:3100
+  UI:   http://127.0.0.1:3100
+  DB:   embedded-postgres (auto-initialized)
+```
 
-ZephyrNexus 提供了一组统一的入口脚本供不同场景使用：
-- `pnpm dev`：纯本地前端/后端热更开发态。
-- `pnpm platform:start`：按 `workspace.config.json` 以后台/生产方式启动所有启用服务。
-- `pnpm platform:stop`：停止系统。
-- `pnpm platform:doctor`：检查各核心服务（包含 Docker 容器和本地 Node 进程）是否正常运行。
-- `pnpm smoke:openclaw-docker-ui`：专项一键启动内嵌的 OpenClaw 控制与网关容器。
+📌 **打开浏览器访问：http://localhost:3100**
 
-## 平台化配置分层 (Configuration Layering)
+---
 
-平台执行层（OpenClaw）采用严格的三层配置稳固架构，避免配置丢失或被覆盖：
+## 🎬 演示路线（Showcase Flow）
 
-1. **Baseline Default (`~/.zephyr-nexus/openclaw/openclaw.json`)**
-   由启动脚本（smoke）在首次启动时生成，保障最基础的可用网关端口和模型基线。
-   *重置机制*：空文件不覆盖有效值，重启时只做关键键值的选择性更新。
+启动成功后，按以下顺序向观众演示：
 
-2. **Local Override (`.env` / `~/.secrets` / 环境变量)**
-   专门用于注入敏感配置，例如 `OPENROUTER_API_KEY`、`OPENAI_API_KEY`，覆盖基线配置。确保敏感数据绝不落盘写入普通的 `json` 配置文件。
+### 1. Dashboard 总览
+- 打开 `http://localhost:3100`
+- 展示：**运行中智能体数量、任务链路、系统指标**
 
-3. **Agent-Specific Override (`auth-profiles.json`)**
-   为特定智能体（如 Main Session）在运行时生成的专用权限或模型上下文，覆盖前两层配置。
+### 2. 创建公司（Company）
+- 点击左上角 **「新建公司」**
+- 填写公司名称（例如：`TalentForce AI`）
+- 展示：多组织管理能力
 
-### 3. 控制平面脚本（推荐）
+### 3. 招募智能体（Agent）
+- 进入公司 → **「智能体」** 面板
+- 点击 **「招募智能体」**，选择角色（如：HR Director、Resume Screener）
+- 展示：角色分工、权限配置
+
+### 4. 创建任务（Issue）
+- 进入 **「任务看板」**
+- 创建新 Issue，分配给对应智能体
+- 展示：任务状态流转（`todo → in progress → in review → done`）
+
+### 5. 智能体心跳（Heartbeat）
+- 打开某个智能体详情页
+- 展示：实时活动日志、执行记录、Token 用量审计
+
+### 6. 治理与成本控制
+- 进入 **「设置」→「预算与策略」**
+- 展示：预算上限、权限约束、审计日志
+
+---
+
+## ⚙️ 配置说明（可选）
+
+系统支持三种数据库模式，按优先级：
+
+```
+1. DATABASE_URL 环境变量（外部 PostgreSQL，推荐生产）
+2. Docker Compose（docker-compose.yml 自带 postgres:17）
+3. Embedded PostgreSQL（零配置，自动启动，推荐演示）
+```
+
+### 使用 Docker 数据库（若 embedded 有问题）
 
 ```bash
+# 启动 PostgreSQL 容器
+docker compose up db -d
+
+# 以外部 DB 模式启动服务
+DATABASE_URL=postgres://zephyr:zephyr_nexus@localhost:5432/zephyr_nexus pnpm dev
+```
+
+### 环境变量速查
+
+```bash
+DATABASE_URL        # 外部 PostgreSQL 连接字符串
+PORT                # API 服务端口（默认 3100）
+ZEPHYR_HOME         # 数据目录（默认 ~/.zephyr-nexus）
+ZEPHYR_MIGRATION_AUTO_APPLY=true  # 自动应用数据库迁移
+```
+
+---
+
+## 📁 项目结构
+
+```
+ZephyrNexus/
+├── ui/          → 前端 Dashboard（React + Vite）
+├── server/      → 后端 API + 调度引擎（Express + TypeScript）
+├── packages/
+│   ├── db/              → 数据库层（Drizzle ORM）
+│   ├── adapters/        → 多模型适配器（Claude / Codex / Cursor / OpenClaw）
+│   ├── context-manager/ → 上下文管理
+│   └── shared/          → 共享类型与常量
+├── scripts/     → 启动/停止/健康检查脚本
+└── docs/        → 架构文档与开发指南
+```
+
+---
+
+## 🛠️ 常用命令速查
+
+```bash
+pnpm dev                    # 启动开发服务器（UI + API 热更）
+pnpm dev:server             # 单独启动后端
+pnpm dev:ui                 # 单独启动前端
+pnpm db:migrate             # 手动执行数据库迁移
+pnpm doctor                 # 系统健康检查
+pnpm test                   # 运行单元测试
+```
+
+---
+
+## 🔍 健康检查 & 常见问题
+
+### 检查系统状态
+
+```bash
+pnpm doctor
+# 或
 ./scripts/health-check.sh
-./scripts/start-all.sh
-./scripts/stop-all.sh
 ```
 
-默认读取：
+### 常见问题排查
 
-- `ZEPHYR_NEXUS_ENV_PROFILE`（如 `wsl` / `ssh` / `windows`）
-- `ZEPHYR_NEXUS_RUNTIME_DIR`
-- `ZEPHYR_NEXUS_LOG_DIR`
+| 现象 | 原因 | 解决方案 |
+|------|------|---------|
+| `ERR_CONNECTION_REFUSED` at :3100 | 服务未启动 | 检查终端是否有报错，重新运行 `pnpm dev` |
+| `28P01` 认证失败 | 旧版 embedded-postgres 数据残留 | 删除 `~/.zephyr-nexus/instances/default/db` 后重启 |
+| 端口被占用 | 其他进程占用 3100 | 系统会自动选择下一个可用端口，查看终端输出 |
+| 缺少 Node.js | 版本过低 | 安装 Node.js >= 20（推荐 nvm 管理） |
+| Windows 下 embedded-postgres 报错 | 二进制兼容性问题 | 使用 WSL 或通过 Docker 方式运行 |
 
-
-
-### 4. OpenClaw OAuth 启动（无 API Key）
+### 重置数据库（演示前清空）
 
 ```bash
-pnpm smoke:openclaw-docker-ui:oauth
+# 删除 embedded postgres 数据目录后重启即可自动重建
+rm -rf ~/.zephyr-nexus/instances/default/db
+pnpm dev
 ```
 
-或：
+---
 
-```bash
-OPENCLAW_PROVIDER_AUTH_MODE=oauth pnpm smoke:openclaw-docker-ui
+## 📡 服务端口一览
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| UI + API | 3100 | 统一入口，UI 通过 API 代理 |
+| Embedded PostgreSQL | 54329 | 内嵌数据库（自动管理，无需手动操作） |
+| OpenClaw Gateway | 18789 | 智能体执行网关（可选） |
+
+---
+
+## 🧠 系统架构速览
+
+```
+                    ┌─────────────────────────┐
+                    │     Browser / Client     │
+                    └────────────┬────────────┘
+                                 │ HTTP / WebSocket
+                    ┌────────────▼────────────┐
+                    │   ZephyrNexus Server     │
+                    │  (Express + tsx, :3100)  │
+                    └──┬──────────────────┬───┘
+                       │                  │
+          ┌────────────▼──┐    ┌──────────▼──────────┐
+          │  PostgreSQL   │    │    Agent Adapters    │
+          │  (embedded /  │    │  Claude / Codex /    │
+          │   Docker)     │    │  Cursor / OpenClaw   │
+          └───────────────┘    └─────────────────────┘
 ```
 
-## 配置入口
+---
 
-- 工作区配置：[workspace.config.json](workspace.config.json)
-- 身份与品牌：[IDENTITY.md](IDENTITY.md)
-- 开发说明：[doc/DEVELOPING.md](doc/DEVELOPING.md)
-- OpenClaw 接入：[doc/OPENCLAW_ONBOARDING.md](doc/OPENCLAW_ONBOARDING.md)
-
-## 命名规范
-
-项目内所有面向用户/团队协作的命名统一使用 `ZephyrNexus / Zephyr Nexus / 风之灵枢`。旧命名仅在兼容变量或历史迁移上下文中保留。
-
-MIT &copy; 2026 ZephyrNexus
+*Powered by ZephyrNexus · Built for the Autonomous Era · MIT © 2026*

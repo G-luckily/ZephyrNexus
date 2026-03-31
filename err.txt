@@ -1,0 +1,20 @@
+
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Guo\Documents\GitHub\ZephyrNexus\server\node_modules\@zephyr-nexus\context-manager\dist\index.js' imported from C:\Users\Guo\Documents\GitHub\ZephyrNexus\server\src\services\heartbeat.ts
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:932:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    at nextResolve (node:internal/modules/esm/hooks:748:28)
+    at resolveBase (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1774931816593:2:3744)
+    at resolveDirectory (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1774931816593:2:4243)
+    at resolveTsPaths (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1774931816593:2:4984)
+    at resolve (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1774931816593:2:5361)
+    at nextResolve (node:internal/modules/esm/hooks:748:28)
+    at Hooks.resolve (node:internal/modules/esm/hooks:240:30) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/server/node_modules/@zephyr-nexus/context-manager/dist/index.js'
+}
+
+Node.js v22.12.0

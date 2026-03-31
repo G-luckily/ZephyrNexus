@@ -1,0 +1,32 @@
+=== STDOUT ===
+[05:23:22] [32mINFO[39m: [36mUsing embedded PostgreSQL because no DATABASE_URL set (dataDir=C:\Users\郭\.zephyr-nexus\instances\default\db, port=54329)[39m
+[05:23:32] [31mERROR[39m: [36mZephyr Nexus server failed to start[39m 
+    err: {
+      "type": "PostgresError",
+      "message": "password authentication failed for user \"zephyr\"",
+      "stack":
+          PostgresError: password authentication failed for user "zephyr"
+              at ErrorResponse (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/postgres@3.4.8/node_modules/postgres/src/connection.js:817:22)
+              at handle (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/postgres@3.4.8/node_modules/postgres/src/connection.js:489:6)
+              at Socket.data (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/postgres@3.4.8/node_modules/postgres/src/connection.js:324:9)
+              at Socket.emit (node:events:524:28)
+              at addChunk (node:internal/streams/readable:561:12)
+              at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+              at Readable.push (node:internal/streams/readable:392:5)
+              at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
+              at cachedError (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/postgres@3.4.8/node_modules/postgres/src/query.js:170:23)
+              at new Query (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/postgres@3.4.8/node_modules/postgres/src/query.js:36:24)
+              at sql (file:///C:/Users/Guo/Documents/GitHub/ZephyrNexus/node_modules/.pnpm/postgres@3.4.8/node_modules/postgres/src/index.js:112:11)
+              at ensurePostgresDatabase (C:\Users\Guo\Documents\GitHub\ZephyrNexus\packages\db\src\client.ts:728:28)
+      "name": "PostgresError",
+      "severity_local": "FATAL",
+      "severity": "FATAL",
+      "code": "28P01",
+      "file": "auth.c",
+      "line": "320",
+      "routine": "auth_failed"
+    }
+
+=== STDERR ===
+
+=== EXIT: null ===
