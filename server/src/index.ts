@@ -29,6 +29,8 @@ import { heartbeatService, reconcilePersistedRuntimeServicesOnStartup } from "./
 import { createStorageServiceFromConfig } from "./storage/index.js";
 import { printStartupBanner } from "./startup-banner.js";
 import { getBoardClaimWarningUrl, initializeBoardClaimChallenge } from "./board-claim.js";
+import { hookManager } from "./services/hooks/index.js";
+import { hrAgentPlugin } from "./services/hooks/plugins/HRAgentPlugin.js";
 
 type BetterAuthSessionUser = {
   id: string;
@@ -489,6 +491,9 @@ export async function startServer(): Promise<StartedServer> {
   const listenPort = await detectPort(config.port);
   const uiMode = config.uiDevMiddleware ? "vite-dev" : config.serveUi ? "static" : "none";
   const storageService = createStorageServiceFromConfig(config);
+  
+  hookManager.use(hrAgentPlugin);
+
   const app = await createApp(db as any, {
     uiMode,
     serverPort: listenPort,

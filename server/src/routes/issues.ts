@@ -31,6 +31,7 @@ import { forbidden, HttpError, unauthorized } from "../errors.js";
 import { assertCompanyAccess, assertCompanyRole, getActorInfo } from "./authz.js";
 import { shouldWakeAssigneeOnCheckout } from "./issues-checkout-wakeup.js";
 import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
+import { hookManager } from "../services/hooks/index.js";
 
 export function issueRoutes(db: Db, storage: StorageService) {
   const router = Router();
@@ -821,6 +822,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
         minFileDeliverables: 0,
       },
     });
+
+    await hookManager.dispatch('onIssueCreated', { db, issue, actor });
 
     await logActivity(db, {
       companyId,
