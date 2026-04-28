@@ -59,6 +59,40 @@ type EmbeddedPostgresCtor = new (opts: {
   onError?: (message: unknown) => void;
 }) => EmbeddedPostgresInstance;
 
+const EMBEDDED_POSTGRES_USER = "zephyr";
+const EMBEDDED_POSTGRES_PASSWORD = "zephyr_nexus";
+const LEGACY_EMBEDDED_POSTGRES_USER = "paperclip";
+const LEGACY_EMBEDDED_POSTGRES_PASSWORD = "paperclip";
+
+function isZephyrCredentialBootstrapError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err ?? "");
+  return (
+    message.includes('role "zephyr" does not exist') ||
+    message.includes('password authentication failed for user "zephyr"')
+  );
+}
+
+async function repairZephyrRoleWithLegacyCredentials(port: number): Promise<void> {
+  const legacyAdminUrl = `postgres://${LEGACY_EMBEDDED_POSTGRES_USER}:${LEGACY_EMBEDDED_POSTGRES_PASSWORD}@127.0.0.1:${port}/postgres`;
+  const { default: postgres } = await import("postgres");
+  const sql = postgres(legacyAdminUrl);
+  try {
+    await sql.unsafe(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${EMBEDDED_POSTGRES_USER}') THEN
+          ALTER ROLE ${EMBEDDED_POSTGRES_USER} WITH LOGIN SUPERUSER PASSWORD '${EMBEDDED_POSTGRES_PASSWORD}';
+        ELSE
+          CREATE ROLE ${EMBEDDED_POSTGRES_USER} WITH LOGIN SUPERUSER PASSWORD '${EMBEDDED_POSTGRES_PASSWORD}';
+        END IF;
+      END
+      $$;
+    `);
+  } finally {
+    await sql.end();
+  }
+}
+
 
 export interface StartedServer {
   server: ReturnType<typeof createServer>;
@@ -332,8 +366,8 @@ export async function startServer(): Promise<StartedServer> {
       logger.info(`Using embedded PostgreSQL because no DATABASE_URL set (dataDir=${dataDir}, port=${port})`);
       embeddedPostgres = new EmbeddedPostgres({
         databaseDir: dataDir,
-        user: "paperclip",
-        password: "paperclip",
+        user: EMBEDDED_POSTGRES_USER,
+        password: EMBEDDED_POSTGRES_PASSWORD,
         port,
         persistent: true,
         onLog: appendEmbeddedPostgresLog,
@@ -364,30 +398,21 @@ export async function startServer(): Promise<StartedServer> {
       embeddedPostgresStartedByThisProcess = true;
     }
   
-    const embeddedAdminConnectionString = `postgres://zephyr:zephyr_nexus@127.0.0.1:${port}/postgres`;
+    const embeddedAdminConnectionString = `postgres://${EMBEDDED_POSTGRES_USER}:${EMBEDDED_POSTGRES_PASSWORD}@127.0.0.1:${port}/postgres`;
     let dbStatus: "created" | "exists";
     try {
       dbStatus = await ensurePostgresDatabase(embeddedAdminConnectionString, "zephyr_nexus");
-    } catch (err: any) {
-      // If role zephyr doesn't exist, try to create it using legacy paperclip credentials
-      if (err?.message?.includes('role "zephyr" does not exist')) {
-        logger.info("Database role 'zephyr' does not exist; attempting to create it using legacy credentials...");
-        const legacyAdminUrl = `postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`;
-        const { default: postgres } = await import("postgres");
-        const sql = postgres(legacyAdminUrl);
-        try {
-          // Attempt to create the new role
-          await sql.unsafe("CREATE ROLE zephyr WITH LOGIN SUPERUSER PASSWORD 'zephyr_nexus'");
-          logger.info("Successfully created 'zephyr' role using legacy credentials");
-          // Retry ensuring the database
-          dbStatus = await ensurePostgresDatabase(embeddedAdminConnectionString, "zephyr_nexus");
-        } catch (createErr: any) {
-          logger.error({ err: createErr }, "Failed to create 'zephyr' role using legacy credentials");
-          throw err; // Throw the original "zephyr doesn't exist" error
-        } finally {
-          await sql.end();
-        }
-      } else {
+    } catch (err) {
+      if (!isZephyrCredentialBootstrapError(err)) {
+        throw err;
+      }
+      logger.info("Repairing embedded PostgreSQL role 'zephyr' using legacy credentials");
+      try {
+        await repairZephyrRoleWithLegacyCredentials(port);
+        logger.info("Embedded PostgreSQL role 'zephyr' is ready");
+        dbStatus = await ensurePostgresDatabase(embeddedAdminConnectionString, "zephyr_nexus");
+      } catch (repairErr) {
+        logger.error({ err: repairErr }, "Failed to repair embedded PostgreSQL role 'zephyr'");
         throw err;
       }
     }
@@ -396,7 +421,7 @@ export async function startServer(): Promise<StartedServer> {
       logger.info("Created embedded PostgreSQL database: zephyr_nexus");
     }
   
-    const embeddedConnectionString = `postgres://zephyr:zephyr_nexus@127.0.0.1:${port}/zephyr_nexus`;
+    const embeddedConnectionString = `postgres://${EMBEDDED_POSTGRES_USER}:${EMBEDDED_POSTGRES_PASSWORD}@127.0.0.1:${port}/zephyr_nexus`;
     const shouldAutoApplyFirstRunMigrations = !clusterAlreadyInitialized || dbStatus === "created";
     if (shouldAutoApplyFirstRunMigrations) {
       logger.info("Detected first-run embedded PostgreSQL setup; applying pending migrations automatically");
