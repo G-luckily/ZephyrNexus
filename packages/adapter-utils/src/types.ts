@@ -162,6 +162,17 @@ export interface HireApprovedHookResult {
   detail?: Record<string, unknown>;
 }
 
+/**
+ * Adapter release maturity. Used by UI to label/sort adapter choices and by
+ * docs to communicate which adapters are production-ready vs early-stage.
+ *
+ * - "stable":       primary recommendation, production tested
+ * - "beta":         working but evolving — surface but not as default
+ * - "experimental": early-stage, expect breaking changes
+ * - "deprecated":   slated for removal; keep importable for one release cycle
+ */
+export type AdapterMaturity = "stable" | "beta" | "experimental" | "deprecated";
+
 export interface ServerAdapterModule {
   type: string;
   execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult>;
@@ -171,6 +182,7 @@ export interface ServerAdapterModule {
   models?: AdapterModel[];
   listModels?: () => Promise<AdapterModel[]>;
   agentConfigurationDoc?: string;
+  maturity?: AdapterMaturity;
   /**
    * Optional lifecycle hook when an agent is approved/hired (join-request or hire_agent approval).
    * adapterConfig is the agent's adapter config so the adapter can e.g. send a callback to a configured URL.

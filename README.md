@@ -1,8 +1,8 @@
 # 🌪️ ZephyrNexus（风之灵枢）
 
-> **AI 智能体编排系统 · 现场演示指南**
+> **让一个人管 100 个 AI 智能体，像管 1 个一样省心。**
 >
-> AI 公司级控制平面——统一管理智能体、任务、组织与运行监控。
+> 开源的 AI Agent 控制台：招募、派活、算账、留痕。
 
 ---
 
@@ -34,6 +34,11 @@ pnpm install
 # 第三步：启动开发服务器
 pnpm dev
 ```
+
+> **Windows 用户没装 pnpm？** 两种办法任选：
+>
+> 1. **直接用 npm（最省事）**：`npm install` 然后 `npm run dev`。Node 自带 npm，dev 入口已自动通过 corepack 调起 pnpm。
+> 2. **启用 corepack 一次性配好 pnpm**：在 PowerShell 里跑一次 `corepack enable`，之后 `pnpm install` / `pnpm dev` 就能直接用了。
 
 启动成功后，终端将打印类似如下内容：
 
