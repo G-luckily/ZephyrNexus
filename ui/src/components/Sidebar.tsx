@@ -1,17 +1,13 @@
 import {
   Inbox,
   CircleDot,
-  Target,
   LayoutDashboard,
   Search,
   SquarePen,
   Settings,
   BookOpen,
   Building2,
-  Briefcase,
-  Network,
   Bot,
-  CircleDollarSign,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -21,38 +17,11 @@ import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { sidebarBadgesApi } from "../api/sidebarBadges";
 import { heartbeatsApi } from "../api/heartbeats";
-import { projectsApi } from "../api/projects";
 import { agentsApi } from "../api/agents";
 import { queryKeys } from "../lib/queryKeys";
-import {
-  buildAgentTiers,
-  buildOrgUnits,
-  buildProjectNav,
-} from "../lib/company-scope";
+import { buildAgentTiers } from "../lib/company-scope";
 import { useWorkspaceScope } from "../context/WorkspaceScopeContext";
 import { Button } from "@/components/ui/button";
-
-function orgUnitToDept(unitKey: string): string {
-  switch (unitKey) {
-    case "ceo":
-      return "总裁 / CEO";
-    case "executive-assistant":
-      return "总裁助理";
-    case "cho":
-    case "pm":
-      return "人力总监";
-    case "cto":
-      return "技术总监";
-    case "research":
-      return "社会研究院";
-    case "public-affairs":
-      return "公共责任部";
-    case "media":
-      return "新媒体中心";
-    default:
-      return "公共责任部";
-  }
-}
 
 import { useInboxSettings } from "../lib/inbox-settings";
 
@@ -86,11 +55,6 @@ export function Sidebar() {
     enabled: !!selectedCompanyId,
     refetchInterval: 10_000,
   });
-  const { data: projects } = useQuery({
-    queryKey: queryKeys.projects.list(selectedCompanyId!),
-    queryFn: () => projectsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
-  });
   const { data: agents } = useQuery({
     queryKey: queryKeys.agents.list(selectedCompanyId!),
     queryFn: () => agentsApi.list(selectedCompanyId!),
@@ -101,11 +65,6 @@ export function Sidebar() {
   const { setScopeView, setProjectFilter, setDepartmentFilter } =
     useWorkspaceScope();
 
-  const projectItems = useMemo(
-    () => buildProjectNav(projects ?? []),
-    [projects]
-  );
-  const orgUnits = useMemo(() => buildOrgUnits(agents ?? []), [agents]);
   const agentTiers = useMemo(() => buildAgentTiers(agents ?? []), [agents]);
   const totalAgentCount =
     agentTiers.boss.length + agentTiers.directors.length + agentTiers.executors.length;
@@ -199,38 +158,6 @@ export function Sidebar() {
 
         <SidebarSection label="运营" meta="核心">
           <SidebarNavItem to="/issues" label="任务" icon={CircleDot} />
-          <SidebarNavItem to="/goals" label="目标" icon={Target} />
-          <SidebarNavItem to="/costs" label="成本" icon={CircleDollarSign} />
-        </SidebarSection>
-
-        <SidebarSection label="项目" meta={`${projectItems.length}`}>
-          <SidebarNavItem to="/projects" label="全部项目" icon={Briefcase} />
-          {projectItems.slice(0, 8).map((item) => (
-            <SidebarNavItem
-              key={item.key}
-              to={item.to}
-              label={item.label}
-              icon={Briefcase}
-            />
-          ))}
-        </SidebarSection>
-
-        <SidebarSection label="组织" meta={`${orgUnits.length}`}>
-          {orgUnits.map((item) => (
-            <SidebarNavItem
-              key={item.key}
-              to={item.to}
-              label={item.label}
-              icon={Network}
-              onClick={() => {
-                setScopeView("department");
-                setDepartmentFilter(orgUnitToDept(item.key));
-              }}
-            />
-          ))}
-          {orgUnits.length === 0 && (
-            <SidebarNavItem to="/org" label="组织架构" icon={Network} />
-          )}
         </SidebarSection>
 
         <SidebarSection label="智能体" meta={`${totalAgentCount}`}>

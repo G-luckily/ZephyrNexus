@@ -16,6 +16,7 @@ export type {
   AdapterModel,
   HireApprovedPayload,
   HireApprovedHookResult,
+  AdapterMaturity,
   ServerAdapterModule,
   TranscriptEntry,
   StdoutLineParser,
