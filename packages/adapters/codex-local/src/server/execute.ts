@@ -342,22 +342,27 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       });
     }
 
-    const proc = await runChildProcess(runId, command, args, {
-      cwd,
-      env,
-      stdin: prompt,
-      timeoutSec,
-      graceSec,
-      onLog: async (stream, chunk) => {
-        if (stream !== "stderr") {
-          await onLog(stream, chunk);
-          return;
-        }
-        const cleaned = stripCodexRolloutNoise(chunk);
-        if (!cleaned.trim()) return;
-        await onLog(stream, cleaned);
-      },
-    });
+    let proc;
+    try {
+      proc = await runChildProcess(runId, command, args, {
+        cwd,
+        env,
+        stdin: prompt,
+        timeoutSec,
+        graceSec,
+        onLog: async (stream, chunk) => {
+          if (stream !== "stderr") {
+            await onLog(stream, chunk);
+            return;
+          }
+          const cleaned = stripCodexRolloutNoise(chunk);
+          if (!cleaned.trim()) return;
+          await onLog(stream, cleaned);
+        },
+      });
+    } catch (err) {
+      throw new Error(`execute failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
     const cleanedStderr = stripCodexRolloutNoise(proc.stderr);
     return {
       proc: {
