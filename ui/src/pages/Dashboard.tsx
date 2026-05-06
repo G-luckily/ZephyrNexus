@@ -80,6 +80,16 @@ type FeedFilter = "all" | "errors" | "tasks";
 type EventLevel = "信息" | "警告" | "错误";
 type AgentLayer = "ORG" | "V1-PROJECT" | "V2-PIPELINE" | "INFRA";
 
+// Dashboard metric constants
+const CHART_BAR_MIN_HEIGHT = 2;
+const CHART_BAR_MAX_HEIGHT = 26;
+const CARD_HEIGHT_PX = 140;
+const ACTION_QUEUE_SLICE_LIMIT = 160;
+const RECENT_ISSUES_LIMIT = 5;
+const AGENT_LOGS_LIMIT = 5;
+const ORG_UNITS_DISPLAY_LIMIT = 12;
+const HEALTH_CHECK_PASS_PERCENT = 96;
+
 type ActiveAgentRow = {
   id: string;
   route: string;
@@ -331,7 +341,7 @@ function MetricCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "premium-panel glass-surface hover-lift group relative h-[140px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300",
+        `premium-panel glass-surface hover-lift group relative h-[${CARD_HEIGHT_PX}px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300`,
         kind === "accent" && "border-primary/20",
         kind === "warning" && "border-warning/30"
       )}
@@ -392,7 +402,7 @@ function SuccessRateCard({
     <button
       type="button"
       onClick={onClick}
-      className="premium-panel glass-surface hover-lift group relative h-[140px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300"
+      className={`premium-panel glass-surface hover-lift group relative h-[${CARD_HEIGHT_PX}px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300`}
     >
       <div className="relative flex h-full flex-col justify-between z-10">
         <div className="flex items-center justify-between">
@@ -411,8 +421,8 @@ function SuccessRateCard({
             {bars.map((b, i) => {
               const h =
                 b.total === 0
-                  ? 2
-                  : Math.max(4, Math.round((b.total / maxTotal) * 26));
+                  ? CHART_BAR_MIN_HEIGHT
+                  : Math.max(4, Math.round((b.total / maxTotal) * CHART_BAR_MAX_HEIGHT));
               const successFrac = b.total === 0 ? 1 : b.ok / b.total;
               const barColor =
                 b.total === 0
@@ -765,7 +775,7 @@ export function Dashboard() {
   }, [activity, scopeView, projectFilter, scopeIssueIds, scopeAgentIds]);
 
   const recentActivity = useMemo(
-    () => scopedActivity.slice(0, 160),
+    () => scopedActivity.slice(0, ACTION_QUEUE_SLICE_LIMIT),
     [scopedActivity]
   );
 
@@ -780,7 +790,7 @@ export function Dashboard() {
           event.entityType.toLowerCase().includes("task")
         );
       })
-      .slice(0, 12);
+      .slice(0, ORG_UNITS_DISPLAY_LIMIT);
   }, [recentActivity, feedFilter, logWindow]);
 
   useEffect(() => {
@@ -933,7 +943,7 @@ export function Dashboard() {
         action.includes("task")
       );
     });
-    return hits.slice(0, 5);
+    return hits.slice(0, AGENT_LOGS_LIMIT);
   }, [recentActivity, selectedFlowNode]);
 
   const departments = useMemo(() => {
