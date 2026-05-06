@@ -430,7 +430,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     });
 
     const parsedStream = parseClaudeStreamJson(proc.stdout);
-    const parsed = parsedStream.resultJson ?? parseJson(proc.stdout);
+    const parseResult = parseJson(proc.stdout);
+    const parsed = parseResult.ok ? parseResult.data : null;
     return { proc, parsedStream, parsed };
   };
 

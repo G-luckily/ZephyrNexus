@@ -13,8 +13,9 @@ export function parseClaudeStreamJson(stdout: string) {
   for (const rawLine of stdout.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) continue;
-    const event = parseJson(line);
-    if (!event) continue;
+    const eventResult = parseJson(line);
+    if (!eventResult.ok) continue;
+    const event = eventResult.data;
 
     const type = asString(event.type, "");
     if (type === "system" && asString(event.subtype, "") === "init") {
