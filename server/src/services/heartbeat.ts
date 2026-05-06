@@ -1459,6 +1459,108 @@ export function heartbeatService(db: Db) {
     };
   }
 
+  // Extracted execute-phase helper — runs after adapter result is available.
+  // Handles: context snapshot writing, session state resolution, outcome determination, log finalization.
+  async function captureRunOutput(params: {
+    run: typeof heartbeatRuns.$inferSelect;
+    adapterResult: AdapterExecutionResult;
+    context: Record<string, unknown>;
+    runtimeForAdapter: {
+      sessionId: string | null;
+      sessionParams: Record<string, unknown> | null;
+      sessionDisplayId: string | null;
+      taskKey: string | null;
+    };
+    previousSessionParams: Record<string, unknown> | null;
+    sessionCodec: AdapterSessionCodec;
+    handle: RunLogHandle | null;
+    runLogStore: ReturnType<typeof getRunLogStore>;
+    executionWorkspace: import("./workspace-runtime.js").RealizedExecutionWorkspace;
+    agent: typeof agents.$inferSelect;
+    issueId: string | null;
+    issueRef: { id: string; identifier: string | null; title: string } | null;
+  }): Promise<{
+    outcome: "succeeded" | "failed" | "cancelled" | "timed_out";
+    logSummary: { bytes: number; sha256?: string; compressed: boolean } | null;
+    nextSessionState: {
+      params: Record<string, unknown> | null;
+      displayId: string | null;
+      legacySessionId: string | null;
+    };
+  }> {
+    const { run, adapterResult, context, runtimeForAdapter, previousSessionParams, sessionCodec, handle, runLogStore, executionWorkspace } = params;
+
+    // Write context snapshot (lines ~1717-1744)
+    if (executionWorkspace.cwd) {
+      try {
+        const contextDbPath = path.join(executionWorkspace.cwd, ".paperclip", "context.db");
+        const contextStore = new SqliteContextStore({ dbPath: contextDbPath });
+        const rawSnapshot = adapterResult.resultJson?.zephyrDiffSnapshot as Record<string, unknown> | undefined;
+        const snapshotInput =
+          rawSnapshot && typeof rawSnapshot === "object"
+            ? normalizeDiffSnapshotInput({
+                taskId: readNonEmptyString(context.issueId ?? context.taskId) ?? run.id,
+                runId: run.id,
+                workerId: params.agent.id,
+                touchedFiles: Array.isArray(rawSnapshot.touchedFiles) ? (rawSnapshot.touchedFiles as string[]) : undefined,
+                signatureChanges:
+                  typeof rawSnapshot.signatureChanges === "object"
+                    ? (rawSnapshot.signatureChanges as Record<string, unknown>)
+                    : undefined,
+                newDependencies:
+                  typeof rawSnapshot.newDependencies === "object"
+                    ? (rawSnapshot.newDependencies as Record<string, unknown>)
+                    : undefined,
+                brokenContracts:
+                  typeof rawSnapshot.brokenContracts === "object"
+                    ? (rawSnapshot.brokenContracts as Record<string, unknown>)
+                    : undefined,
+                plainSummary: typeof rawSnapshot.plainSummary === "string" ? rawSnapshot.plainSummary : undefined,
+              })
+            : normalizeDiffSnapshotInput({
+                taskId: readNonEmptyString(context.issueId ?? context.taskId) ?? run.id,
+                runId: run.id,
+                workerId: params.agent.id,
+                plainSummary: adapterResult.summary ?? (adapterResult.errorMessage ?? "").slice(0, 500),
+              });
+        await writeDiffSnapshot(contextStore, snapshotInput);
+        contextStore.close();
+      } catch (snapshotErr) {
+        logger.debug({ err: snapshotErr, runId: run.id }, "context-manager writeDiffSnapshot skipped");
+      }
+    }
+
+    // Resolve next session state (lines ~1745-1751)
+    const nextSessionState = resolveNextSessionState({
+      codec: sessionCodec,
+      adapterResult,
+      previousParams: previousSessionParams,
+      previousDisplayId: runtimeForAdapter.sessionDisplayId,
+      previousLegacySessionId: runtimeForAdapter.sessionId,
+    });
+
+    // Determine outcome (lines ~1753-1763)
+    let outcome: "succeeded" | "failed" | "cancelled" | "timed_out";
+    const latestRun = await getRun(run.id);
+    if (latestRun?.status === "cancelled") {
+      outcome = "cancelled";
+    } else if (adapterResult.timedOut) {
+      outcome = "timed_out";
+    } else if ((adapterResult.exitCode ?? 0) === 0 && !adapterResult.errorMessage) {
+      outcome = "succeeded";
+    } else {
+      outcome = "failed";
+    }
+
+    // Finalize log store (lines ~1765-1768)
+    let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
+    if (handle) {
+      logSummary = await runLogStore.finalize(handle);
+    }
+
+    return { outcome, logSummary, nextSessionState };
+  }
+
   async function executeRun(runId: string) {
     let run = await getRun(runId);
     if (!run) return;
@@ -1714,58 +1816,20 @@ export function heartbeatService(db: Db) {
           }
         }
       }
-      if (executionWorkspace.cwd) {
-        try {
-          const contextDbPath = path.join(executionWorkspace.cwd, ".paperclip", "context.db");
-          const contextStore = new SqliteContextStore({ dbPath: contextDbPath });
-          const rawSnapshot = adapterResult.resultJson?.zephyrDiffSnapshot as Record<string, unknown> | undefined;
-          const snapshotInput = rawSnapshot && typeof rawSnapshot === "object"
-            ? normalizeDiffSnapshotInput({
-                taskId: readNonEmptyString(context.issueId ?? context.taskId) ?? run.id,
-                runId: run.id,
-                workerId: agent.id,
-                touchedFiles: Array.isArray(rawSnapshot.touchedFiles) ? rawSnapshot.touchedFiles as string[] : undefined,
-                signatureChanges: typeof rawSnapshot.signatureChanges === "object" ? (rawSnapshot.signatureChanges as Record<string, unknown>) : undefined,
-                newDependencies: typeof rawSnapshot.newDependencies === "object" ? (rawSnapshot.newDependencies as Record<string, unknown>) : undefined,
-                brokenContracts: typeof rawSnapshot.brokenContracts === "object" ? (rawSnapshot.brokenContracts as Record<string, unknown>) : undefined,
-                plainSummary: typeof rawSnapshot.plainSummary === "string" ? rawSnapshot.plainSummary : undefined,
-              })
-            : normalizeDiffSnapshotInput({
-                taskId: readNonEmptyString(context.issueId ?? context.taskId) ?? run.id,
-                runId: run.id,
-                workerId: agent.id,
-                plainSummary: adapterResult.summary ?? (adapterResult.errorMessage ?? "").slice(0, 500),
-              });
-          await writeDiffSnapshot(contextStore, snapshotInput);
-          contextStore.close();
-        } catch (snapshotErr) {
-          logger.debug({ err: snapshotErr, runId: run.id }, "context-manager writeDiffSnapshot skipped");
-        }
-      }
-      const nextSessionState = resolveNextSessionState({
-        codec: sessionCodec,
+      const { outcome, logSummary, nextSessionState } = await captureRunOutput({
+        run,
         adapterResult,
-        previousParams: previousSessionParams,
-        previousDisplayId: runtimeForAdapter.sessionDisplayId,
-        previousLegacySessionId: runtimeForAdapter.sessionId,
+        context,
+        runtimeForAdapter,
+        previousSessionParams,
+        sessionCodec,
+        handle,
+        runLogStore,
+        executionWorkspace,
+        agent,
+        issueId,
+        issueRef,
       });
-
-      let outcome: "succeeded" | "failed" | "cancelled" | "timed_out";
-      const latestRun = await getRun(run.id);
-      if (latestRun?.status === "cancelled") {
-        outcome = "cancelled";
-      } else if (adapterResult.timedOut) {
-        outcome = "timed_out";
-      } else if ((adapterResult.exitCode ?? 0) === 0 && !adapterResult.errorMessage) {
-        outcome = "succeeded";
-      } else {
-        outcome = "failed";
-      }
-
-      let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
-      if (handle) {
-        logSummary = await runLogStore.finalize(handle);
-      }
 
       const status =
         outcome === "succeeded"
