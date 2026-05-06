@@ -806,7 +806,7 @@ function runOfficeDispatch(args: {
   env?: Record<string, string>;
   scriptPath: string;
 }): Promise<{ code: number; stdout: string; stderr: string }> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const child = spawn(
       "bash",
       [
@@ -835,17 +835,26 @@ function runOfficeDispatch(args: {
       stderr += chunk.toString();
     });
 
+    let timedOut = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     if (args.timeoutMs > 0) {
       timer = setTimeout(() => {
+        timedOut = true;
         void args.onLog("stderr", `[openclaw-gateway] office dispatch timeout after ${args.timeoutMs}ms, terminating process\n`);
         child.kill("SIGTERM");
       }, args.timeoutMs);
     }
 
+    child.on("error", (err) => {
+      if (timer) clearTimeout(timer);
+      reject(new Error(`spawn failed: ${err.message}`));
+    });
+
     child.on("close", (code) => {
       if (timer) clearTimeout(timer);
-      resolve({ code: code ?? 1, stdout, stderr });
+      if (!timedOut) {
+        resolve({ code: code ?? 1, stdout, stderr });
+      }
     });
   });
 }
@@ -1656,7 +1665,11 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   let autoPairAttempted = false;
   let latestResultPayload: unknown = null;
 
-  while (true) {
+  const MAX_DISPATCH_RETRIES = 5;
+  let attempt = 0;
+
+  while (attempt < MAX_DISPATCH_RETRIES) {
+    attempt++;
     const trackedRunIds = new Set<string>([ctx.runId]);
     const assistantChunks: string[] = [];
     let lifecycleError: string | null = null;
@@ -1994,4 +2007,13 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       client.close();
     }
   }
+  // Exhausted all retries
+  return {
+    exitCode: 1,
+    signal: null,
+    timedOut: false,
+    errorMessage: "OpenClaw gateway dispatch exhausted all retries",
+    errorCode: "openclaw_gateway_exhausted_retries",
+    resultJson: asRecord(latestResultPayload),
+  };
 }
