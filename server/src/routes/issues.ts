@@ -920,17 +920,26 @@ export function issueRoutes(db: Db, storage: StorageService) {
       }
     }
 
-    // Dependency Gate Check
-    if (updateFields.status && updateFields.status !== existing.status && ["in_progress", "in_review", "done"].includes(updateFields.status as string)) {
+    // Guard: skip if status not changing to blocking states
+    const blockingStatuses = ["in_progress", "in_review", "done"];
+    if (
+      !updateFields.status ||
+      updateFields.status === existing.status ||
+      !blockingStatuses.includes(updateFields.status)
+    ) {
+      // Not a blocking transition — fall through to normal flow
+    } else {
       const dependsOn = (updateFields.dependsOn as string[] | undefined) ?? (existing.dependsOn as string[] | null) ?? [];
+
       if (dependsOn.length > 0) {
         const incompleteDeps = await db
           .select({ identifier: issues.identifier })
           .from(issues)
           .where(and(inArray(issues.id, dependsOn), sql`status != 'done'`));
+
         if (incompleteDeps.length > 0) {
           const blockedBy = incompleteDeps.map(d => d.identifier).join(", ");
-          
+
           if (req.actor.userId) {
             await db.insert(notifications).values({
               companyId: existing.companyId,
@@ -942,7 +951,9 @@ export function issueRoutes(db: Db, storage: StorageService) {
             });
           }
 
-          res.status(400).json({ error: `未满足前置依赖 (Dependency Gate)：当前任务状态流转被阻塞。\n请先完成依赖任务：${blockedBy}` });
+          res.status(400).json({
+            error: `未满足前置依赖 (Dependency Gate)：当前任务状态流转被阻塞。\n请先完成依赖任务：${blockedBy}`
+          });
           return;
         }
       }
