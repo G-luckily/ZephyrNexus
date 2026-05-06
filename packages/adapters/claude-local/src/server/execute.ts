@@ -277,13 +277,18 @@ export async function runClaudeLogin(input: {
     authToken: input.authToken,
   });
 
-  const proc = await runChildProcess(input.runId, runtime.command, ["login"], {
-    cwd: runtime.cwd,
-    env: runtime.env,
-    timeoutSec: runtime.timeoutSec,
-    graceSec: runtime.graceSec,
-    onLog,
-  });
+  let proc;
+  try {
+    proc = await runChildProcess(input.runId, runtime.command, ["login"], {
+      cwd: runtime.cwd,
+      env: runtime.env,
+      timeoutSec: runtime.timeoutSec,
+      graceSec: runtime.graceSec,
+      onLog,
+    });
+  } catch (err) {
+    throw new Error(`execute failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   const loginMeta = detectClaudeLoginRequired({
     parsed: null,
@@ -420,14 +425,19 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       });
     }
 
-    const proc = await runChildProcess(runId, command, args, {
-      cwd,
-      env,
-      stdin: prompt,
-      timeoutSec,
-      graceSec,
-      onLog,
-    });
+    let proc;
+    try {
+      proc = await runChildProcess(runId, command, args, {
+        cwd,
+        env,
+        stdin: prompt,
+        timeoutSec,
+        graceSec,
+        onLog,
+      });
+    } catch (err) {
+      throw new Error(`execute failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     const parsedStream = parseClaudeStreamJson(proc.stdout);
     const parsed = parsedStream.resultJson ?? parseJson(proc.stdout);
