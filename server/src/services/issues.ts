@@ -1,4 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import type { PostgresJsQueryResultHKT, PostgresJsTransaction } from "drizzle-orm/postgres-js";
+import type { PgTransaction } from "drizzle-orm/pg-core/session";
 import type { Db } from "@zephyr-nexus/db";
 import {
   agents,
@@ -91,12 +93,46 @@ type IssueUserContextInput = {
   updatedAt: Date | string;
 };
 
+interface OutputContract {
+  requiresSummary?: boolean;
+  minFileDeliverables?: number;
+}
+
+interface HealthSummary {
+  isBlocked: boolean;
+  blockingDependencyCount: number;
+  contractSatisfied: boolean | null;
+  missingSummary: boolean;
+  missingFileCount: number;
+  summaryDeliverableCount: number;
+  fileDeliverableCount: number;
+  unreadNotificationCount: number;
+}
+
+type IssueWithHealth = IssueRow & { healthSummary: HealthSummary };
+
+type CurrentIssueData = {
+  id: string;
+  status: string;
+  assigneeAgentId: string | null;
+  checkoutRunId: string | null;
+  executionRunId: string | null;
+};
+
+type IssueHealthInput = {
+  id: string;
+  dependsOn?: string[] | null;
+  outputContract?: OutputContract | null;
+};
+
 function sameRunLock(checkoutRunId: string | null, actorRunId: string | null) {
   if (actorRunId) return checkoutRunId === actorRunId;
   return checkoutRunId == null;
 }
 
 const TERMINAL_HEARTBEAT_RUN_STATUSES = new Set(["succeeded", "failed", "cancelled", "timed_out"]);
+
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, "\\$&");
@@ -183,16 +219,16 @@ function unreadForUserCondition(companyId: string, userId: string) {
   `;
 }
 
-async function withHealthSummaries(
-  dbOrTx: any,
+async function withHealthSummaries<T extends IssueRow>(
+  dbOrTx: Db | PgTransaction<any, any, any>,
   companyId: string,
   contextUserId: string | undefined,
-  rows: any[]
-): Promise<any[]> {
+  rows: T[]
+): Promise<(T & { healthSummary: HealthSummary })[]> {
   if (rows.length === 0) return [];
-  
-  const issueIds = rows.map((r: any) => r.id);
-  
+
+  const issueIds = rows.map((r) => r.id);
+
   // 1. Dependencies status
   const allDependencyIds = new Set<string>();
   for (const r of rows) {
@@ -202,17 +238,17 @@ async function withHealthSummaries(
       }
     }
   }
-  
+
   const dependencyStatusMap = new Map<string, string>();
   if (allDependencyIds.size > 0) {
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    const uuidRegex = UUID_REGEX;
     const uuidDeps: string[] = [];
     const idDeps: string[] = [];
     for (const d of allDependencyIds) {
       if (uuidRegex.test(d)) uuidDeps.push(d);
       else idDeps.push(d);
     }
-    
+
     const depConditions = [];
     if (uuidDeps.length > 0) depConditions.push(inArray(issues.id, uuidDeps));
     if (idDeps.length > 0) depConditions.push(inArray(issues.identifier, idDeps));
@@ -222,7 +258,7 @@ async function withHealthSummaries(
         .select({ id: issues.id, identifier: issues.identifier, status: issues.status })
         .from(issues)
         .where(and(eq(issues.companyId, companyId), or(...depConditions)));
-        
+
       for (const r of depRows) {
         dependencyStatusMap.set(r.id, r.status);
         if (r.identifier) dependencyStatusMap.set(r.identifier, r.status);
@@ -235,7 +271,7 @@ async function withHealthSummaries(
     .select({ issueId: issueDeliverables.issueId, kind: issueDeliverables.kind })
     .from(issueDeliverables)
     .where(and(eq(issueDeliverables.companyId, companyId), inArray(issueDeliverables.issueId, issueIds)));
-    
+
   const deliverablesByIssue = new Map<string, { summary: number; file: number }>();
   for (const r of delivRows) {
     const counts = deliverablesByIssue.get(r.issueId) ?? { summary: 0, file: 0 };
@@ -275,13 +311,13 @@ async function withHealthSummaries(
         }
       }
     }
-    
+
     let contractSatisfied: boolean | null = null;
     let missingSummary = false;
     let missingFileCount = 0;
-    const c = row.outputContract as any;
+    const c = row.outputContract as OutputContract | null;
     const delivs = deliverablesByIssue.get(row.id) ?? { summary: 0, file: 0 };
-    
+
     if (c && (c.requiresSummary || (c.minFileDeliverables && c.minFileDeliverables > 0))) {
       contractSatisfied = true;
       if (c.requiresSummary && delivs.summary < 1) {
@@ -293,9 +329,9 @@ async function withHealthSummaries(
         contractSatisfied = false;
       }
     }
-    
+
     const unreadNotificationCount = unreadCountsByIssue.get(row.id) ?? 0;
-    
+
     return {
       ...row,
       healthSummary: {
@@ -306,8 +342,8 @@ async function withHealthSummaries(
         missingFileCount,
         summaryDeliverableCount: delivs.summary,
         fileDeliverableCount: delivs.file,
-        unreadNotificationCount
-      }
+        unreadNotificationCount,
+      },
     };
   });
 }
@@ -551,6 +587,43 @@ export function issueService(db: Db) {
       .then((rows) => rows[0] ?? null);
 
     return adopted;
+  }
+
+  async function adoptStaleCheckoutIfNeeded(
+    id: string,
+    agentId: string,
+    checkoutRunId: string | null,
+    current: CurrentIssueData
+  ): Promise<IssueRow | null> {
+    // First adopt attempt — when agent already assigned, just needs runId
+    if (
+      current.assigneeAgentId === agentId &&
+      current.status === "in_progress" &&
+      current.checkoutRunId == null &&
+      (current.executionRunId == null || current.executionRunId === checkoutRunId) &&
+      checkoutRunId
+    ) {
+      const adopted = await db
+        .update(issues)
+        .set({
+          checkoutRunId,
+          executionRunId: checkoutRunId,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(issues.id, id),
+            eq(issues.status, "in_progress"),
+            eq(issues.assigneeAgentId, agentId),
+            isNull(issues.checkoutRunId),
+            or(isNull(issues.executionRunId), eq(issues.executionRunId, checkoutRunId)),
+          ),
+        )
+        .returning()
+        .then((rows) => rows[0] ?? null);
+      if (adopted) return adopted;
+    }
+    return null;
   }
 
   return {
@@ -981,34 +1054,11 @@ export function issueService(db: Db) {
 
       if (!current) throw notFound("Issue not found");
 
-      if (
-        current.assigneeAgentId === agentId &&
-        current.status === "in_progress" &&
-        current.checkoutRunId == null &&
-        (current.executionRunId == null || current.executionRunId === checkoutRunId) &&
-        checkoutRunId
-      ) {
-        const adopted = await db
-          .update(issues)
-          .set({
-            checkoutRunId,
-            executionRunId: checkoutRunId,
-            updatedAt: new Date(),
-          })
-          .where(
-            and(
-              eq(issues.id, id),
-              eq(issues.status, "in_progress"),
-              eq(issues.assigneeAgentId, agentId),
-              isNull(issues.checkoutRunId),
-              or(isNull(issues.executionRunId), eq(issues.executionRunId, checkoutRunId)),
-            ),
-          )
-          .returning()
-          .then((rows) => rows[0] ?? null);
-        if (adopted) return adopted;
-      }
+      // First adopt attempt — agent already assigned, just needs runId
+      const adopted = await adoptStaleCheckoutIfNeeded(id, agentId, checkoutRunId, current);
+      if (adopted) return adopted;
 
+      // Second adopt attempt — different runId, may be stale
       if (
         checkoutRunId &&
         current.assigneeAgentId === agentId &&

@@ -268,14 +268,19 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       });
     }
 
-    const proc = await runChildProcess(runId, command, args, {
-      cwd,
-      env: runtimeEnv,
-      stdin: prompt,
-      timeoutSec,
-      graceSec,
-      onLog,
-    });
+    let proc;
+    try {
+      proc = await runChildProcess(runId, command, args, {
+        cwd,
+        env: runtimeEnv,
+        stdin: prompt,
+        timeoutSec,
+        graceSec,
+        onLog,
+      });
+    } catch (err) {
+      throw new Error(`execute failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
     return {
       proc,
       rawStderr: proc.stderr,

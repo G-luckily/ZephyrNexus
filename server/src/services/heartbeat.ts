@@ -52,19 +52,23 @@ const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
 const DEFAULT_MAX_CONTEXT_BLOCK_CHARS = 12_000;
 const DEFAULT_MAX_CONTEXT_PRIOR_SNAPSHOTS = 8;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_MAX = 10;
+const MAX_CHAIN_OF_COMMAND = 50;
+const MAX_PROMOTION_ATTEMPTS = 10;
+const DEFAULT_TRUNCATE_MAX = 128;
+const MAX_CONTEXT_CHARS_CAP = 100_000;
 
 function getMaxContextBlockChars(): number {
   const raw = process.env.ZEPHYR_MAX_CONTEXT_CHARS;
   if (raw === undefined || raw === "") return DEFAULT_MAX_CONTEXT_BLOCK_CHARS;
   const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) && n > 0 ? Math.min(n, 100_000) : DEFAULT_MAX_CONTEXT_BLOCK_CHARS;
+  return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_CONTEXT_CHARS_CAP) : DEFAULT_MAX_CONTEXT_BLOCK_CHARS;
 }
 
 function getMaxContextPriorSnapshots(): number {
   const raw = process.env.ZEPHYR_MAX_PRIOR_SNAPSHOTS;
   if (raw === undefined || raw === "") return DEFAULT_MAX_CONTEXT_PRIOR_SNAPSHOTS;
   const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) && n > 0 ? Math.min(n, 50) : DEFAULT_MAX_CONTEXT_PRIOR_SNAPSHOTS;
+  return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_CHAIN_OF_COMMAND) : DEFAULT_MAX_CONTEXT_PRIOR_SNAPSHOTS;
 }
 const DEFERRED_WAKE_CONTEXT_KEY = "_paperclipWakeContext";
 const startLocksByAgent = new Map<string, Promise<void>>();
@@ -360,7 +364,7 @@ function isSameTaskScope(left: string | null, right: string | null) {
   return (left ?? null) === (right ?? null);
 }
 
-function truncateDisplayId(value: string | null | undefined, max = 128) {
+function truncateDisplayId(value: string | null | undefined, max = DEFAULT_TRUNCATE_MAX) {
   if (!value) return null;
   return value.length > max ? value.slice(0, max) : value;
 }
@@ -1859,7 +1863,10 @@ export function heartbeatService(db: Db) {
         })
         .where(eq(issues.id, issue.id));
 
-      while (true) {
+      let attempts = 0;
+
+      while (attempts < MAX_PROMOTION_ATTEMPTS) {
+        attempts++;
         const deferred = await tx
           .select()
           .from(agentWakeupRequests)
@@ -1965,6 +1972,8 @@ export function heartbeatService(db: Db) {
 
         return newRun;
       }
+
+      return null;
     });
 
     if (!promotedRun) return;
