@@ -1561,6 +1561,124 @@ export function heartbeatService(db: Db) {
     return { outcome, logSummary, nextSessionState };
   }
 
+  // Extracted cleanup-phase helper — finalizes run state after adapter execution.
+  // Handles: status mapping, run/wakeup status update, session management, agent status.
+  async function finalizeRunOutcome(params: {
+    run: typeof heartbeatRuns.$inferSelect;
+    agent: typeof agents.$inferSelect;
+    adapterResult: AdapterExecutionResult;
+    outcome: "succeeded" | "failed" | "cancelled" | "timed_out";
+    logSummary: { bytes: number; sha256?: string; compressed: boolean } | null;
+    nextSessionState: {
+      params: Record<string, unknown> | null;
+      displayId: string | null;
+      legacySessionId: string | null;
+    };
+    stdoutExcerpt: string;
+    stderrExcerpt: string;
+    seq: number;
+    taskKey: string | null;
+    previousSessionParams: Record<string, unknown> | null;
+    previousSessionDisplayId: string | null;
+    taskSessionForRun: typeof agentTaskSessions.$inferSelect | null;
+  }) {
+    const { run, agent, adapterResult, outcome, logSummary, nextSessionState, stdoutExcerpt, stderrExcerpt, seq, taskKey, previousSessionParams, previousSessionDisplayId, taskSessionForRun } = params;
+    let currentSeq = seq;
+
+    const status =
+      outcome === "succeeded"
+        ? "succeeded"
+        : outcome === "cancelled"
+          ? "cancelled"
+          : outcome === "timed_out"
+            ? "timed_out"
+            : "failed";
+
+    const usageJson =
+      adapterResult.usage || adapterResult.costUsd != null
+        ? ({
+            ...(adapterResult.usage ?? {}),
+            ...(adapterResult.costUsd != null ? { costUsd: adapterResult.costUsd } : {}),
+            ...(adapterResult.billingType ? { billingType: adapterResult.billingType } : {}),
+            ...(adapterResult.provider ? { provider: adapterResult.provider } : {}),
+            ...(adapterResult.model ? { model: adapterResult.model } : {}),
+          } as Record<string, unknown>)
+        : null;
+
+    await setRunStatus(run.id, status, {
+      finishedAt: new Date(),
+      error:
+        outcome === "succeeded"
+          ? null
+          : adapterResult.errorMessage ?? (outcome === "timed_out" ? "Timed out" : "Adapter failed"),
+      errorCode:
+        outcome === "timed_out"
+          ? "timeout"
+          : outcome === "cancelled"
+            ? "cancelled"
+            : outcome === "failed"
+              ? (adapterResult.errorCode ?? "adapter_failed")
+              : null,
+      exitCode: adapterResult.exitCode,
+      signal: adapterResult.signal,
+      usageJson,
+      resultJson: adapterResult.resultJson ?? null,
+      sessionIdAfter: nextSessionState.displayId ?? nextSessionState.legacySessionId,
+      stdoutExcerpt,
+      stderrExcerpt,
+      logBytes: logSummary?.bytes,
+      logSha256: logSummary?.sha256,
+      logCompressed: logSummary?.compressed ?? false,
+    });
+
+    await setWakeupStatus(run.wakeupRequestId, outcome === "succeeded" ? "completed" : status, {
+      finishedAt: new Date(),
+      error: adapterResult.errorMessage ?? null,
+    });
+
+    const finalizedRun = await getRun(run.id);
+    if (finalizedRun) {
+      await appendRunEvent(finalizedRun, currentSeq++, {
+        eventType: "lifecycle",
+        stream: "system",
+        level: outcome === "succeeded" ? "info" : "error",
+        message: `run ${outcome}`,
+        payload: {
+          status,
+          exitCode: adapterResult.exitCode,
+        },
+      });
+      await releaseIssueExecutionAndPromote(finalizedRun);
+    }
+
+    if (finalizedRun) {
+      await updateRuntimeState(agent, finalizedRun, adapterResult, {
+        legacySessionId: nextSessionState.legacySessionId,
+      });
+      if (taskKey) {
+        if (adapterResult.clearSession || (!nextSessionState.params && !nextSessionState.displayId)) {
+          await clearTaskSessions(agent.companyId, agent.id, {
+            taskKey,
+            adapterType: agent.adapterType,
+          });
+        } else {
+          await upsertTaskSession({
+            companyId: agent.companyId,
+            agentId: agent.id,
+            adapterType: agent.adapterType,
+            taskKey,
+            sessionParamsJson: nextSessionState.params,
+            sessionDisplayId: nextSessionState.displayId,
+            lastRunId: finalizedRun.id,
+            lastError: outcome === "succeeded" ? null : (adapterResult.errorMessage ?? "run_failed"),
+          });
+        }
+      }
+    }
+    await finalizeAgentStatus(agent.id, outcome);
+    return currentSeq;
+  }
+
   async function executeRun(runId: string) {
     let run = await getRun(runId);
     if (!run) return;
@@ -1831,97 +1949,21 @@ export function heartbeatService(db: Db) {
         issueRef,
       });
 
-      const status =
-        outcome === "succeeded"
-          ? "succeeded"
-          : outcome === "cancelled"
-            ? "cancelled"
-            : outcome === "timed_out"
-              ? "timed_out"
-              : "failed";
-
-      const usageJson =
-        adapterResult.usage || adapterResult.costUsd != null
-          ? ({
-              ...(adapterResult.usage ?? {}),
-              ...(adapterResult.costUsd != null ? { costUsd: adapterResult.costUsd } : {}),
-              ...(adapterResult.billingType ? { billingType: adapterResult.billingType } : {}),
-              ...(adapterResult.provider ? { provider: adapterResult.provider } : {}),
-              ...(adapterResult.model ? { model: adapterResult.model } : {}),
-            } as Record<string, unknown>)
-          : null;
-
-      await setRunStatus(run.id, status, {
-        finishedAt: new Date(),
-        error:
-          outcome === "succeeded"
-            ? null
-            : adapterResult.errorMessage ?? (outcome === "timed_out" ? "Timed out" : "Adapter failed"),
-        errorCode:
-          outcome === "timed_out"
-            ? "timeout"
-            : outcome === "cancelled"
-              ? "cancelled"
-              : outcome === "failed"
-                ? (adapterResult.errorCode ?? "adapter_failed")
-                : null,
-        exitCode: adapterResult.exitCode,
-        signal: adapterResult.signal,
-        usageJson,
-        resultJson: adapterResult.resultJson ?? null,
-        sessionIdAfter: nextSessionState.displayId ?? nextSessionState.legacySessionId,
+      seq = await finalizeRunOutcome({
+        run,
+        agent,
+        adapterResult,
+        outcome,
+        logSummary,
+        nextSessionState,
         stdoutExcerpt,
         stderrExcerpt,
-        logBytes: logSummary?.bytes,
-        logSha256: logSummary?.sha256,
-        logCompressed: logSummary?.compressed ?? false,
+        seq,
+        taskKey,
+        previousSessionParams,
+        previousSessionDisplayId,
+        taskSessionForRun,
       });
-
-      await setWakeupStatus(run.wakeupRequestId, outcome === "succeeded" ? "completed" : status, {
-        finishedAt: new Date(),
-        error: adapterResult.errorMessage ?? null,
-      });
-
-      const finalizedRun = await getRun(run.id);
-      if (finalizedRun) {
-        await appendRunEvent(finalizedRun, seq++, {
-          eventType: "lifecycle",
-          stream: "system",
-          level: outcome === "succeeded" ? "info" : "error",
-          message: `run ${outcome}`,
-          payload: {
-            status,
-            exitCode: adapterResult.exitCode,
-          },
-        });
-        await releaseIssueExecutionAndPromote(finalizedRun);
-      }
-
-      if (finalizedRun) {
-        await updateRuntimeState(agent, finalizedRun, adapterResult, {
-          legacySessionId: nextSessionState.legacySessionId,
-        });
-        if (taskKey) {
-          if (adapterResult.clearSession || (!nextSessionState.params && !nextSessionState.displayId)) {
-            await clearTaskSessions(agent.companyId, agent.id, {
-              taskKey,
-              adapterType: agent.adapterType,
-            });
-          } else {
-            await upsertTaskSession({
-              companyId: agent.companyId,
-              agentId: agent.id,
-              adapterType: agent.adapterType,
-              taskKey,
-              sessionParamsJson: nextSessionState.params,
-              sessionDisplayId: nextSessionState.displayId,
-              lastRunId: finalizedRun.id,
-              lastError: outcome === "succeeded" ? null : (adapterResult.errorMessage ?? "run_failed"),
-            });
-          }
-        }
-      }
-      await finalizeAgentStatus(agent.id, outcome);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown adapter failure";
       logger.error({ err, runId }, "heartbeat execution failed");
