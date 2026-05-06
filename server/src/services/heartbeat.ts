@@ -56,6 +56,8 @@ const MAX_CHAIN_OF_COMMAND = 50;
 const MAX_PROMOTION_ATTEMPTS = 10;
 const DEFAULT_TRUNCATE_MAX = 128;
 const MAX_CONTEXT_CHARS_CAP = 100_000;
+const TRUNCATION_SUFFIX = "\n\n[... context truncated by size limit ...]";
+const TRUNCATION_SUFFIX_LEN = TRUNCATION_SUFFIX.length;
 
 function getMaxContextBlockChars(): number {
   const raw = process.env.ZEPHYR_MAX_CONTEXT_CHARS;
@@ -1102,23 +1104,46 @@ export function heartbeatService(db: Db) {
     });
   }
 
-  async function executeRun(runId: string) {
-    let run = await getRun(runId);
-    if (!run) return;
-    if (run.status !== "queued" && run.status !== "running") return;
+  // Extracted prepare-phase helper — returns all runtime context needed before begin()
+  async function buildRuntimeContext(params: {
+    run: typeof heartbeatRuns.$inferSelect;
+    db: Db;
+    agentsSvc: { getById: (id: string) => Promise<typeof agents.$inferSelect | null> };
+    issuesSvc: unknown;
+    costSvc: { getSpentCentsForIssue: (companyId: string, issueId: string) => Promise<number> };
+    secretsSvc: { resolveAdapterConfigForRuntime: (companyId: string, config: Record<string, unknown>) => Promise<{ config: Record<string, unknown>; secretKeys: Set<string> }> };
+    setRunStatus: typeof setRunStatus;
+    setWakeupStatus: typeof setWakeupStatus;
+    releaseIssueExecutionAndPromote: typeof releaseIssueExecutionAndPromote;
+    appendRunEvent: typeof appendRunEvent;
+  }): Promise<{
+    agent: typeof agents.$inferSelect;
+    context: Record<string, unknown>;
+    sessionCodec: AdapterSessionCodec;
+    issueId: string | null;
+    issueRef: { id: string; identifier: string | null; title: string } | null;
+    resolvedWorkspace: ResolvedWorkspaceForRun;
+    resolvedConfig: Record<string, unknown>;
+    secretKeys: Set<string>;
+    runtimeForAdapter: {
+      sessionId: string | null;
+      sessionParams: Record<string, unknown> | null;
+      sessionDisplayId: string | null;
+      taskKey: string | null;
+    };
+    runtimeWorkspaceWarnings: string[];
+    executionWorkspace: import("./workspace-runtime.js").RealizedExecutionWorkspace;
+    previousSessionParams: Record<string, unknown> | null;
+    previousSessionDisplayId: string | null;
+    taskKey: string | null;
+    taskSessionForRun: typeof agentTaskSessions.$inferSelect | null;
+  } | { done: true }> {
+    const { run, db, agentsSvc, costSvc, secretsSvc, setRunStatus, setWakeupStatus, releaseIssueExecutionAndPromote, appendRunEvent } = params;
 
-    if (run.status === "queued") {
-      const claimed = await claimQueuedRun(run);
-      if (!claimed) {
-        // Another worker has already claimed or finalized this run.
-        return;
-      }
-      run = claimed;
-    }
-
-    const agent = await getAgent(run.agentId);
+    // Agent fetch + budget guard
+    const agent = await agentsSvc.getById(run.agentId);
     if (!agent) {
-      await setRunStatus(runId, "failed", {
+      await setRunStatus(run.id, "failed", {
         error: "Agent not found",
         errorCode: "agent_not_found",
         finishedAt: new Date(),
@@ -1127,18 +1152,21 @@ export function heartbeatService(db: Db) {
         finishedAt: new Date(),
         error: "Agent not found",
       });
-      const failedRun = await getRun(runId);
+      const failedRun = await db
+        .select()
+        .from(heartbeatRuns)
+        .where(eq(heartbeatRuns.id, run.id))
+        .then((rows) => rows[0] ?? null);
       if (failedRun) await releaseIssueExecutionAndPromote(failedRun);
-      return;
+      return { done: true };
     }
 
     // Budget guard (P0): refuse to invoke adapters once the agent monthly budget is exhausted.
-    // This is intentionally conservative and easy to roll back (no schema changes).
     const budgetMonthlyCents = Number(agent.budgetMonthlyCents ?? 0);
     const spentMonthlyCents = Number(agent.spentMonthlyCents ?? 0);
     if (Number.isFinite(budgetMonthlyCents) && budgetMonthlyCents > 0 && spentMonthlyCents >= budgetMonthlyCents) {
       const now = new Date();
-      await setRunStatus(runId, "failed", {
+      await setRunStatus(run.id, "failed", {
         error: `Budget exceeded for agent "${agent.name}" (${spentMonthlyCents}/${budgetMonthlyCents} cents this month)`,
         errorCode: "budget_exceeded",
         finishedAt: now,
@@ -1147,7 +1175,11 @@ export function heartbeatService(db: Db) {
         finishedAt: now,
         error: "budget_exceeded",
       });
-      const failedRun = await getRun(runId);
+      const failedRun = await db
+        .select()
+        .from(heartbeatRuns)
+        .where(eq(heartbeatRuns.id, run.id))
+        .then((rows) => rows[0] ?? null);
       if (failedRun) {
         await appendRunEvent(failedRun, 1, {
           eventType: "lifecycle",
@@ -1165,8 +1197,8 @@ export function heartbeatService(db: Db) {
       }
       await finalizeAgentStatus(agent.id, "failed");
       await startNextQueuedRunForAgent(agent.id);
-      runningProcesses.delete(runId);
-      return;
+      runningProcesses.delete(run.id);
+      return { done: true };
     }
 
     const runtime = await ensureRuntimeState(agent);
@@ -1186,16 +1218,34 @@ export function heartbeatService(db: Db) {
           .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
           .then((rows) => rows[0] ?? null)
       : null;
+    // Issue not found guard: issueId was provided but no matching issue exists in DB
+    if (issueId && !issueAssigneeConfig) {
+      const now = new Date();
+      await setRunStatus(run.id, "failed", {
+        error: "Issue not found",
+        finishedAt: now,
+      });
+      await setWakeupStatus(run.wakeupRequestId, "failed", {
+        finishedAt: now,
+        error: "Issue not found",
+      });
+      const failedRun = await db
+        .select()
+        .from(heartbeatRuns)
+        .where(eq(heartbeatRuns.id, run.id))
+        .then((rows) => rows[0] ?? null);
+      if (failedRun) await releaseIssueExecutionAndPromote(failedRun);
+      return { done: true };
+    }
     const issueAssigneeOverrides =
       issueAssigneeConfig && issueAssigneeConfig.assigneeAgentId === agent.id
-        ? parseIssueAssigneeAdapterOverrides(
-            issueAssigneeConfig.assigneeAdapterOverrides,
-          )
+        ? parseIssueAssigneeAdapterOverrides(issueAssigneeConfig.assigneeAdapterOverrides)
         : null;
     const issueExecutionWorkspaceSettings = parseIssueExecutionWorkspaceSettings(
       issueAssigneeConfig?.executionWorkspaceSettings,
     );
-    // Per-issue budget guard (Phase 4): if issue has budgetCents in executionWorkspaceSettings, block when spent >= budget.
+
+    // Per-issue budget guard
     const rawSettings = issueAssigneeConfig?.executionWorkspaceSettings;
     const issueBudgetCents =
       typeof rawSettings === "object" &&
@@ -1204,10 +1254,10 @@ export function heartbeatService(db: Db) {
         ? Math.max(0, Math.floor((rawSettings as Record<string, unknown>).budgetCents as number))
         : 0;
     if (issueId && issueBudgetCents > 0) {
-      const issueSpentCents = await costService(db).getSpentCentsForIssue(agent.companyId, issueId);
+      const issueSpentCents = await costSvc.getSpentCentsForIssue(agent.companyId, issueId);
       if (issueSpentCents >= issueBudgetCents) {
         const now = new Date();
-        await setRunStatus(runId, "failed", {
+        await setRunStatus(run.id, "failed", {
           error: `Issue budget exceeded (${issueSpentCents}/${issueBudgetCents} cents)`,
           errorCode: "issue_budget_exceeded",
           finishedAt: now,
@@ -1216,7 +1266,11 @@ export function heartbeatService(db: Db) {
           finishedAt: now,
           error: "issue_budget_exceeded",
         });
-        const failedRun = await getRun(runId);
+        const failedRun = await db
+          .select()
+          .from(heartbeatRuns)
+          .where(eq(heartbeatRuns.id, run.id))
+          .then((rows) => rows[0] ?? null);
         if (failedRun) {
           await appendRunEvent(failedRun, 1, {
             eventType: "lifecycle",
@@ -1229,10 +1283,11 @@ export function heartbeatService(db: Db) {
         }
         await finalizeAgentStatus(agent.id, "failed");
         await startNextQueuedRunForAgent(agent.id);
-        runningProcesses.delete(runId);
-        return;
+        runningProcesses.delete(run.id);
+        return { done: true };
       }
     }
+
     const contextProjectId = readNonEmptyString(context.projectId);
     const executionProjectId = issueAssigneeConfig?.projectId ?? contextProjectId;
     const projectExecutionWorkspacePolicy = executionProjectId
@@ -1279,11 +1334,7 @@ export function heartbeatService(db: Db) {
     );
     const issueRef = issueId
       ? await db
-          .select({
-            id: issues.id,
-            identifier: issues.identifier,
-            title: issues.title,
-          })
+          .select({ id: issues.id, identifier: issues.identifier, title: issues.title })
           .from(issues)
           .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
           .then((rows) => rows[0] ?? null)
@@ -1299,19 +1350,12 @@ export function heartbeatService(db: Db) {
       },
       config: resolvedConfig,
       issue: issueRef,
-      agent: {
-        id: agent.id,
-        name: agent.name,
-        companyId: agent.companyId,
-      },
+      agent: { id: agent.id, name: agent.name, companyId: agent.companyId },
     });
     const runtimeSessionResolution = resolveRuntimeSessionParamsForWorkspace({
       agentId: agent.id,
       previousSessionParams,
-      resolvedWorkspace: {
-        ...resolvedWorkspace,
-        cwd: executionWorkspace.cwd,
-      },
+      resolvedWorkspace: { ...resolvedWorkspace, cwd: executionWorkspace.cwd },
     });
     const runtimeSessionParams = runtimeSessionResolution.sessionParams;
     const runtimeWorkspaceWarnings = [
@@ -1373,7 +1417,7 @@ export function heartbeatService(db: Db) {
         let blockText = serializeContextBlock(contextBlock);
         if (blockText.length > maxContextChars) {
           const originalLen = blockText.length;
-          blockText = blockText.slice(0, maxContextChars - 50) + "\n\n[... context truncated by size limit ...]";
+          blockText = blockText.slice(0, maxContextChars - TRUNCATION_SUFFIX_LEN) + TRUNCATION_SUFFIX;
           logger.debug({ cwd: executionWorkspace.cwd, originalLen }, "zephyrContextBlock truncated");
         }
         context.zephyrContextBlock = blockText;
@@ -1395,6 +1439,51 @@ export function heartbeatService(db: Db) {
       sessionDisplayId: previousSessionDisplayId,
       taskKey,
     };
+
+    return {
+      agent,
+      context,
+      sessionCodec,
+      issueId,
+      issueRef,
+      resolvedWorkspace,
+      resolvedConfig,
+      secretKeys,
+      runtimeForAdapter,
+      runtimeWorkspaceWarnings,
+      executionWorkspace,
+      previousSessionParams,
+      previousSessionDisplayId,
+      taskKey,
+      taskSessionForRun,
+    };
+  }
+
+  async function executeRun(runId: string) {
+    let run = await getRun(runId);
+    if (!run) return;
+    if (run.status !== "queued" && run.status !== "running") return;
+
+    if (run.status === "queued") {
+      const claimed = await claimQueuedRun(run);
+      if (!claimed) return;
+      run = claimed;
+    }
+
+    const ctx = await buildRuntimeContext({
+      run,
+      db,
+      agentsSvc: { getById: getAgent },
+      issuesSvc,
+      costSvc: costService(db),
+      secretsSvc,
+      setRunStatus,
+      setWakeupStatus,
+      releaseIssueExecutionAndPromote,
+      appendRunEvent,
+    });
+    if ("done" in ctx) return;
+    const { agent, context, sessionCodec, issueId, issueRef, resolvedWorkspace, resolvedConfig, secretKeys, runtimeForAdapter, runtimeWorkspaceWarnings, executionWorkspace, previousSessionParams, previousSessionDisplayId, taskKey, taskSessionForRun } = ctx;
 
     let seq = 1;
     let handle: RunLogHandle | null = null;
@@ -1815,7 +1904,7 @@ export function heartbeatService(db: Db) {
           legacySessionId: runtimeForAdapter.sessionId,
         });
 
-        if (taskKey && (previousSessionParams || previousSessionDisplayId || taskSession)) {
+        if (taskKey && (previousSessionParams || previousSessionDisplayId || taskSessionForRun)) {
           await upsertTaskSession({
             companyId: agent.companyId,
             agentId: agent.id,
