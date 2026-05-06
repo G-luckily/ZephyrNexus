@@ -33,6 +33,31 @@ import { shouldWakeAssigneeOnCheckout } from "./issues-checkout-wakeup.js";
 import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
 import { hookManager } from "../services/hooks/index.js";
 
+interface HealthSummary {
+  unreadNotificationCount?: number;
+  contractSatisfied?: boolean;
+  missingSummary?: boolean;
+  missingFileCount?: number;
+  isBlocked?: boolean;
+  [key: string]: unknown;
+}
+
+interface ActionQueueEntry {
+  issue: {
+    id: string;
+    status: string;
+    dependsOn?: string[];
+    healthSummary?: HealthSummary;
+    [key: string]: unknown;
+  };
+  reason: string;
+}
+
+interface ExecutionWorkspaceSettings {
+  budgetCents?: number;
+  [key: string]: unknown;
+}
+
 export function issueRoutes(db: Db, storage: StorageService) {
   const router = Router();
   const svc = issueService(db);
@@ -389,8 +414,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
       contextUserId, 
     });
 
-    const attention: any[] = [];
-    const ready: any[] = [];
+    const attention: ActionQueueEntry[] = [];
+    const ready: ActionQueueEntry[] = [];
 
     for (const issue of allIssues) {
       if (issue.status === "cancelled" || issue.status === "done") continue;
@@ -530,7 +555,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
     assertCompanyAccess(req, issue.companyId);
 
-    const budgetCents = Number((issue.executionWorkspaceSettings as any)?.budgetCents ?? 0);
+    const budgetCents = Number((issue.executionWorkspaceSettings as ExecutionWorkspaceSettings)?.budgetCents ?? 0);
     const spentCents = await costService(db).getSpentCentsForIssue(companyId, id);
     
     // Fetch recent cost events
