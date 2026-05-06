@@ -1,4 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import type { PostgresJsQueryResultHKT, PostgresJsTransaction } from "drizzle-orm/postgres-js";
+import type { PgTransaction } from "drizzle-orm/pg-core/session";
 import type { Db } from "@zephyr-nexus/db";
 import {
   agents,
@@ -218,7 +220,7 @@ function unreadForUserCondition(companyId: string, userId: string) {
 }
 
 async function withHealthSummaries<T extends IssueRow>(
-  dbOrTx: any,
+  dbOrTx: Db | PgTransaction<any, any, any>,
   companyId: string,
   contextUserId: string | undefined,
   rows: T[]
