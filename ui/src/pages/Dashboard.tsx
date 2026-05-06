@@ -658,7 +658,10 @@ export function Dashboard() {
     const allRuns = runs ?? [];
     if (scopeView === "company") return allRuns;
     return allRuns.filter((run) => {
-      const issueId = (run as { issueId?: string }).issueId;
+      const issueId =
+        typeof run === "object" && run !== null && "issueId" in run
+          ? (run as unknown as { issueId?: string }).issueId
+          : undefined;
       if (scopeView === "project") {
         if (projectFilter === "all") return true;
         return !!issueId && scopeIssueIds.has(issueId);
@@ -743,7 +746,10 @@ export function Dashboard() {
     const all = activity ?? [];
     if (scopeView === "company") return all;
     return all.filter((event) => {
-      const issueId = (event as { issueId?: string }).issueId;
+      const issueId =
+        typeof event === "object" && event !== null && "issueId" in event
+          ? (event as unknown as { issueId?: string }).issueId
+          : undefined;
       if (scopeView === "project") {
         if (projectFilter === "all") return true;
         return !!issueId && scopeIssueIds.has(issueId);
