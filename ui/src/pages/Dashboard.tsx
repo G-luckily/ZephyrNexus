@@ -1381,14 +1381,17 @@ export function Dashboard() {
 
         <div className="relative z-10 flex min-h-[350px] flex-col justify-between p-7 md:p-9 lg:p-11">
           <div className="max-w-[700px] space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-background/55 px-3.5 py-1 backdrop-blur-xl">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zephyr-blue opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-zephyr-blue" />
-              </span>
-              <span className="type-label text-foreground/80">
-                系统在线 · {lastSyncTime}
-              </span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-background/55 px-3.5 py-1 backdrop-blur-xl">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zephyr-blue opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-zephyr-blue" />
+                </span>
+                <span className="type-label text-foreground/80">
+                  系统在线 · {lastSyncTime}
+                </span>
+              </div>
+              <RuntimePanel variant="minimal" />
             </div>
 
             <div className="space-y-1.5">
@@ -1396,7 +1399,7 @@ export function Dashboard() {
                 风之灵枢
               </h1>
               <h2 className="text-lg font-light tracking-[0.22em] text-muted-foreground md:text-xl lg:text-2xl">
-                AI 编排系统
+                AI 编排系统 · Control Plane
               </h2>
             </div>
 
