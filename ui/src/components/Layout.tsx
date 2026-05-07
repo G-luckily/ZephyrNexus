@@ -7,7 +7,7 @@ import {
   type UIEvent,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Moon, Sun } from "lucide-react";
+import { BookOpen, Moon, Sun, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CompanyRail } from "./CompanyRail";
 import { Sidebar } from "./Sidebar";
@@ -35,7 +35,7 @@ import { NotFoundPage } from "../pages/NotFound";
 import { Button } from "@/components/ui/button";
 
 export function Layout() {
-  const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile } = useSidebar();
+  const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile, sidebarCollapsed, toggleSidebarCollapse } = useSidebar();
   const { openNewIssue, openOnboarding } = useDialog();
   const { togglePanelVisible } = usePanel();
   const {
@@ -302,20 +302,46 @@ export function Layout() {
             <div
               className={cn(
                 "overflow-hidden transition-[width] duration-100 ease-out",
-                sidebarOpen ? "w-72" : "w-0"
+                sidebarOpen
+                  ? sidebarCollapsed
+                    ? "w-[var(--sidebar-collapsed-width)]"
+                    : "w-72"
+                  : "w-0"
               )}
             >
               <Sidebar />
             </div>
           </div>
           <div className="border-t border-white/[0.04] bg-sidebar px-3 py-2">
-            <div className="flex items-center gap-1">
-              <SidebarNavItem
-                to="/docs"
-                label="文档"
-                icon={BookOpen}
-                className="flex-1 min-w-0"
-              />
+            <div
+              className={cn(
+                "flex items-center gap-1",
+                sidebarCollapsed && "justify-center"
+              )}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 text-muted-foreground hover:bg-surface-overlay hover:text-sidebar-foreground"
+                onClick={toggleSidebarCollapse}
+                aria-label={sidebarCollapsed ? "展开侧边栏" : "折叠侧边栏"}
+                title={sidebarCollapsed ? "展开侧边栏" : "折叠侧边栏"}
+              >
+                {sidebarCollapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </Button>
+              {!sidebarCollapsed && (
+                <SidebarNavItem
+                  to="/docs"
+                  label="文档"
+                  icon={BookOpen}
+                  className="flex-1 min-w-0"
+                />
+              )}
               <Button
                 type="button"
                 variant="ghost"
@@ -353,9 +379,12 @@ export function Layout() {
             id="main-content"
             tabIndex={-1}
             className={cn(
-              "relative z-[1] flex-1 overflow-auto px-4 py-5 md:px-6 md:py-6 xl:px-8 xl:py-7",
+              "relative z-[1] flex-1 overflow-auto",
               isMobile && "pb-[calc(5rem+env(safe-area-inset-bottom))]"
             )}
+            style={{
+              padding: "var(--page-padding-y) var(--page-padding-x)",
+            }}
             onScroll={handleMainScroll}
           >
             {hasUnknownCompanyPrefix ? (

@@ -87,12 +87,12 @@ export function RuntimePanel({
           </button>
         </div>
 
-        {/* Route Trace - 6-step pipeline */}
+        {/* Route Trace - 6-step pipeline with directional flow */}
         <div className="mb-3">
           <p className="mb-2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
             路由轨迹
           </p>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {routeSteps.map((step, i) => {
               const isLast = i === routeSteps.length - 1;
               const isActive = step.state === "active";
@@ -103,25 +103,31 @@ export function RuntimePanel({
               return (
                 <div key={i} className="flex items-center">
                   <div className="flex flex-col items-center">
-                    {/* Step indicator */}
-                    <div
-                      className={cn(
-                        "flex h-7 w-7 items-center justify-center rounded-lg border text-[9px] font-bold transition-all",
-                        isActive && "border-zephyr-blue/50 bg-zephyr-blue/15 text-zephyr-blue shadow-[0_0_8px_0_rgba(59,130,246,0.3)]",
-                        isDone && "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
-                        isWaiting && "border-amber-400/40 bg-amber-400/10 text-amber-400",
-                        isPending && "border-white/15 bg-white/5 text-muted-foreground/50"
+                    {/* Step indicator with directional flow */}
+                    <div className="relative">
+                      {/* Directional leading edge for active */}
+                      {isActive && (
+                        <div className="absolute -left-1 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-zephyr-blue opacity-60" />
                       )}
-                    >
-                      {isDone ? (
-                        <Check className="h-3 w-3" />
-                      ) : isWaiting ? (
-                        <Loader className="h-3 w-3 animate-spin" />
-                      ) : isActive ? (
-                        <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-                      ) : (
-                        <span>{i + 1}</span>
-                      )}
+                      <div
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-lg border text-[9px] font-bold transition-all",
+                          isActive && "border-zephyr-blue/50 bg-zephyr-blue/15 text-zephyr-blue shadow-[0_0_10px_1px_rgba(59,130,246,0.35)] route-step-active",
+                          isDone && "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
+                          isWaiting && "border-amber-400/40 bg-amber-400/10 text-amber-400",
+                          isPending && "border-white/15 bg-white/5 text-muted-foreground/50"
+                        )}
+                      >
+                        {isDone ? (
+                          <Check className="h-3 w-3" />
+                        ) : isWaiting ? (
+                          <Loader className="h-3 w-3 animate-spin" />
+                        ) : isActive ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                        ) : (
+                          <span>{i + 1}</span>
+                        )}
+                      </div>
                     </div>
                     {/* Step label */}
                     <span
@@ -135,10 +141,34 @@ export function RuntimePanel({
                     >
                       {step.label}
                     </span>
+                    {/* Agent name beneath label */}
+                    <span
+                      className={cn(
+                        "text-[6px]",
+                        isActive && "text-zephyr-blue/50",
+                        isDone && "text-emerald-400/40",
+                        isWaiting && "text-amber-400/50",
+                        isPending && "text-muted-foreground/25"
+                      )}
+                    >
+                      {step.agent}
+                    </span>
                   </div>
-                  {/* Connector arrow */}
+                  {/* Connector arrow with directional flow */}
                   {!isLast && (
-                    <div className={cn("mx-0.5 flex h-4 items-center", isDone ? "text-emerald-400/40" : "text-white/10")}>
+                    <div className={cn("relative mx-0.5 flex h-4 w-3 items-center", isDone ? "text-emerald-400/40" : isActive ? "text-zephyr-blue/40" : "text-white/10")}>
+                      {/* Flowing dot in connector when done */}
+                      {isDone && (
+                        <div
+                          className="absolute inset-0 flex items-center justify-center"
+                          style={{ pointerEvents: "none" }}
+                        >
+                          <div
+                            className="h-0.5 w-1.5 rounded-full bg-emerald-400 opacity-70"
+                            style={{ animation: "flowDot 1.5s ease-out infinite" }}
+                          />
+                        </div>
+                      )}
                       <svg viewBox="0 0 12 8" className="h-2 w-3">
                         <path d="M0 4h10M7 1l3 3-3 3" stroke="currentColor" strokeWidth="1" fill="none" />
                       </svg>

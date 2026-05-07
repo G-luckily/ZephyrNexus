@@ -62,6 +62,15 @@
 
 :root {
   color-scheme: light;
+  /* ── App Shell Layout Tokens ── */
+  --sidebar-width: 320px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 56px;
+  --page-padding-x: clamp(20px, 2vw, 32px);
+  --page-padding-y: 32px;
+  --content-max-width: 1560px;
+  --shell-radius-xl: 24px;
+
   /* ── Spacing System (4px base) ── */
   --space-1: 4px;
   --space-2: 8px;
@@ -94,6 +103,18 @@
   --radius-card: 8px;
   --radius-chip: 999px;
 
+  /* ── Constellation Graph Tokens (light) ── */
+  --graph-line: rgba(99, 102, 241, 0.3);
+  --graph-line-faint: rgba(99, 102, 241, 0.1);
+  --graph-node-bg: rgba(255, 255, 255, 0.6);
+  --graph-node-active-bg: rgba(99, 102, 241, 0.08);
+  --graph-node-active-stroke: rgba(99, 102, 241, 0.6);
+  --graph-node-active-inner: rgba(99, 102, 241, 0.8);
+  --graph-ghost-node: rgba(100, 116, 139, 0.25);
+  --graph-ghost-stroke: rgba(100, 116, 139, 0.2);
+  --graph-text: rgba(71, 85, 105, 0.55);
+  --graph-text-ghost: rgba(100, 116, 139, 0.4);
+
   /* ── Motion Tokens — System Breathing ── */
   --duration-instant: 40ms;
   --duration-fast: 120ms;
@@ -112,8 +133,8 @@
   /* Shared shell tokens (left shell + right content use the same family) */
   --shell-page-bg: #f2f5ff;
   --shell-pane-bg: #edf2ff;
-  --shell-surface-bg: rgba(255, 255, 255, 0.74);
-  --shell-surface-elevated: #f9fbff;
+  --shell-surface-bg: rgba(255, 255, 255, 0.68);
+  --shell-surface-elevated: rgba(255, 255, 255, 0.85);
   --shell-border: rgba(149, 172, 216, 0.4);
   --shell-border-strong: rgba(128, 155, 210, 0.58);
   --shell-hover: rgba(66, 112, 214, 0.08);
@@ -293,6 +314,18 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
 
+  /* ── Constellation Graph Tokens (dark) — violet/indigo core ── */
+  --graph-line: rgba(167, 139, 250, 0.25);
+  --graph-line-faint: rgba(167, 139, 250, 0.08);
+  --graph-node-bg: rgba(25, 25, 40, 0.25);
+  --graph-node-active-bg: rgba(25, 25, 45, 0.85);
+  --graph-node-active-stroke: rgba(167, 139, 250, 0.55);
+  --graph-node-active-inner: rgba(167, 139, 250, 0.75);
+  --graph-ghost-node: rgba(148, 163, 184, 0.08);
+  --graph-ghost-stroke: rgba(148, 163, 184, 0.06);
+  --graph-text: rgba(148, 163, 184, 0.3);
+  --graph-text-ghost: rgba(148, 163, 184, 0.2);
+
   /* ── Sidebar — AI Workspace Rail ── */
   --sidebar: rgba(15, 16, 21, 0.85);
   --sidebar-foreground: #a8aab4;
@@ -300,10 +333,16 @@
   --sidebar-primary-foreground: #090a0d;
   --sidebar-accent: #1c1f26;
   --sidebar-accent-foreground: #e8e9ed;
-  --sidebar-border: none;
-  --sidebar-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  --sidebar-border: rgba(255, 255, 255, 0.04);
+  --sidebar-shadow: 0 0 1px rgba(255, 255, 255, 0.06), 4px 0 24px rgba(0, 0, 0, 0.35);
   --sidebar-rail-width: 56px;
-  --sidebar-width: 240px;
+  --sidebar-width: 320px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 56px;
+  --page-padding-x: clamp(20px, 2vw, 32px);
+  --page-padding-y: 32px;
+  --content-max-width: 1560px;
+  --shell-radius-xl: 24px;
 }
 
 @layer base {
@@ -363,38 +402,72 @@
   }
 }
 
-/* Dark mode scrollbars */
+/* ── Theme-aware scrollbars ── */
 .dark {
   color-scheme: dark;
 }
 
-.dark *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Global scrollbar — thin, subtle */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.dark *::-webkit-scrollbar-track {
-  background: oklch(0.205 0 0);
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: oklch(0.65 0.02 260 / 0.25);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.02 260 / 0.35);
 }
 
 .dark *::-webkit-scrollbar-thumb {
-  background: oklch(0.4 0 0);
-  border-radius: 4px;
+  background: oklch(0.35 0 0 / 0.5);
 }
 
 .dark *::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0);
+  background: oklch(0.45 0 0 / 0.6);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.65 0.02 260 / 0.25) transparent;
+}
+
+.dark * {
+  scrollbar-color: oklch(0.35 0 0 / 0.5) transparent;
 }
 
 /* Auto-hide scrollbar: transparent by default, visible on container hover */
 .scrollbar-auto-hide::-webkit-scrollbar-thumb {
   background: transparent !important;
 }
-.scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
-  background: oklch(0.4 0 0) !important;
+
+.scrollbar-auto-hide::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
+
+.scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
+  background: oklch(0.65 0.02 260 / 0.25) !important;
+}
+
 .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0) !important;
+  background: oklch(0.55 0.02 260 / 0.35) !important;
+}
+
+.dark .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
+  background: oklch(0.35 0 0 / 0.5) !important;
+}
+
+.dark .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.45 0 0 / 0.6) !important;
 }
 
 /* Expandable dialog transition for max-width changes */
@@ -1068,6 +1141,28 @@ a.paperclip-project-mention-chip {
   opacity: 0.08;
 }
 
+/* Hero ambient glow — premium atmosphere */
+.hero-ambient-glow {
+  position: relative;
+}
+.hero-ambient-glow::before {
+  content: "";
+  position: absolute;
+  inset: -80px -40px;
+  background: radial-gradient(
+    ellipse 70% 60% at 30% 40%,
+    color-mix(in oklab, var(--zephyr-blue) 12%, transparent) 0%,
+    color-mix(in oklab, var(--violet-soft) 8%, transparent) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-ambient-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* Celestial Glass — Premium Surface System */
 /* Based on: Shader Gradient, Design Spells, Variant */
 
@@ -1438,6 +1533,39 @@ a.paperclip-project-mention-chip {
   border-right: none;
 }
 
+/* ── Card elevation levels — clear hierarchy ── */
+.card-base {
+  background: var(--surface-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-lg);
+  transition: background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+}
+.card-void {
+  background: var(--surface-void);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-lg);
+}
+.card-section {
+  background: var(--surface-section);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-lg);
+}
+.card-elevated {
+  background: var(--surface-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.card-floating {
+  background: var(--surface-floating);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
 /* ── Premium Card — Reduced boxy feel ── */
 .premium-card {
   background: var(--surface-card);
@@ -1789,6 +1917,214 @@ a.paperclip-project-mention-chip {
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
+/* ── Flow Particle (SVG path animation) ── */
+/* Animated dot flowing along bezier connection paths */
+@keyframes flowDot {
+  0% { transform: translateX(-100%); opacity: 0; }
+  8% { opacity: 1; }
+  50% { opacity: 0.8; }
+  92% { opacity: 0.6; }
+  100% { transform: translateX(200%); opacity: 0; }
+}
+.flow-particle {
+  animation: flowDot 2.4s var(--ease-out) infinite;
+}
+
+/* ── Pipeline Directional Flow ── */
+/* Glowing leading edge on progress tracks */
+@keyframes pipelineFlow {
+  0% {
+    background-position: 0% 50%;
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3);
+  }
+  100% {
+    background-position: 200% 50%;
+    filter: brightness(1);
+  }
+}
+.pipeline-active-glow {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.6) 40%,
+    rgba(139, 92, 246, 0.8) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: pipelineFlow 1.8s linear infinite;
+}
+
+/* ── Pipeline Step Pulse ── */
+/* Active pipeline node has a breathing outer ring */
+@keyframes pipelineStepPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5), 0 0 12px 2px rgba(59, 130, 246, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 0 20px 4px rgba(59, 130, 246, 0.35);
+  }
+}
+.pipeline-step-active {
+  animation: pipelineStepPulse 2s ease-in-out infinite;
+}
+
+/* ── Event Row Slide-In ── */
+/* New events slide in from top with fade */
+@keyframes eventRowSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.event-row-enter {
+  animation: eventRowSlide 0.25s var(--ease-out) both;
+}
+
+/* ── Events Empty State — radar decoration ── */
+.events-empty-icon {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+.events-empty-icon::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
+  animation: events-empty-scan 3s ease-in-out infinite;
+}
+.events-empty-icon::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  animation: events-empty-scan 3s ease-in-out infinite 0.6s;
+}
+@keyframes events-empty-scan {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.15); opacity: 0.6; }
+}
+
+/* ── Hero Status Breathe ── */
+/* Subtle breathing for live status indicators */
+@keyframes heroStatusBreathe {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.hero-live-dot {
+  animation: heroStatusBreathe 2.5s ease-in-out infinite;
+}
+
+/* ── Active Connection Glow ── */
+/* SVG bezier connections with active glow */
+@keyframes connectionGlow {
+  0%, 100% { filter: drop-shadow(0 0 1px currentColor); }
+  50% { filter: drop-shadow(0 0 3px currentColor); }
+}
+.connection-active-glow {
+  animation: connectionGlow 2s ease-in-out infinite;
+}
+
+/* ── Agent Node Breathing ── */
+/* Active agent nodes have a slow breathing scale effect */
+@keyframes agentNodeBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.agent-node-breathing {
+  animation: agentNodeBreathe 3s ease-in-out infinite;
+}
+
+/* ── Route Trace Step Advance ── */
+/* Active route trace step has an advancing highlight */
+@keyframes routeStepAdvance {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  60% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+.route-step-active {
+  animation: routeStepAdvance 1.6s ease-out infinite;
+}
+
+/* ── System Metrics Card Pulse ── */
+/* Active metrics cards have a subtle pulse */
+@keyframes metricCardPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  50% { box-shadow: 0 0 8px 1px rgba(59, 130, 246, 0.15); }
+}
+.metric-card-pulse:hover {
+  animation: metricCardPulse 2s ease-in-out infinite;
+}
+
+/* ── Orchestration Track Flow ── */
+/* Animated gradient flowing along the track */
+@keyframes orchestrationTrackFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+.orchestration-track-active {
+  background: linear-gradient(
+    90deg,
+    var(--zephyr-blue) 0%,
+    var(--violet-soft) 50%,
+    var(--zephyr-blue) 100%
+  );
+  background-size: 300% 100%;
+  animation: orchestrationTrackFlow 3s linear infinite;
+}
+
+/* ── Agent Constellation Animations ── */
+/* Hover float-up for constellation nodes */
+@keyframes constellation-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+.constellation-node {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.constellation-node:hover {
+  transform: translateY(-6px) scale(1.08);
+  z-index: 20;
+}
+
+/* Orbiting glow ring on active constellation nodes */
+@keyframes constellation-glow-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.constellation-glow-ring {
+  animation: constellation-glow-ring 2.4s ease-out infinite;
+}
+
+/* Constellation connecting path flow */
+@keyframes constellation-path-flow {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -24; }
+}
+.constellation-path-active {
+  stroke-dasharray: 4 3;
+  animation: constellation-path-flow 0.8s linear infinite;
+}
+
+/* ── AgentInspector Tab Transitions ── */
+@keyframes inspector-tab-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.inspector-tab-enter {
+  animation: inspector-tab-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* ── Reduced Motion Support ── */
 @media (prefers-reduced-motion: reduce) {
   .runtime-executing,
@@ -1801,8 +2137,25 @@ a.paperclip-project-mention-chip {
   .runtime-event-enter,
   .runtime-node-active,
   .runtime-metric-update,
-  .runtime-glow-pulse {
+  .runtime-glow-pulse,
+  .flow-particle,
+  .pipeline-active-glow,
+  .pipeline-step-active,
+  .event-row-enter,
+  .hero-live-dot,
+  .connection-active-glow,
+  .agent-node-breathing,
+  .route-step-active,
+  .metric-card-pulse,
+  .orchestration-track-active,
+  .constellation-node,
+  .constellation-glow-ring,
+  .constellation-path-active,
+  .inspector-tab-enter {
     animation: none;
+  }
+  .constellation-node:hover {
+    transform: none;
   }
 }
 

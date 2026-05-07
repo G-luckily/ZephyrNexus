@@ -24,10 +24,13 @@ import { useWorkspaceScope } from "../context/WorkspaceScopeContext";
 import { Button } from "@/components/ui/button";
 
 import { useInboxSettings } from "../lib/inbox-settings";
+import { cn } from "../lib/utils";
+import { useSidebar } from "../context/SidebarContext";
 
 export function Sidebar() {
   const { openNewIssue } = useDialog();
   const { selectedCompanyId, selectedCompany } = useCompany();
+  const { sidebarCollapsed } = useSidebar();
 
   const { data: sidebarBadges } = useQuery({
     queryKey: queryKeys.sidebarBadges(selectedCompanyId!),
@@ -89,7 +92,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="relative flex h-full min-h-0 w-72 flex-col bg-sidebar text-sidebar-foreground shadow-[var(--sidebar-shadow)]">
+    <aside className={cn("relative flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground shadow-[var(--sidebar-shadow)]", sidebarCollapsed ? "w-[var(--sidebar-collapsed-width)]" : "w-72")}>
       {/* Subtle atmosphere — top cold light */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -99,30 +102,34 @@ export function Sidebar() {
         }}
       />
       {/* Company header — floating surface */}
-      <div className="relative shrink-0 px-3.5 py-3">
-        <div className="panel-floating relative rounded-xl px-3 py-3">
-          <div className="flex items-center gap-2">
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-floating text-[11px] font-semibold text-accent shadow-sm">
-              <span className="absolute inset-[1px] rounded-md border border-white/5" />
+      <div className={cn("relative shrink-0", sidebarCollapsed ? "px-2 py-3" : "px-3.5 py-3")}>
+        <div className={cn("panel-floating relative", sidebarCollapsed ? "flex justify-center rounded-lg p-2" : "rounded-xl px-3 py-3")}>
+          <div className={cn("flex items-center", sidebarCollapsed ? "flex-col gap-1" : "gap-2")}>
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-[11px] font-semibold text-muted-foreground shadow-sm">
+              <span className="absolute inset-[1px] rounded-md border border-white/[0.03]" />
               <span className="relative">灵枢</span>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
-                {selectedCompany?.name ?? "请选择公司"}
-              </p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-mono">
-                风之灵枢
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="shrink-0 text-muted-foreground transition-all duration-150 hover:bg-surface-overlay hover:text-sidebar-foreground"
-              onClick={openSearch}
-              aria-label="打开搜索"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
+            {!sidebarCollapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
+                  {selectedCompany?.name ?? "请选择公司"}
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-mono">
+                  风之灵枢
+                </p>
+              </div>
+            )}
+            {!sidebarCollapsed && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 text-muted-foreground transition-all duration-150 hover:bg-surface-overlay hover:text-sidebar-foreground"
+                onClick={openSearch}
+                aria-label="打开搜索"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -131,10 +138,16 @@ export function Sidebar() {
         {/* New task button — floating accent */}
         <button
           onClick={() => openNewIssue()}
-          className="flex items-center gap-2 rounded-lg bg-surface-floating px-3 py-2.5 text-[13px] font-semibold text-sidebar-foreground shadow-sm transition-all duration-150 hover:bg-surface-overlay"
+          title={sidebarCollapsed ? "分配任务" : undefined}
+          className={cn(
+            "flex items-center rounded-lg bg-surface-floating shadow-sm transition-all duration-150 hover:bg-surface-overlay",
+            sidebarCollapsed
+              ? "justify-center px-0 py-2.5 mx-2"
+              : "gap-2 px-3 py-2.5 text-[13px] font-semibold text-sidebar-foreground"
+          )}
         >
           <SquarePen className="h-3.5 w-3.5 shrink-0 text-accent" />
-          <span className="truncate">分配任务</span>
+          {!sidebarCollapsed && <span className="truncate">分配任务</span>}
         </button>
 
         <SidebarSection label="公司" meta={`${liveRunCount} 运行中`}>
@@ -166,7 +179,7 @@ export function Sidebar() {
         <SidebarSection label="智能体" meta={`${totalAgentCount}`}>
           {agentTiers.boss.length > 0 && (
             <>
-              <p className="nav-section-label">老板级</p>
+              <p className={cn("nav-section-label", sidebarCollapsed && "hidden")}>老板级</p>
               {agentTiers.boss.map((item) => (
                 <SidebarNavItem key={item.id} to={item.to} label={stripAgentPrefix(item.name)} icon={Bot} />
               ))}
@@ -174,8 +187,8 @@ export function Sidebar() {
           )}
           {agentTiers.directors.length > 0 && (
             <>
-              {agentTiers.boss.length > 0 && <div className="my-1.5 h-px bg-white/[0.04]" />}
-              <p className="nav-section-label">总监级</p>
+              {agentTiers.boss.length > 0 && <div className={cn("my-1.5 h-px bg-white/[0.04]", sidebarCollapsed && "hidden")} />}
+              <p className={cn("nav-section-label", sidebarCollapsed && "hidden")}>总监级</p>
               {agentTiers.directors.map((item) => (
                 <SidebarNavItem key={item.id} to={item.to} label={stripAgentPrefix(item.name)} icon={Bot} />
               ))}
@@ -184,13 +197,13 @@ export function Sidebar() {
           {agentTiers.executors.length > 0 && (
             <>
               {(agentTiers.boss.length > 0 || agentTiers.directors.length > 0) && (
-                <div className="my-1.5 h-px bg-white/[0.04]" />
+                <div className={cn("my-1.5 h-px bg-white/[0.04]", sidebarCollapsed && "hidden")} />
               )}
-              <p className="nav-section-label">执行专员</p>
+              <p className={cn("nav-section-label", sidebarCollapsed && "hidden")}>执行专员</p>
               {visibleExecutors.map((item) => (
                 <SidebarNavItem key={item.id} to={item.to} label={stripAgentPrefix(item.name)} icon={Bot} />
               ))}
-              {hiddenCount > 0 && (
+              {hiddenCount > 0 && !sidebarCollapsed && (
                 <button
                   onClick={() => setExecutorsExpanded((v) => !v)}
                   className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-surface-overlay hover:text-sidebar-foreground"
@@ -203,9 +216,9 @@ export function Sidebar() {
           {agentTiers.engineers && agentTiers.engineers.length > 0 && (
             <>
               {(agentTiers.boss.length > 0 || agentTiers.directors.length > 0 || agentTiers.executors.length > 0) && (
-                <div className="my-1.5 h-px bg-sidebar-border/60" />
+                <div className={cn("my-1.5 h-px bg-sidebar-border/60", sidebarCollapsed && "hidden")} />
               )}
-              <p className="px-2 pt-0.5 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">工程专员</p>
+              <p className={cn("px-2 pt-0.5 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60", sidebarCollapsed && "hidden")}>工程专员</p>
               {agentTiers.engineers.map((item) => (
                 <SidebarNavItem key={item.id} to={item.to} label={stripAgentPrefix(item.name)} icon={Bot} />
               ))}

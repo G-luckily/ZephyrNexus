@@ -35,7 +35,7 @@ export function BreadcrumbBar() {
   // Single breadcrumb = page title (uppercase)
   if (breadcrumbs.length === 1) {
     return (
-      <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-shell-border bg-background/70 px-4 md:px-6 backdrop-blur-sm">
+      <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-shell-border bg-background/70 backdrop-blur-sm" style={{ paddingLeft: "var(--page-padding-x)", paddingRight: "var(--page-padding-x)" }}>
         {menuButton}
         <h1 className="relative z-[1] truncate text-base font-semibold tracking-tight text-foreground">
           {breadcrumbs[0].label}
@@ -53,7 +53,7 @@ export function BreadcrumbBar() {
 
   // Multiple breadcrumbs = breadcrumb trail
   return (
-    <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-shell-border bg-background/70 px-4 md:px-6 backdrop-blur-sm">
+    <div className="relative flex h-14 shrink-0 items-center overflow-hidden border-b border-shell-border bg-background/70 backdrop-blur-sm" style={{ paddingLeft: "var(--page-padding-x)", paddingRight: "var(--page-padding-x)" }}>
       {menuButton}
       <Breadcrumb className="relative z-[1] min-w-0 overflow-hidden">
         <BreadcrumbList className="flex-nowrap">

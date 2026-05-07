@@ -21,7 +21,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { cn, relativeTime } from "../lib/utils";
 import { tStatus } from "../lib/i18n";
 import { buildOrgUnits } from "../lib/company-scope";
-import { ConstellationWindField } from "../components/dashboard/ConstellationWindField";
+
 import {
   cleanVisibleAgentName,
   departmentLabelFromKey,
@@ -68,6 +68,8 @@ import type {
   Issue,
 } from "@zephyr-nexus/shared";
 import { RuntimePanel, AgentCoordinationPanel } from "../components/runtime";
+import { SectionCollapse } from "../components/SectionCollapse";
+import { CommandSurface } from "../components/CommandSurface";
 
 type LogWindow = "15m" | "1h" | "24h";
 type SuccessWindow = "24h" | "7d" | "30d";
@@ -136,6 +138,42 @@ function getRecentIssues(issues: Issue[]): Issue[] {
   return [...issues].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
+}
+
+/**
+ * Build role-slot topology data from real agent list.
+ * Used by AgentConstellationGraph and Hero to consistently
+ * map agents to role slots and compute completeness.
+ */
+function buildAgentTopologyData(agents: Agent[]) {
+  const slotDefs = [
+    { role: "ceo",       label: "CEO",       ghostLabel: "CEO",  ghostDesc: "待配置" },
+    { role: "researcher",label: "研究",       ghostLabel: "研究", ghostDesc: "待配置" },
+    { role: "cto",       label: "CTO",       ghostLabel: "技术", ghostDesc: "待配置" },
+    { role: "pm",        label: "PM",        ghostLabel: "管理", ghostDesc: "待配置" },
+    { role: "general",   label: "执行",       ghostLabel: "执行", ghostDesc: "待配置" },
+    { role: "devops",    label: "运维",       ghostLabel: "运维", ghostDesc: "待配置" },
+  ] as const;
+
+  const roleAgentMap = new Map<string, Agent>();
+  for (const agent of agents) {
+    const key = agent.role || "general";
+    if (!roleAgentMap.has(key)) roleAgentMap.set(key, agent);
+  }
+
+  const slotAgents: (Agent | null)[] = slotDefs.map((slot) =>
+    roleAgentMap.get(slot.role) || null
+  );
+
+  const rolesCovered = new Set(
+    agents.map((a) => a.role || "general").filter(Boolean)
+  );
+  const completenessPct = Math.round(
+    (rolesCovered.size / slotDefs.length) * 100
+  );
+  const missingRoles = slotDefs.filter((s) => !roleAgentMap.has(s.role));
+
+  return { slotDefs, slotAgents, rolesCovered, completenessPct, missingRoles, totalSlots: slotDefs.length, filledSlots: rolesCovered.size };
 }
 
 function toLevel(event: ActivityEvent): EventLevel {
@@ -340,9 +378,8 @@ function EventRow({
 
   return (
     <div
-      className="relative flex items-start gap-3 border-b border-border/50 px-3 py-3 text-sm last:border-b-0"
+      className="relative flex items-start gap-3 border-b border-border/50 px-3 py-3 text-sm last:border-b-0 event-row-enter transition-colors duration-150 hover:bg-white/[0.03] dark:hover:bg-white/[0.02]"
       style={{
-        animation: "eventRowIn 0.25s ease both",
         animationDelay: `${index * 55}ms`,
       }}
     >
@@ -1024,8 +1061,14 @@ export function Dashboard() {
     );
   }, [deptRuntimeMap]);
 
+  const hasErrors = runtimeTotals.failed > 0 || blockedIssues > 0 || criticalIssues > 0;
+  const healthPercent = hasErrors ? 94 : 99;
+  const runningCount = runtimeTotals.running;
+  const topology = buildAgentTopologyData(companyAgents);
+  const completenessPct = topology.completenessPct;
+
   const OrgRuntimePanel = () => (
-    <section className="panel-floating relative flex h-full min-h-0 flex-col overflow-hidden p-5 lg:p-6">
+    <section className="panel-floating relative flex h-full min-h-0 flex-col overflow-hidden p-5 lg:p-6 max-h-[460px]">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-28"
         style={{
@@ -1081,6 +1124,19 @@ export function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* Agent Constellation — compact embed */}
+      {topology.slotAgents.some(Boolean) && (
+        <div className="mb-3 rounded-xl border border-periwinkle-border bg-background/25 p-1.5" style={{ height: "170px" }}>
+          <div className="h-full w-full opacity-80">
+            <AgentConstellationGraph
+              slotDefs={topology.slotDefs}
+              slotAgents={topology.slotAgents}
+              runningIds={new Set(runningAgents.map((a) => a.id))}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="relative flex min-h-0 flex-1 flex-col rounded-[22px] border border-periwinkle-border bg-background/35 p-3">
         <div className="mb-3 flex items-center gap-2">
@@ -1175,286 +1231,213 @@ export function Dashboard() {
     </section>
   );
 
-  const ActiveAgentsPanel = () => {
-    const counts = useMemo(() => {
-      const all = selectedDeptAgentRows;
-      return {
-        active: all.filter((r) => r.status === "执行中").length,
-        waiting: all.filter((r) => r.status === "等待中").length,
-        failed: all.filter((r) => r.status === "异常").length,
-        total: all.length,
-      };
-    }, [selectedDeptAgentRows]);
+
+  /* ── Agent Constellation Graph ── */
+  function AgentConstellationGraph({
+    slotDefs,
+    slotAgents,
+    runningIds,
+  }: {
+    slotDefs: readonly { role: string; label: string; ghostLabel: string; ghostDesc: string }[];
+    slotAgents: (Agent | null)[];
+    runningIds: Set<string>;
+  }) {
+
+    // Constellation positions: star/hex pattern
+    const positions = [
+      { x: 200, y: 35 },   // 0: top center (CEO)
+      { x: 70, y: 100 },   // 1: upper left
+      { x: 330, y: 100 },  // 2: upper right
+      { x: 55, y: 220 },   // 3: bottom left
+      { x: 200, y: 260 },  // 4: bottom center
+      { x: 345, y: 220 },  // 5: bottom right
+    ];
+
+    // Star + cross topology
+    const connections = [
+      [0, 1], [0, 2], [0, 3], [0, 4], [0, 5],
+      [1, 2], [3, 4], [4, 5], [1, 3], [2, 5],
+    ];
 
     return (
-      <section className="panel-floating relative flex h-full min-h-0 flex-col overflow-hidden p-5 lg:p-6">
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-28"
-          style={{
-            background:
-              "radial-gradient(circle at 78% 0%, color-mix(in oklab, var(--violet-mist) 75%, transparent) 0%, transparent 68%)",
-          }}
-        />
-        <div className="relative mb-4 flex items-start justify-between gap-3">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-periwinkle-dim px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-shell-chip-foreground">
-              <Bot className="h-3.5 w-3.5 text-zephyr-blue" />
-              活跃智能体
-            </div>
-            <h3 className="mt-3 text-[20px] type-heading text-foreground">
-              智能体群协同面板
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              群体摘要与实时名册同步联动。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {selectedDept !== "all" && (
-              <button
-                type="button"
-                onClick={() => setSelectedDept("all")}
-                className="rounded-full border border-border bg-background/40 px-3.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-all duration-200 hover:bg-zephyr-blue-soft hover:text-foreground"
-              >
-                重置部门
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => openNewAgent()}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/40 px-3.5 py-1.5 text-[11px] font-semibold text-foreground transition-all duration-200 hover:border-zephyr-blue/35 hover:bg-zephyr-blue-soft"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              新建智能体
-            </button>
-          </div>
-        </div>
+      <svg viewBox="0 0 400 300" className="h-full w-full" style={{ filter: "drop-shadow(0 0 24px rgba(59,130,246,0.12))" }}>
+        <defs>
+          <filter id="constellation-glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id="constellation-glow-soft">
+            <feGaussianBlur stdDeviation="1.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
 
-        <div className="mb-4 grid grid-cols-4 gap-2 text-[11px]">
-          <div className="rounded-xl border border-zephyr-blue/25 bg-zephyr-blue-soft px-3 py-2 text-center">
-            <p className="font-semibold text-zephyr-blue">{counts.active}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              活跃
-            </p>
-          </div>
-          <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
-            <p className="font-semibold text-foreground">{counts.waiting}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              待命
-            </p>
-          </div>
-          <div className="rounded-xl border border-rose-400/20 bg-rose-500/8 px-3 py-2 text-center">
-            <p className="font-semibold text-rose-500 dark:text-rose-200">{counts.failed}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              异常
-            </p>
-          </div>
-          <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
-            <p className="font-semibold text-foreground">{counts.total}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              总计
-            </p>
-          </div>
-        </div>
+        {connections.map(([fi, ti], i) => {
+          const from = positions[fi];
+          const to = positions[ti];
+          if (!from || !to) return null;
+          const fromAgent = slotAgents[fi];
+          const toAgent = slotAgents[ti];
+          const fromActive = fromAgent ? runningIds.has(fromAgent.id) : false;
+          const toActive = toAgent ? runningIds.has(toAgent.id) : false;
+          const bothActive = fromActive && toActive;
+          const bothReal = !!(fromAgent && toAgent);
+          const cpY = (from.y + to.y) / 2;
+          const d = `M${from.x} ${from.y} C${from.x} ${cpY}, ${to.x} ${cpY}, ${to.x} ${to.y}`;
 
-        <div className="flex min-h-0 flex-1 flex-col rounded-[22px] border border-periwinkle-border bg-background/35 p-3">
-          <div className="mb-3 flex shrink-0 items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              实时名册
-            </span>
-            <div className="h-px flex-1 bg-periwinkle-dim" />
-            <span className="text-[10px] font-medium text-zephyr-blue">
-              {selectedDept === "all" ? "全部部门" : selectedDept}
-            </span>
-          </div>
+          return (
+            <g key={`conn-${i}`}>
+              <path d={d} strokeWidth={bothActive ? 1.5 : bothReal ? 1 : 0.5} fill="none"
+                className={bothActive ? "constellation-path-active" : ""}
+                style={{ stroke: bothActive ? "var(--graph-line)" : bothReal ? "var(--graph-line)" : "var(--graph-line-faint)" }}
+              />
+              {bothActive && (
+                <circle r="2.5" filter="url(#constellation-glow-soft)" style={{ fill: "var(--graph-node-active-inner)" }}>
+                  <animateMotion dur="2.5s" repeatCount="indefinite" path={d} />
+                </circle>
+              )}
+            </g>
+          );
+        })}
 
-          {selectedDeptAgentRows.length === 0 ? (
-            <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-periwinkle-border bg-background/35 px-4 py-8 text-center text-sm text-muted-foreground">
-              当前筛选下暂无活跃智能体
-            </div>
-          ) : (
-            <div className="scrollbar-auto-hide min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-              {(Object.keys(agentLayerCounts) as AgentLayer[]).map((layer) => {
-                const rows = activeAgentRowsByLayer.get(layer) ?? [];
-                if (rows.length === 0) return null;
-                const meta = layerMeta(layer);
+        {slotAgents.map((agent, idx) => {
+          const pos = positions[idx];
+          if (!pos) return null;
+          const slot = slotDefs[idx];
+          const isGhost = !agent;
+          const isRunning = agent ? runningIds.has(agent.id) : false;
 
-                return (
-                  <div
-                    key={layer}
-                    className="rounded-2xl border border-periwinkle-border bg-background/45 p-2.5"
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        {meta.label} · {meta.description}
-                      </p>
-                      <span className="rounded-full border border-periwinkle-border bg-periwinkle-dim px-2 py-0.5 text-[10px] font-medium text-shell-chip-foreground">
-                        {rows.length}
-                      </span>
-                    </div>
+          if (isGhost) {
+            // Ghost/placeholder node for unfilled role slot
+            return (
+              <g key={`ghost-${idx}`} className="constellation-node" style={{ transformOrigin: `${pos.x}px ${pos.y}px` }}>
+                <circle cx={pos.x} cy={pos.y} r="8" style={{ fill: "var(--graph-ghost-node)", stroke: "var(--graph-ghost-stroke)" }} strokeWidth="1" strokeDasharray="3 2" />
+                <circle cx={pos.x} cy={pos.y} r="2" style={{ fill: "var(--graph-ghost-stroke)" }} />
+                <text x={pos.x} y={pos.y + 24} textAnchor="middle" style={{ fill: "var(--graph-text-ghost)" }} fontSize="7" fontWeight="500" fontFamily="system-ui" fontStyle="italic">
+                  {slot.ghostLabel}
+                </text>
+                <text x={pos.x} y={pos.y + 32} textAnchor="middle" style={{ fill: "var(--graph-text-ghost)" }} fontSize="5.5" fontWeight="400" fontFamily="system-ui">
+                  {slot.ghostDesc}
+                </text>
+              </g>
+            );
+          }
 
-                    <div className="space-y-1">
-                      {rows.map((row) => {
-                        const statusCls =
-                          row.status === "执行中"
-                            ? "bg-zephyr-blue-soft text-zephyr-blue ring-zephyr-blue/25"
-                            : row.status === "异常"
-                            ? "bg-rose-500/12 text-rose-500 dark:text-rose-200 ring-rose-500/22"
-                            : row.status === "等待中"
-                            ? "bg-periwinkle-dim text-shell-chip-foreground ring-periwinkle-border"
-                            : "bg-muted text-muted-foreground ring-border";
+          // Real agent node
+          return (
+            <g key={agent.id} className="constellation-node" style={{ transformOrigin: `${pos.x}px ${pos.y}px` }}>
+              {isRunning && (
+                <circle cx={pos.x} cy={pos.y} r="16" fill="none" strokeWidth="1.5" className="constellation-glow-ring" style={{ stroke: "var(--graph-line)" }} />
+              )}
+              <circle cx={pos.x} cy={pos.y} r={isRunning ? 11 : 8} strokeWidth={isRunning ? 2 : 1}
+                style={{
+                  fill: isRunning ? "var(--graph-node-active-bg)" : "var(--graph-node-bg)",
+                  stroke: isRunning ? "var(--graph-node-active-stroke)" : "var(--graph-ghost-stroke)",
+                }}
+              />
+              {isRunning ? (
+                <>
+                  <circle cx={pos.x} cy={pos.y} r="3.5" filter="url(#constellation-glow)" style={{ fill: "var(--graph-node-active-inner)" }}>
+                    <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx={pos.x} cy={pos.y} r="6" fill="none" strokeWidth="1" style={{ stroke: "var(--graph-line)" }}>
+                    <animate attributeName="r" values="6;10;6" dur="2.2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.5;0;0.5" dur="2.2s" repeatCount="indefinite" />
+                  </circle>
+                </>
+              ) : (
+                <circle cx={pos.x} cy={pos.y} r="2" style={{ fill: "var(--graph-ghost-stroke)" }} />
+              )}
+              <text x={pos.x} y={pos.y + 24} textAnchor="middle" fontSize="7.5" fontWeight="600" fontFamily="system-ui"
+                style={{ fill: isRunning ? "var(--graph-node-active-inner)" : "var(--graph-text)" }}>
+                {agent.name.length > 7 ? agent.name.slice(0, 6) + "…" : agent.name}
+              </text>
+              <text x={pos.x} y={pos.y + 33} textAnchor="middle" fontSize="6" fontWeight="500" fontFamily="system-ui"
+                style={{ fill: isRunning ? "var(--graph-line)" : "var(--graph-text)" }}>
+                {slot.label}
+              </text>
+            </g>
+          );
+        })}
 
-                        return (
-                          <button
-                            key={row.id}
-                            type="button"
-                            onClick={() => navigate(row.route)}
-                            className="group flex w-full items-center justify-between gap-2.5 rounded-xl border border-transparent bg-background/35 px-2.5 py-1.5 text-left transition-all duration-150 hover:border-zephyr-blue/25 hover:bg-background/55"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-foreground">
-                                {row.displayName}
-                              </p>
-                              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                                {row.subtitle}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold ring-1 ring-inset",
-                                  statusCls
-                                )}
-                              >
-                                {row.status}
-                              </span>
-                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/80 transition-transform duration-150 group-hover:translate-x-0.5" />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <div className="mt-3 flex shrink-0 items-center justify-between border-t border-periwinkle-border pt-2">
-            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              名册密度
-            </span>
-            <span className="text-[10px] font-medium text-zephyr-blue">
-              已纳管 {counts.total} 个智能体
-            </span>
-          </div>
-        </div>
-      </section>
+        {slotAgents.length === 0 && (
+          <text x="200" y="150" textAnchor="middle" fontSize="12" fontWeight="500" style={{ fill: "var(--graph-text-ghost)" }}>
+            暂无智能体数据
+          </text>
+        )}
+      </svg>
     );
-  };
+  }
 
-  const ZephyrHero = () => {
+  // ZephyrHero removed in Round 2 IA restructure.
+  // Brand identity → PageHeader, Health/metrics → StatsBar, ConstellationGraph → OrgRuntimePanel
+  // Computations (healthPercent, topology, completenessPct) moved to Dashboard body.
+
+  const MissionSnapshot = () => {
+    const missionMetrics = [
+      {
+        label: "活跃任务",
+        value: activeIssues.length,
+        emptyMsg: "系统处于待命状态",
+      },
+      {
+        label: "待处理",
+        value: blockedIssues,
+        emptyMsg: "无待处理事项",
+      },
+      {
+        label: "异常",
+        value: runtimeTotals.failed,
+        emptyMsg: "无异常",
+      },
+      {
+        label: "平均响应",
+        value: avgRunMinutes > 0 ? `${avgRunMinutes}min` : "—",
+        emptyMsg: "暂无执行数据",
+      },
+      {
+        label: "同步状态",
+        value: lastSyncTime,
+        emptyMsg: "同步中",
+      },
+      {
+        label: "运行中",
+        value: runningCount,
+        emptyMsg: "空闲",
+      },
+      {
+        label: "系统健康",
+        value: `${healthPercent}%`,
+        emptyMsg: "—",
+      },
+      {
+        label: "编队完整",
+        value: `${completenessPct}%`,
+        emptyMsg: "—",
+      },
+    ];
     return (
-      <section className="panel relative overflow-hidden border border-white/[0.06] shadow-xl">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(120deg, color-mix(in oklab, var(--shell-surface-bg) 86%, transparent) 0%, color-mix(in oklab, var(--shell-surface-bg) 62%, transparent) 46%, transparent 100%)",
-          }}
-        />
-        <div className="pointer-events-none absolute inset-0 z-[1]">
-          <ConstellationWindField className="h-full w-full opacity-[0.95] dark:opacity-[0.98]" />
-        </div>
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[64%]"
-          style={{
-            background:
-              "linear-gradient(90deg, var(--card) 0%, color-mix(in oklab, var(--card) 88%, transparent) 35%, transparent 100%)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute inset-y-0 left-[40%] z-[2] w-[30%]"
-          style={{
-            background:
-              "radial-gradient(ellipse at 22% 50%, var(--violet-glow) 0%, transparent 72%)",
-          }}
-        />
-
-        <div className="relative z-10 flex min-h-[350px] flex-col justify-between p-7 md:p-9 lg:p-11">
-          <div className="max-w-[700px] space-y-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-background/55 px-3.5 py-1 backdrop-blur-xl">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zephyr-blue opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-zephyr-blue" />
-                </span>
-                <span className="type-label text-foreground/80">
-                  系统在线 · {lastSyncTime}
-                </span>
-              </div>
-              <RuntimePanel variant="minimal" />
-            </div>
-
-            <div className="space-y-1.5">
-              <h1 className="type-display text-4xl text-foreground md:text-5xl lg:text-[3.25rem]">
-                风之灵枢
-              </h1>
-              <h2 className="text-lg font-light tracking-[0.22em] text-muted-foreground md:text-xl lg:text-2xl">
-                AI 编排系统 · Control Plane
-              </h2>
-            </div>
-
-            <div className="rounded-[20px] border border-periwinkle-border bg-background/48 px-4 py-3 backdrop-blur-sm">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-                <div>
-                  <p className="text-2xl font-semibold leading-none text-foreground">
-                    {departments.length}
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    部门
-                  </p>
-                </div>
-                <div className="sm:border-l sm:border-periwinkle-border sm:pl-4">
-                  <p className="text-2xl font-semibold leading-none text-foreground">
-                    {companyAgents.length}
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    智能体
-                  </p>
-                </div>
-                <div className="sm:border-l sm:border-periwinkle-border sm:pl-4">
-                  <p className="text-2xl font-semibold leading-none text-foreground">
-                    96%
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    健康度
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                onClick={() => openNewIssue()}
-                className="inline-flex items-center gap-2 rounded-xl border border-zephyr-blue bg-zephyr-blue px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_22px_-14px_var(--zephyr-blue-glow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_28px_-14px_var(--zephyr-blue-glow)]"
-              >
-                <Plus className="h-4 w-4" />
-                新建任务
-              </button>
-            </div>
+      <div className="flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl border border-border/40 bg-border/20">
+        {missionMetrics.map((m) => (
+          <div
+            key={m.label}
+            className="flex flex-1 flex-col justify-center gap-0.5 bg-shell-surface-bg px-3.5 py-2.5 min-w-[90px]"
+          >
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+              {m.label}
+            </span>
+            {typeof m.value === "number" && m.value === 0 ? (
+              <span className="text-[11px] font-medium text-muted-foreground/60">
+                {m.emptyMsg}
+              </span>
+            ) : (
+              <span className="text-sm font-semibold text-foreground tabular-nums">
+                {m.value}
+              </span>
+            )}
           </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
-            <span>风灵群体｜智能体群</span>
-            <span className="h-[3px] w-[3px] rounded-full bg-current opacity-40" />
-            <span>风脉路径｜任务流</span>
-            <span className="h-[3px] w-[3px] rounded-full bg-current opacity-40" />
-            <span>风灵协同｜协同网络</span>
-            <span className="h-[3px] w-[3px] rounded-full bg-current opacity-40" />
-            <span>风擎引擎｜执行引擎</span>
-          </div>
-        </div>
-      </section>
+        ))}
+      </div>
     );
   };
 
@@ -1465,48 +1448,50 @@ export function Dashboard() {
         value: activeIssues.length,
         sub: "执行负载",
         icon: <Activity className="h-4 w-4" />,
-        tone: "blue" as const,
-        accent: "border-zephyr-blue/30 bg-zephyr-blue-soft/50",
+        accent: activeIssues.length > 0
+          ? "border-zephyr-blue/25 bg-zephyr-blue-soft/40"
+          : "border-border/40 bg-transparent",
       },
       {
         label: "人工升级",
         value: blockedIssues,
         sub: "人工介入",
         icon: <AlertTriangle className="h-4 w-4" />,
-        tone: "warm" as const,
-        accent: "border-amber-400/30 bg-amber-400/10",
+        accent: blockedIssues > 0
+          ? "border-amber-400/20 bg-amber-400/8"
+          : "border-border/40 bg-transparent",
       },
       {
         label: "系统成功率",
-        value: `${successRate}%`,
+        value: successRate > 0 ? `${successRate}%` : "—",
         sub: "运行质量",
         icon: <ShieldCheck className="h-4 w-4" />,
-        tone: "emerald" as const,
-        accent: "border-emerald-400/30 bg-emerald-400/10",
+        accent: successRate > 0
+          ? "border-emerald-400/20 bg-emerald-400/8"
+          : "border-border/40 bg-transparent",
       },
       {
         label: "通信机器人",
         value: "活跃",
         sub: "同步中",
         icon: <Bot className="h-4 w-4" />,
-        tone: "violet" as const,
-        accent: "border-violet-400/30 bg-violet-400/10",
+        accent: "border-violet-400/20 bg-violet-400/8",
       },
-    ] as const;
+    ];
 
     return (
       <section className="panel-floating relative flex h-full min-h-[260px] flex-col overflow-hidden p-5 lg:p-6">
         {/* Atmospheric glow */}
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-40"
+          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-30"
           style={{
             background:
-              "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(56, 121, 234, 0.12) 0%, transparent 70%)",
+              "radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in oklab, var(--zephyr-blue) 10%, transparent) 0%, transparent 70%)",
           }}
         />
 
         <div className="relative mb-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/60">
             实时监控
           </p>
           <h3 className="mt-2 text-[20px] type-heading text-foreground">
@@ -1519,31 +1504,23 @@ export function Dashboard() {
             <div
               key={metric.label}
               className={cn(
-                "group relative flex flex-col justify-between rounded-xl border p-3.5 transition-all duration-200 hover:scale-[1.02] hover:border-white/15",
+                "card relative flex flex-col justify-between rounded-xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-white/[0.08]",
                 metric.accent
               )}
             >
-              {/* Glow effect on hover */}
-              <div
-                className="absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                style={{
-                  background:
-                    "radial-gradient(ellipse 60% 40% at 30% 0%, rgba(56, 121, 234, 0.08) 0%, transparent 70%)",
-                }}
-              />
               <div className="relative">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/60">
                     {metric.sub}
                   </span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5">
-                    <span className="text-muted-foreground">{metric.icon}</span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03]">
+                    <span className="text-muted-foreground/50">{metric.icon}</span>
                   </div>
                 </div>
                 <p className="text-xl font-semibold text-foreground tabular-nums">
                   {metric.value}
                 </p>
-                <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+                <p className="mt-0.5 text-[10px] font-medium text-muted-foreground/60">
                   {metric.label}
                 </p>
               </div>
@@ -1554,189 +1531,206 @@ export function Dashboard() {
     );
   };
 
-  const OrchestrationLane = () => {
+  const PipelineRail = () => {
+    const [expanded, setExpanded] = useState(false);
     const status = liveTask?.status ?? "todo";
     const blocked = status === "blocked";
 
-    // 6-step pipeline with agent assignments
     const stages = [
       {
-        id: "input",
-        label: "任务输入",
-        agent: "发起人",
+        id: "input", label: "任务输入", agent: "发起人",
+        desc: "接收原始任务请求，解析任务类型与优先级",
         state: status === "todo" ? "active" : "done",
       },
       {
-        id: "decompose",
-        label: "任务拆解",
-        agent: "CEO 智能体",
+        id: "decompose", label: "任务拆解", agent: "CEO 智能体",
+        desc: "将任务拆解为可执行的子任务单元",
         state: status === "todo" ? "pending" : blocked ? "failed" : status === "in_progress" ? "active" : "done",
       },
       {
-        id: "dispatch",
-        label: "Agent 分派",
-        agent: "调度器",
+        id: "dispatch", label: "Agent 分派", agent: "调度器",
+        desc: "匹配最优资源，分派给对应 Agent",
         state: status === "in_progress" ? "active" : status === "in_review" || status === "done" ? "done" : "pending",
       },
       {
-        id: "execute",
-        label: "工具调用",
-        agent: "执行引擎",
+        id: "execute", label: "工具调用", agent: "执行引擎",
+        desc: "执行具体工具调用和数据操作",
         state: status === "in_review" ? "active" : status === "done" ? "done" : "pending",
       },
       {
-        id: "aggregate",
-        label: "结果汇总",
-        agent: "CEO 智能体",
+        id: "aggregate", label: "结果汇总", agent: "CEO 智能体",
+        desc: "汇总各 Agent 执行结果，生成综合报告",
         state: status === "done" ? "active" : status === "in_review" ? "done" : "pending",
       },
       {
-        id: "confirm",
-        label: "人工确认",
-        agent: "人工",
+        id: "confirm", label: "人工确认", agent: "人工",
+        desc: "最终结果通过人工审核确认",
         state: status === "done" ? "done" : status === "in_review" ? "active" : "pending",
       },
     ] as const;
 
-    const terminalIndex = stages.reduce((acc, stage, index) => {
-      if (stage.state === "done" || stage.state === "active" || stage.state === "failed") {
-        return index;
-      }
-      return acc;
-    }, 0);
-    const progress = Math.max(8, Math.round((terminalIndex / (stages.length - 1)) * 100));
-    const progressBar = stages.some((stage) => stage.state === "failed")
-      ? "linear-gradient(90deg, color-mix(in oklab, var(--zephyr-blue) 35%, var(--warning)) 0%, var(--error) 100%)"
-      : "linear-gradient(90deg, var(--zephyr-blue) 0%, var(--violet-soft) 100%)";
+    const doneCount = stages.filter((s) => s.state === "done").length;
+    const progress = Math.round((doneCount / stages.length) * 100);
+
+    const stageColor = (state: string) => {
+      if (state === "active") return "var(--zephyr-blue)";
+      if (state === "done") return "var(--success)";
+      if (state === "failed") return "var(--error)";
+      return "rgba(255,255,255,0.1)";
+    };
+    const stageBg = (state: string) => {
+      if (state === "active") return "rgba(59,130,246,0.15)";
+      if (state === "done") return "rgba(52,211,153,0.12)";
+      if (state === "failed") return "rgba(239,68,68,0.12)";
+      return "rgba(255,255,255,0.03)";
+    };
 
     return (
-      <div className="relative px-2 py-2">
-        {/* Background track */}
-        <div className="absolute left-6 right-6 top-[28px] h-[3px] rounded-full bg-white/[0.06]" />
-
-        {/* Active progress track */}
-        <div
-          className="absolute left-6 top-[28px] h-[3px] rounded-full transition-all duration-700"
-          style={{
-            width: `calc((100% - 3rem) * ${progress / 100})`,
-            background: progressBar,
-            boxShadow: "0 0 8px 0 rgba(59, 130, 246, 0.4)",
-          }}
-        />
-
-        {/* Pipeline steps */}
-        <div className="relative flex items-start justify-between gap-1">
-          {stages.map((stage, i) => {
-            const isActive = stage.state === "active";
-            const isDone = stage.state === "done";
-            const isFailed = stage.state === "failed";
-            const isPending = stage.state === "pending";
-            const isLast = i === stages.length - 1;
-
-            return (
-              <div key={stage.id} className="flex flex-1 flex-col items-center">
-                {/* Step node */}
-                <div
-                  className={cn(
-                    "relative z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300",
-                    isActive && "border-zephyr-blue bg-zephyr-blue/20 shadow-[0_0_16px_2px_rgba(59,130,246,0.35)]",
-                    isDone && "border-emerald-400/60 bg-emerald-400/15",
-                    isFailed && "border-error/60 bg-error/15",
-                    isPending && "border-white/20 bg-white/5"
-                  )}
-                >
-                  {isDone ? (
-                    <Check className="h-4 w-4 text-emerald-400" />
-                  ) : isFailed ? (
-                    <AlertTriangle className="h-4 w-4 text-error" />
-                  ) : isActive ? (
-                    <div className="h-2 w-2 rounded-full bg-zephyr-blue animate-pulse" />
-                  ) : (
-                    <span className="text-[10px] font-bold text-muted-foreground/40">{i + 1}</span>
-                  )}
-
-                  {/* Active ring */}
-                  {isActive && (
-                    <div
-                      className="absolute inset-0 rounded-full border border-zephyr-blue/30"
-                      style={{ animation: "node-active-ring 2s ease-in-out infinite" }}
-                    />
-                  )}
-                </div>
-
-                {/* Labels */}
-                <div className="mt-2 flex flex-col items-center">
-                  <span
-                    className={cn(
-                      "text-[9px] font-semibold leading-tight",
-                      isActive && "text-zephyr-blue",
-                      isDone && "text-emerald-400/80",
-                      isFailed && "text-error",
-                      isPending && "text-muted-foreground/50"
-                    )}
-                  >
-                    {stage.label}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-[7px] leading-tight",
-                      isActive && "text-zephyr-blue/60",
-                      isDone && "text-muted-foreground/40",
-                      isPending && "text-muted-foreground/30"
-                    )}
-                  >
-                    {stage.agent}
-                  </span>
-                </div>
-
-                {/* Status badge */}
-                <div
-                  className={cn(
-                    "mt-1.5 rounded-full px-1.5 py-0.5 text-[7px] font-medium",
-                    isActive && "bg-zephyr-blue/15 text-zephyr-blue",
-                    isDone && "bg-emerald-400/10 text-emerald-400/70",
-                    isFailed && "bg-error/10 text-error",
-                    isPending && "bg-white/5 text-muted-foreground/40"
-                  )}
-                >
-                  {isActive ? "● 运行中" : isDone ? "✓ 完成" : isFailed ? "✕ 失败" : "○ 等待"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const MissionControl = () => {
-    return (
-      <section className="panel-floating relative flex h-full min-h-[260px] flex-col overflow-hidden p-5 lg:p-6">
-        <div className="mb-4 flex items-start justify-between gap-3">
+      <section className="panel-floating relative flex flex-col overflow-hidden p-5 lg:p-6">
+        <div className="relative mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              任务流程
+              作业流水线
             </p>
-            <h3 className="mt-2 text-[20px] type-heading text-foreground">
-              任务执行链
+            <h3 className="mt-2 text-lg type-heading text-foreground">
+              标准作业流程
             </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              执行与人工校核的首页编排摘要。
-            </p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-periwinkle-dim px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-shell-chip-foreground">
-            <Workflow className="h-3.5 w-3.5 text-zephyr-blue" />
-            编排通道
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-400 to-zephyr-blue transition-all duration-700"
+                  style={{ width: `${Math.max(4, progress)}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-semibold text-muted-foreground">{progress}%</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="ml-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[9px] font-semibold text-muted-foreground/70 transition-all hover:border-zephyr-blue/30 hover:text-zephyr-blue"
+            >
+              {expanded ? "收起详情" : "展开详情"}
+            </button>
           </div>
         </div>
 
-        <div className="rounded-[22px] border border-periwinkle-border bg-background/36 p-2">
-          <OrchestrationLane />
-        </div>
+        {/* Compact horizontal stepped rail (default) */}
+        {!expanded && (
+          <div className="flex items-center gap-2 pb-1">
+            {stages.map((stage, i) => {
+              const isLast = i === stages.length - 1;
+              const isActive = stage.state === "active";
+              const isDone = stage.state === "done";
+              const isFailed = stage.state === "failed";
+
+              return (
+                <div key={stage.id} className="flex items-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className="flex h-7 w-7 items-center justify-center rounded-full border text-[9px] font-bold transition-all"
+                      style={{
+                        borderColor: stageColor(stage.state),
+                        background: stageBg(stage.state),
+                        boxShadow: isActive ? "0 0 10px 1px rgba(59,130,246,0.3)" : undefined,
+                      }}
+                    >
+                      {isDone ? (
+                        <Check className="h-3 w-3 text-emerald-400" />
+                      ) : isActive ? (
+                        <div className="h-1.5 w-1.5 rounded-full bg-zephyr-blue animate-pulse" />
+                      ) : isFailed ? (
+                        <AlertTriangle className="h-3 w-3 text-error" />
+                      ) : (
+                        <span className="text-muted-foreground/40">{i + 1}</span>
+                      )}
+                    </div>
+                    <span className="whitespace-nowrap text-[8px] font-medium text-muted-foreground/60">
+                      {stage.label}
+                    </span>
+                    <span className="text-[6px] text-muted-foreground/35">{stage.agent}</span>
+                  </div>
+                  {!isLast && (
+                    <div className="mx-1 mt-[-16px] h-px w-3 bg-white/[0.06]" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Expanded vertical timeline */}
+        {expanded && (
+          <div className="relative flex flex-1 flex-col gap-0">
+            <div className="absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-violet-400/20 via-zephyr-blue/10 to-transparent" />
+
+            {stages.map((stage, i) => {
+              const isActive = stage.state === "active";
+              const isDone = stage.state === "done";
+              const isFailed = stage.state === "failed";
+              const isPending = stage.state === "pending";
+
+              return (
+                <div key={stage.id} className="relative flex items-start gap-4 pb-4 last:pb-0">
+                  <div
+                    className="relative z-10 flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300"
+                    style={{
+                      borderColor: isActive ? "var(--zephyr-blue)" : isDone ? "rgba(52,211,153,0.5)" : isFailed ? "var(--error)" : "rgba(255,255,255,0.12)",
+                      background: isActive ? "rgba(59,130,246,0.15)" : isDone ? "rgba(52,211,153,0.1)" : isFailed ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.04)",
+                      boxShadow: isActive ? "0 0 16px 2px rgba(59,130,246,0.3)" : undefined,
+                    }}
+                  >
+                    {isDone ? (
+                      <Check className="h-4 w-4 text-emerald-400" />
+                    ) : isFailed ? (
+                      <AlertTriangle className="h-4 w-4 text-error" />
+                    ) : isActive ? (
+                      <div className="h-2.5 w-2.5 rounded-full bg-zephyr-blue" style={{ animation: "status-breathe 1.6s ease-in-out infinite" }} />
+                    ) : (
+                      <span className="text-[11px] font-bold text-muted-foreground/40">{i + 1}</span>
+                    )}
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-full border border-zephyr-blue/30" style={{ animation: "node-active-ring 2s ease-in-out infinite" }} />
+                    )}
+                  </div>
+
+                  <div
+                    className="min-w-0 flex-1 rounded-xl border px-3.5 py-2.5 transition-all duration-200"
+                    style={{
+                      borderColor: isActive ? "rgba(59,130,246,0.2)" : isDone ? "rgba(52,211,153,0.1)" : isPending ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.06)",
+                      background: isActive ? "rgba(59,130,246,0.04)" : "rgba(255,255,255,0.02)",
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={cn("text-sm font-semibold",
+                        isActive && "text-zephyr-blue",
+                        isDone && "text-emerald-400/80",
+                        isFailed && "text-error",
+                        isPending && "text-muted-foreground/50"
+                      )}>
+                        {stage.label}
+                      </span>
+                      <span className={cn("rounded-full px-2 py-0.5 text-[8px] font-semibold",
+                        isActive && "bg-zephyr-blue/15 text-zephyr-blue",
+                        isDone && "bg-emerald-400/10 text-emerald-400/70",
+                        isFailed && "bg-error/10 text-error",
+                        isPending && "bg-white/5 text-muted-foreground/40"
+                      )}>
+                        {isActive ? "运行中" : isDone ? "已完成" : isFailed ? "异常" : "待处理"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground/70">{stage.desc}</p>
+                    <p className="mt-1 text-[9px] font-medium text-muted-foreground/50">执行: {stage.agent}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     );
   };
-
   const EventTimeline = () => (
     <section className="panel-floating relative overflow-hidden p-6 lg:p-8 shadow-xl">
       <div
@@ -1785,13 +1779,23 @@ export function Dashboard() {
       </div>
 
       {filteredEvents.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          当前筛选下暂无事件。
-        </p>
+        <div className="flex flex-col items-center justify-center gap-3 py-10">
+          <div className="events-empty-icon">
+            <Radar className="h-8 w-8 text-muted-foreground/20" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-muted-foreground/50">
+              当前没有新的系统事件
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground/30">
+              编排系统正在监听任务、Agent 与组织状态变化
+            </p>
+          </div>
+        </div>
       ) : (
         <div
           ref={logsContainerRef}
-          className="relative max-h-[420px] overflow-auto rounded-[24px] border border-periwinkle-border"
+          className="scrollbar-auto-hide relative max-h-[420px] overflow-auto rounded-[24px] border border-periwinkle-border"
           style={{
             background:
               "linear-gradient(180deg, color-mix(in oklab, var(--shell-surface-bg) 85%, transparent) 0%, color-mix(in oklab, var(--card) 72%, var(--shell-surface-bg)) 100%)",
@@ -1824,6 +1828,45 @@ export function Dashboard() {
     </section>
   );
 
+  const PageHeader = () => (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">总览</h1>
+          {runningCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-[10px] font-medium text-emerald-400">Route Live</span>
+            </div>
+          )}
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground/60 tracking-wide">
+          风之灵枢 · AI 编排系统 · Control Plane
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => openNewIssue()}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-zephyr-blue bg-zephyr-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-md"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          新建任务
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/org")}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/40 px-3.5 py-1.5 text-xs font-semibold text-foreground/80 transition-all duration-200 hover:border-zephyr-blue/30 hover:bg-zephyr-blue-soft"
+        >
+          进入组织
+        </button>
+      </div>
+    </div>
+  );
+
   if (!selectedCompanyId) {
     if (companies.length === 0) {
       return (
@@ -1844,11 +1887,12 @@ export function Dashboard() {
 
   return (
     <div
-      className="relative mr-auto w-full max-w-[1760px] pb-20 pt-8 text-foreground"
+      className="relative mr-auto w-full pb-20 text-foreground"
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "48px",
+        gap: "20px",
+        maxWidth: "var(--content-max-width)",
       }}
     >
       <style>{`
@@ -1858,65 +1902,61 @@ export function Dashboard() {
         }
       `}</style>
 
-      {/* Hero section */}
+      {/* ═══ PAGE HEADER — compact title + identity + actions ═══ */}
+      <PageHeader />
+
+      {/* ═══ STATS BAR — enhanced with health/completeness ═══ */}
       <section style={{ animation: "panelRiseIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both" }}>
-        <ZephyrHero />
+        <MissionSnapshot />
       </section>
 
-      {/* System Status Row - A层：系统总状态 */}
+      {/* ═══ CORE WORKSPACE — balanced 2-column cards ═══ */}
       <section
+        className="grid grid-cols-12 gap-5"
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "24px",
           animation: "panelRiseIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
           animationDelay: "0.05s",
         }}
       >
-        {/* Runtime Status - 系统运行时状态 */}
-        <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
-
-        {/* Agent Coordination - 智能体协同拓扑 */}
-        <AgentCoordinationPanel />
+        <div className="col-span-7" style={{ minHeight: "320px" }}>
+          <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
+        </div>
+        <div className="col-span-5" style={{ minHeight: "320px" }}>
+          <SystemMetricsPanel />
+        </div>
       </section>
 
-      {/* Primary execution row */}
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-          gap: "32px",
-          animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
-          animationDelay: "0.1s",
-        }}
-      >
-        <MissionControl />
-        <SystemMetricsPanel />
+      {/* ═══ TIER 2 — Command Surface (consolidated detail modules) ═══ */}
+      <section style={{ animation: "panelRiseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both", animationDelay: "0.1s" }}>
+        <CommandSurface
+          tabs={[
+            {
+              id: "pipeline",
+              label: "作业流程",
+              badge: activeIssues.length,
+              content: <PipelineRail />,
+            },
+            {
+              id: "org",
+              label: "组织拓扑",
+              content: <OrgRuntimePanel />,
+            },
+            {
+              id: "agents",
+              label: "Agent 检查",
+              badge: activeAgentRows.length,
+              content: <AgentCoordinationPanel />,
+            },
+            {
+              id: "events",
+              label: "系统事件",
+              badge: alertCount,
+              content: <EventTimeline />,
+            },
+          ]}
+        />
       </section>
 
-      {/* Agent coordination row */}
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-          gap: "32px",
-          animation: "panelRiseIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) both",
-          animationDelay: "0.14s",
-        }}
-      >
-        <OrgRuntimePanel />
-        <ActiveAgentsPanel />
-      </section>
-
-      {/* Timeline — full width */}
-      <section
-        style={{
-          animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
-          animationDelay: "0.2s",
-        }}
-      >
-        <EventTimeline />
-      </section>
 
       {/* Overlays & Modals */}
       <Dialog open={blockedModalOpen} onOpenChange={setBlockedModalOpen}>
