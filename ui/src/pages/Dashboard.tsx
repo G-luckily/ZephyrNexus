@@ -17,17 +17,11 @@ import {
   TaskFlowBoard,
   type FlowNodeDetail,
 } from "../components/dashboard/TaskFlowBoard";
-import { OrgRuntimePanel } from "../components/dashboard/OrgRuntimePanel";
-import { ActiveAgentsPanel } from "../components/dashboard/ActiveAgentsPanel";
-import { ZephyrHero } from "../components/dashboard/ZephyrHero";
-import { SystemMetricsPanel } from "../components/dashboard/SystemMetricsPanel";
-import { OrchestrationLane } from "../components/dashboard/OrchestrationLane";
-import { EventTimeline } from "../components/dashboard/EventTimeline";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { cn, relativeTime } from "../lib/utils";
 import { tStatus } from "../lib/i18n";
 import { buildOrgUnits } from "../lib/company-scope";
-import { ConstellationWindField } from "../components/dashboard/ConstellationWindField";
+
 import {
   cleanVisibleAgentName,
   departmentLabelFromKey,
@@ -73,22 +67,15 @@ import type {
   HeartbeatRun,
   Issue,
 } from "@zephyr-nexus/shared";
+import { RuntimePanel, AgentCoordinationPanel } from "../components/runtime";
+import { SectionCollapse } from "../components/SectionCollapse";
+import { CommandSurface } from "../components/CommandSurface";
 
 type LogWindow = "15m" | "1h" | "24h";
 type SuccessWindow = "24h" | "7d" | "30d";
 type FeedFilter = "all" | "errors" | "tasks";
 type EventLevel = "信息" | "警告" | "错误";
 type AgentLayer = "ORG" | "V1-PROJECT" | "V2-PIPELINE" | "INFRA";
-
-// Dashboard metric constants
-const CHART_BAR_MIN_HEIGHT = 2;
-const CHART_BAR_MAX_HEIGHT = 26;
-const CARD_HEIGHT_PX = 140;
-const ACTION_QUEUE_SLICE_LIMIT = 160;
-const RECENT_ISSUES_LIMIT = 5;
-const AGENT_LOGS_LIMIT = 5;
-const ORG_UNITS_DISPLAY_LIMIT = 12;
-const HEALTH_CHECK_PASS_PERCENT = 96;
 
 type ActiveAgentRow = {
   id: string;
@@ -151,6 +138,42 @@ function getRecentIssues(issues: Issue[]): Issue[] {
   return [...issues].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
+}
+
+/**
+ * Build role-slot topology data from real agent list.
+ * Used by AgentConstellationGraph and Hero to consistently
+ * map agents to role slots and compute completeness.
+ */
+function buildAgentTopologyData(agents: Agent[]) {
+  const slotDefs = [
+    { role: "ceo",       label: "CEO",       ghostLabel: "CEO",  ghostDesc: "待配置" },
+    { role: "researcher",label: "研究",       ghostLabel: "研究", ghostDesc: "待配置" },
+    { role: "cto",       label: "CTO",       ghostLabel: "技术", ghostDesc: "待配置" },
+    { role: "pm",        label: "PM",        ghostLabel: "管理", ghostDesc: "待配置" },
+    { role: "general",   label: "执行",       ghostLabel: "执行", ghostDesc: "待配置" },
+    { role: "devops",    label: "运维",       ghostLabel: "运维", ghostDesc: "待配置" },
+  ] as const;
+
+  const roleAgentMap = new Map<string, Agent>();
+  for (const agent of agents) {
+    const key = agent.role || "general";
+    if (!roleAgentMap.has(key)) roleAgentMap.set(key, agent);
+  }
+
+  const slotAgents: (Agent | null)[] = slotDefs.map((slot) =>
+    roleAgentMap.get(slot.role) || null
+  );
+
+  const rolesCovered = new Set(
+    agents.map((a) => a.role || "general").filter(Boolean)
+  );
+  const completenessPct = Math.round(
+    (rolesCovered.size / slotDefs.length) * 100
+  );
+  const missingRoles = slotDefs.filter((s) => !roleAgentMap.has(s.role));
+
+  return { slotDefs, slotAgents, rolesCovered, completenessPct, missingRoles, totalSlots: slotDefs.length, filledSlots: rolesCovered.size };
 }
 
 function toLevel(event: ActivityEvent): EventLevel {
@@ -321,6 +344,84 @@ function translateAction(action: string): string {
   return MAP[action] ?? action;
 }
 
+function EventRow({
+  event,
+  level,
+  agentName,
+  index = 0,
+}: {
+  event: ActivityEvent;
+  level: EventLevel;
+  agentName: string;
+  index?: number;
+}) {
+  const levelClass =
+    level === "错误"
+      ? "text-[#ff8c82]"
+      : level === "警告"
+      ? "text-[#f6bd60]"
+      : "text-[#81ddff]";
+  const dotColor =
+    level === "错误" ? "#ff5d73" : level === "警告" ? "#ffb347" : "#4fd1ff";
+  const outerAnim =
+    level === "错误"
+      ? "eventDotBreathStrong"
+      : level === "警告"
+      ? "eventDotBreathSoft"
+      : "eventDotBreathSoft";
+  const innerShadow =
+    level === "错误"
+      ? "0 0 0 3px rgba(255,93,115,0.35)"
+      : level === "警告"
+      ? "0 0 0 3px rgba(255,179,71,0.3)"
+      : "0 0 0 2px rgba(79,209,255,0.28)";
+
+  return (
+    <div
+      className="relative flex items-start gap-3 border-b border-border/50 px-3 py-3 text-sm last:border-b-0 event-row-enter transition-colors duration-150 hover:bg-white/[0.03] dark:hover:bg-white/[0.02]"
+      style={{
+        animationDelay: `${index * 55}ms`,
+      }}
+    >
+      <div className="mt-1.5 flex w-[74px] shrink-0 flex-col items-start gap-1">
+        <span className="relative inline-flex h-3 w-3">
+          <span
+            className="absolute inline-flex h-full w-full rounded-full"
+            style={{
+              backgroundColor: dotColor,
+              opacity: level === "信息" ? 0.35 : 0.55,
+              animation: `${outerAnim} ${
+                level === "错误" ? 2.1 : level === "警告" ? 2.4 : 2.9
+              }s ease-in-out infinite`,
+            }}
+          />
+          <span
+            className="relative h-2.5 w-2.5 rounded-full"
+            style={{
+              backgroundColor: dotColor,
+              boxShadow: innerShadow,
+            }}
+          />
+        </span>
+        <span className="text-[11px] text-muted-foreground">
+          {new Date(event.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={cn("text-xs font-semibold", levelClass)}>
+          {level} · {agentName}
+        </p>
+        <p className="mt-1 truncate text-xs text-muted-foreground">
+          {translateAction(event.action)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function MetricCard({
   title,
   value,
@@ -340,11 +441,7 @@ function MetricCard({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        `premium-panel glass-surface hover-lift group relative h-[${CARD_HEIGHT_PX}px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300`,
-        kind === "accent" && "border-primary/20",
-        kind === "warning" && "border-warning/30"
-      )}
+      className="panel group relative h-[140px] overflow-hidden px-6 py-6 text-left transition-all duration-200"
     >
       <div className="relative flex h-full flex-col justify-between z-10">
         <div className="flex items-center justify-between">
@@ -402,7 +499,7 @@ function SuccessRateCard({
     <button
       type="button"
       onClick={onClick}
-      className={`premium-panel glass-surface hover-lift group relative h-[${CARD_HEIGHT_PX}px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300`}
+      className="panel group relative h-[140px] overflow-hidden px-6 py-6 text-left transition-all duration-200"
     >
       <div className="relative flex h-full flex-col justify-between z-10">
         <div className="flex items-center justify-between">
@@ -421,8 +518,8 @@ function SuccessRateCard({
             {bars.map((b, i) => {
               const h =
                 b.total === 0
-                  ? CHART_BAR_MIN_HEIGHT
-                  : Math.max(4, Math.round((b.total / maxTotal) * CHART_BAR_MAX_HEIGHT));
+                  ? 2
+                  : Math.max(4, Math.round((b.total / maxTotal) * 26));
               const successFrac = b.total === 0 ? 1 : b.ok / b.total;
               const barColor =
                 b.total === 0
@@ -668,10 +765,7 @@ export function Dashboard() {
     const allRuns = runs ?? [];
     if (scopeView === "company") return allRuns;
     return allRuns.filter((run) => {
-      const issueId =
-        typeof run === "object" && run !== null && "issueId" in run
-          ? (run as unknown as { issueId?: string }).issueId
-          : undefined;
+      const issueId = (run as { issueId?: string }).issueId;
       if (scopeView === "project") {
         if (projectFilter === "all") return true;
         return !!issueId && scopeIssueIds.has(issueId);
@@ -756,10 +850,7 @@ export function Dashboard() {
     const all = activity ?? [];
     if (scopeView === "company") return all;
     return all.filter((event) => {
-      const issueId =
-        typeof event === "object" && event !== null && "issueId" in event
-          ? (event as unknown as { issueId?: string }).issueId
-          : undefined;
+      const issueId = (event as { issueId?: string }).issueId;
       if (scopeView === "project") {
         if (projectFilter === "all") return true;
         return !!issueId && scopeIssueIds.has(issueId);
@@ -775,7 +866,7 @@ export function Dashboard() {
   }, [activity, scopeView, projectFilter, scopeIssueIds, scopeAgentIds]);
 
   const recentActivity = useMemo(
-    () => scopedActivity.slice(0, ACTION_QUEUE_SLICE_LIMIT),
+    () => scopedActivity.slice(0, 160),
     [scopedActivity]
   );
 
@@ -790,7 +881,7 @@ export function Dashboard() {
           event.entityType.toLowerCase().includes("task")
         );
       })
-      .slice(0, ORG_UNITS_DISPLAY_LIMIT);
+      .slice(0, 12);
   }, [recentActivity, feedFilter, logWindow]);
 
   useEffect(() => {
@@ -943,7 +1034,7 @@ export function Dashboard() {
         action.includes("task")
       );
     });
-    return hits.slice(0, AGENT_LOGS_LIMIT);
+    return hits.slice(0, 5);
   }, [recentActivity, selectedFlowNode]);
 
   const departments = useMemo(() => {
@@ -970,33 +1061,811 @@ export function Dashboard() {
     );
   }, [deptRuntimeMap]);
 
-  const MissionControl = () => {
-    return (
-      <section className="premium-panel glass-surface relative flex h-full min-h-[260px] flex-col overflow-hidden rounded-[var(--radius-panel)] p-5 lg:p-6">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              任务流程
-            </p>
-            <h3 className="mt-2 text-[20px] font-semibold tracking-tight text-foreground">
-              任务执行链
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              执行与人工校核的首页编排摘要。
-            </p>
+  const hasErrors = runtimeTotals.failed > 0 || blockedIssues > 0 || criticalIssues > 0;
+  const healthPercent = hasErrors ? 94 : 99;
+  const runningCount = runtimeTotals.running;
+  const topology = buildAgentTopologyData(companyAgents);
+  const completenessPct = topology.completenessPct;
+
+  const OrgRuntimePanel = () => (
+    <section className="panel-floating relative flex h-full min-h-0 flex-col overflow-hidden p-5 lg:p-6 max-h-[460px]">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-28"
+        style={{
+          background:
+            "radial-gradient(circle at 12% 0%, color-mix(in oklab, var(--zephyr-blue-soft) 75%, transparent) 0%, transparent 66%)",
+        }}
+      />
+      <div className="relative mb-4 flex items-start justify-between gap-3">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-periwinkle-dim px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-shell-chip-foreground">
+            <Layers3 className="h-3.5 w-3.5 text-zephyr-blue" />
+            组织运行态
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-periwinkle-dim px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-shell-chip-foreground">
-            <Workflow className="h-3.5 w-3.5 text-zephyr-blue" />
-            编排通道
+          <h3 className="mt-3 text-[20px] type-heading text-foreground">
+            组织运行拓扑
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            指挥链与执行单元同步密度。
+          </p>
+        </div>
+        <Link
+          to="/org"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/40 px-3.5 py-1.5 text-[11px] font-semibold text-foreground no-underline transition-all duration-200 hover:border-zephyr-blue/35 hover:bg-zephyr-blue-soft"
+        >
+          进入组织页
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      <div className="mb-4 grid grid-cols-4 gap-2 text-[11px]">
+        <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+          <p className="font-semibold text-zephyr-blue">{runtimeTotals.running}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            运行中
+          </p>
+        </div>
+        <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+          <p className="font-semibold text-foreground">{runtimeTotals.waiting}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            待命
+          </p>
+        </div>
+        <div className="rounded-xl border border-rose-400/20 bg-rose-500/8 px-3 py-2 text-center">
+          <p className="font-semibold text-rose-500 dark:text-rose-200">{runtimeTotals.failed}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            异常
+          </p>
+        </div>
+        <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+          <p className="font-semibold text-foreground">{runtimeTotals.total}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            智能体
+          </p>
+        </div>
+      </div>
+
+      {/* Agent Constellation — compact embed */}
+      {topology.slotAgents.some(Boolean) && (
+        <div className="mb-3 rounded-xl border border-periwinkle-border bg-background/25 p-1.5" style={{ height: "170px" }}>
+          <div className="h-full w-full opacity-80">
+            <AgentConstellationGraph
+              slotDefs={topology.slotDefs}
+              slotAgents={topology.slotAgents}
+              runningIds={new Set(runningAgents.map((a) => a.id))}
+            />
           </div>
         </div>
+      )}
 
-        <div className="rounded-[22px] border border-periwinkle-border bg-background/36 p-2">
-          <OrchestrationLane liveTaskStatus={liveTask?.status} />
+      <div className="relative flex min-h-0 flex-1 flex-col rounded-[22px] border border-periwinkle-border bg-background/35 p-3">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            指挥链
+          </span>
+          <div className="h-px flex-1 bg-periwinkle-dim" />
+          <span className="text-[10px] font-medium text-zephyr-blue">
+            {selectedDept === "all" ? "全组织" : selectedDept}
+          </span>
+        </div>
+
+        <div className="scrollbar-auto-hide min-h-0 flex-1 space-y-2 overflow-auto pr-1">
+          {orgUnits.map((unit) => {
+            const dept = departmentLabelFromKey(unit.key, orgDepartmentOptions);
+            const runtime = deptRuntimeMap.get(unit.key) ?? {
+              total: 0,
+              running: 0,
+              waiting: 0,
+              failed: 0,
+              status: "idle" as DeptRuntimeStatus,
+              agents: [],
+            };
+            const badge = statusBadge(runtime.status);
+            const selected = selectedDept === dept;
+
+            return (
+              <button
+                key={unit.key}
+                type="button"
+                onClick={() => setSelectedDept(selected ? "all" : dept)}
+                className={cn(
+                  "group w-full rounded-2xl border px-3 py-2 text-left transition-all duration-200",
+                  selected
+                    ? "border-zephyr-blue/35 bg-zephyr-blue-soft"
+                    : "border-periwinkle-border bg-background/45 hover:border-zephyr-blue/30 hover:bg-background/60"
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {unit.label}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      运行 {runtime.running} · 等待 {runtime.waiting} · 异常{" "}
+                      {runtime.failed}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-periwinkle-border bg-background/50 text-zephyr-blue">
+                      {orgUnitIcon(unit.key)}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex h-5 items-center rounded-full border px-2 text-[9px] font-semibold uppercase tracking-[0.1em]",
+                        badge.cls
+                      )}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 border-t border-periwinkle-border pt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            拓扑密度
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {(Object.keys(agentLayerCounts) as AgentLayer[]).map((layer) => {
+              const meta = layerMeta(layer);
+              return (
+                <div
+                  key={layer}
+                  className="rounded-xl border border-periwinkle-border bg-background/45 px-2.5 py-2"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    {meta.label}
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-foreground">
+                    {agentLayerCounts[layer]}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
+
+  /* ── Agent Constellation Graph ── */
+  function AgentConstellationGraph({
+    slotDefs,
+    slotAgents,
+    runningIds,
+  }: {
+    slotDefs: readonly { role: string; label: string; ghostLabel: string; ghostDesc: string }[];
+    slotAgents: (Agent | null)[];
+    runningIds: Set<string>;
+  }) {
+
+    // Constellation positions: star/hex pattern
+    const positions = [
+      { x: 200, y: 35 },   // 0: top center (CEO)
+      { x: 70, y: 100 },   // 1: upper left
+      { x: 330, y: 100 },  // 2: upper right
+      { x: 55, y: 220 },   // 3: bottom left
+      { x: 200, y: 260 },  // 4: bottom center
+      { x: 345, y: 220 },  // 5: bottom right
+    ];
+
+    // Star + cross topology
+    const connections = [
+      [0, 1], [0, 2], [0, 3], [0, 4], [0, 5],
+      [1, 2], [3, 4], [4, 5], [1, 3], [2, 5],
+    ];
+
+    return (
+      <svg viewBox="0 0 400 300" className="h-full w-full" style={{ filter: "drop-shadow(0 0 24px rgba(59,130,246,0.12))" }}>
+        <defs>
+          <filter id="constellation-glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id="constellation-glow-soft">
+            <feGaussianBlur stdDeviation="1.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {connections.map(([fi, ti], i) => {
+          const from = positions[fi];
+          const to = positions[ti];
+          if (!from || !to) return null;
+          const fromAgent = slotAgents[fi];
+          const toAgent = slotAgents[ti];
+          const fromActive = fromAgent ? runningIds.has(fromAgent.id) : false;
+          const toActive = toAgent ? runningIds.has(toAgent.id) : false;
+          const bothActive = fromActive && toActive;
+          const bothReal = !!(fromAgent && toAgent);
+          const cpY = (from.y + to.y) / 2;
+          const d = `M${from.x} ${from.y} C${from.x} ${cpY}, ${to.x} ${cpY}, ${to.x} ${to.y}`;
+
+          return (
+            <g key={`conn-${i}`}>
+              <path d={d} strokeWidth={bothActive ? 1.5 : bothReal ? 1 : 0.5} fill="none"
+                className={bothActive ? "constellation-path-active" : ""}
+                style={{ stroke: bothActive ? "var(--graph-line)" : bothReal ? "var(--graph-line)" : "var(--graph-line-faint)" }}
+              />
+              {bothActive && (
+                <circle r="2.5" filter="url(#constellation-glow-soft)" style={{ fill: "var(--graph-node-active-inner)" }}>
+                  <animateMotion dur="2.5s" repeatCount="indefinite" path={d} />
+                </circle>
+              )}
+            </g>
+          );
+        })}
+
+        {slotAgents.map((agent, idx) => {
+          const pos = positions[idx];
+          if (!pos) return null;
+          const slot = slotDefs[idx];
+          const isGhost = !agent;
+          const isRunning = agent ? runningIds.has(agent.id) : false;
+
+          if (isGhost) {
+            // Ghost/placeholder node for unfilled role slot
+            return (
+              <g key={`ghost-${idx}`} className="constellation-node" style={{ transformOrigin: `${pos.x}px ${pos.y}px` }}>
+                <circle cx={pos.x} cy={pos.y} r="8" style={{ fill: "var(--graph-ghost-node)", stroke: "var(--graph-ghost-stroke)" }} strokeWidth="1" strokeDasharray="3 2" />
+                <circle cx={pos.x} cy={pos.y} r="2" style={{ fill: "var(--graph-ghost-stroke)" }} />
+                <text x={pos.x} y={pos.y + 24} textAnchor="middle" style={{ fill: "var(--graph-text-ghost)" }} fontSize="7" fontWeight="500" fontFamily="system-ui" fontStyle="italic">
+                  {slot.ghostLabel}
+                </text>
+                <text x={pos.x} y={pos.y + 32} textAnchor="middle" style={{ fill: "var(--graph-text-ghost)" }} fontSize="5.5" fontWeight="400" fontFamily="system-ui">
+                  {slot.ghostDesc}
+                </text>
+              </g>
+            );
+          }
+
+          // Real agent node
+          return (
+            <g key={agent.id} className="constellation-node" style={{ transformOrigin: `${pos.x}px ${pos.y}px` }}>
+              {isRunning && (
+                <circle cx={pos.x} cy={pos.y} r="16" fill="none" strokeWidth="1.5" className="constellation-glow-ring" style={{ stroke: "var(--graph-line)" }} />
+              )}
+              <circle cx={pos.x} cy={pos.y} r={isRunning ? 11 : 8} strokeWidth={isRunning ? 2 : 1}
+                style={{
+                  fill: isRunning ? "var(--graph-node-active-bg)" : "var(--graph-node-bg)",
+                  stroke: isRunning ? "var(--graph-node-active-stroke)" : "var(--graph-ghost-stroke)",
+                }}
+              />
+              {isRunning ? (
+                <>
+                  <circle cx={pos.x} cy={pos.y} r="3.5" filter="url(#constellation-glow)" style={{ fill: "var(--graph-node-active-inner)" }}>
+                    <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx={pos.x} cy={pos.y} r="6" fill="none" strokeWidth="1" style={{ stroke: "var(--graph-line)" }}>
+                    <animate attributeName="r" values="6;10;6" dur="2.2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.5;0;0.5" dur="2.2s" repeatCount="indefinite" />
+                  </circle>
+                </>
+              ) : (
+                <circle cx={pos.x} cy={pos.y} r="2" style={{ fill: "var(--graph-ghost-stroke)" }} />
+              )}
+              <text x={pos.x} y={pos.y + 24} textAnchor="middle" fontSize="7.5" fontWeight="600" fontFamily="system-ui"
+                style={{ fill: isRunning ? "var(--graph-node-active-inner)" : "var(--graph-text)" }}>
+                {agent.name.length > 7 ? agent.name.slice(0, 6) + "…" : agent.name}
+              </text>
+              <text x={pos.x} y={pos.y + 33} textAnchor="middle" fontSize="6" fontWeight="500" fontFamily="system-ui"
+                style={{ fill: isRunning ? "var(--graph-line)" : "var(--graph-text)" }}>
+                {slot.label}
+              </text>
+            </g>
+          );
+        })}
+
+        {slotAgents.length === 0 && (
+          <text x="200" y="150" textAnchor="middle" fontSize="12" fontWeight="500" style={{ fill: "var(--graph-text-ghost)" }}>
+            暂无智能体数据
+          </text>
+        )}
+      </svg>
+    );
+  }
+
+  // ZephyrHero removed in Round 2 IA restructure.
+  // Brand identity → PageHeader, Health/metrics → StatsBar, ConstellationGraph → OrgRuntimePanel
+  // Computations (healthPercent, topology, completenessPct) moved to Dashboard body.
+
+  const MissionSnapshot = () => {
+    const missionMetrics = [
+      {
+        label: "活跃任务",
+        value: activeIssues.length,
+        emptyMsg: "系统处于待命状态",
+      },
+      {
+        label: "待处理",
+        value: blockedIssues,
+        emptyMsg: "无待处理事项",
+      },
+      {
+        label: "异常",
+        value: runtimeTotals.failed,
+        emptyMsg: "无异常",
+      },
+      {
+        label: "平均响应",
+        value: avgRunMinutes > 0 ? `${avgRunMinutes}min` : "—",
+        emptyMsg: "暂无执行数据",
+      },
+      {
+        label: "同步状态",
+        value: lastSyncTime,
+        emptyMsg: "同步中",
+      },
+      {
+        label: "运行中",
+        value: runningCount,
+        emptyMsg: "空闲",
+      },
+      {
+        label: "系统健康",
+        value: `${healthPercent}%`,
+        emptyMsg: "—",
+      },
+      {
+        label: "编队完整",
+        value: `${completenessPct}%`,
+        emptyMsg: "—",
+      },
+    ];
+    return (
+      <div className="flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl border border-border/40 bg-border/20">
+        {missionMetrics.map((m) => (
+          <div
+            key={m.label}
+            className="flex flex-1 flex-col justify-center gap-0.5 bg-shell-surface-bg px-3.5 py-2.5 min-w-[90px]"
+          >
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+              {m.label}
+            </span>
+            {typeof m.value === "number" && m.value === 0 ? (
+              <span className="text-[11px] font-medium text-muted-foreground/60">
+                {m.emptyMsg}
+              </span>
+            ) : (
+              <span className="text-sm font-semibold text-foreground tabular-nums">
+                {m.value}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const SystemMetricsPanel = () => {
+    const metrics = [
+      {
+        label: "活跃任务",
+        value: activeIssues.length,
+        sub: "执行负载",
+        icon: <Activity className="h-4 w-4" />,
+        accent: activeIssues.length > 0
+          ? "border-zephyr-blue/25 bg-zephyr-blue-soft/40"
+          : "border-border/40 bg-transparent",
+      },
+      {
+        label: "人工升级",
+        value: blockedIssues,
+        sub: "人工介入",
+        icon: <AlertTriangle className="h-4 w-4" />,
+        accent: blockedIssues > 0
+          ? "border-amber-400/20 bg-amber-400/8"
+          : "border-border/40 bg-transparent",
+      },
+      {
+        label: "系统成功率",
+        value: successRate > 0 ? `${successRate}%` : "—",
+        sub: "运行质量",
+        icon: <ShieldCheck className="h-4 w-4" />,
+        accent: successRate > 0
+          ? "border-emerald-400/20 bg-emerald-400/8"
+          : "border-border/40 bg-transparent",
+      },
+      {
+        label: "通信机器人",
+        value: "活跃",
+        sub: "同步中",
+        icon: <Bot className="h-4 w-4" />,
+        accent: "border-violet-400/20 bg-violet-400/8",
+      },
+    ];
+
+    return (
+      <section className="panel-floating relative flex h-full min-h-[260px] flex-col overflow-hidden p-5 lg:p-6">
+        {/* Atmospheric glow */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-30"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in oklab, var(--zephyr-blue) 10%, transparent) 0%, transparent 70%)",
+          }}
+        />
+
+        <div className="relative mb-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/60">
+            实时监控
+          </p>
+          <h3 className="mt-2 text-[20px] type-heading text-foreground">
+            执行监控
+          </h3>
+        </div>
+
+        <div className="grid flex-1 grid-cols-2 gap-2.5">
+          {metrics.map((metric) => (
+            <div
+              key={metric.label}
+              className={cn(
+                "card relative flex flex-col justify-between rounded-xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-white/[0.08]",
+                metric.accent
+              )}
+            >
+              <div className="relative">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/60">
+                    {metric.sub}
+                  </span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03]">
+                    <span className="text-muted-foreground/50">{metric.icon}</span>
+                  </div>
+                </div>
+                <p className="text-xl font-semibold text-foreground tabular-nums">
+                  {metric.value}
+                </p>
+                <p className="mt-0.5 text-[10px] font-medium text-muted-foreground/60">
+                  {metric.label}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     );
   };
+
+  const PipelineRail = () => {
+    const [expanded, setExpanded] = useState(false);
+    const status = liveTask?.status ?? "todo";
+    const blocked = status === "blocked";
+
+    const stages = [
+      {
+        id: "input", label: "任务输入", agent: "发起人",
+        desc: "接收原始任务请求，解析任务类型与优先级",
+        state: status === "todo" ? "active" : "done",
+      },
+      {
+        id: "decompose", label: "任务拆解", agent: "CEO 智能体",
+        desc: "将任务拆解为可执行的子任务单元",
+        state: status === "todo" ? "pending" : blocked ? "failed" : status === "in_progress" ? "active" : "done",
+      },
+      {
+        id: "dispatch", label: "Agent 分派", agent: "调度器",
+        desc: "匹配最优资源，分派给对应 Agent",
+        state: status === "in_progress" ? "active" : status === "in_review" || status === "done" ? "done" : "pending",
+      },
+      {
+        id: "execute", label: "工具调用", agent: "执行引擎",
+        desc: "执行具体工具调用和数据操作",
+        state: status === "in_review" ? "active" : status === "done" ? "done" : "pending",
+      },
+      {
+        id: "aggregate", label: "结果汇总", agent: "CEO 智能体",
+        desc: "汇总各 Agent 执行结果，生成综合报告",
+        state: status === "done" ? "active" : status === "in_review" ? "done" : "pending",
+      },
+      {
+        id: "confirm", label: "人工确认", agent: "人工",
+        desc: "最终结果通过人工审核确认",
+        state: status === "done" ? "done" : status === "in_review" ? "active" : "pending",
+      },
+    ] as const;
+
+    const doneCount = stages.filter((s) => s.state === "done").length;
+    const progress = Math.round((doneCount / stages.length) * 100);
+
+    const stageColor = (state: string) => {
+      if (state === "active") return "var(--zephyr-blue)";
+      if (state === "done") return "var(--success)";
+      if (state === "failed") return "var(--error)";
+      return "rgba(255,255,255,0.1)";
+    };
+    const stageBg = (state: string) => {
+      if (state === "active") return "rgba(59,130,246,0.15)";
+      if (state === "done") return "rgba(52,211,153,0.12)";
+      if (state === "failed") return "rgba(239,68,68,0.12)";
+      return "rgba(255,255,255,0.03)";
+    };
+
+    return (
+      <section className="panel-floating relative flex flex-col overflow-hidden p-5 lg:p-6">
+        <div className="relative mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              作业流水线
+            </p>
+            <h3 className="mt-2 text-lg type-heading text-foreground">
+              标准作业流程
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-400 to-zephyr-blue transition-all duration-700"
+                  style={{ width: `${Math.max(4, progress)}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-semibold text-muted-foreground">{progress}%</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="ml-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[9px] font-semibold text-muted-foreground/70 transition-all hover:border-zephyr-blue/30 hover:text-zephyr-blue"
+            >
+              {expanded ? "收起详情" : "展开详情"}
+            </button>
+          </div>
+        </div>
+
+        {/* Compact horizontal stepped rail (default) */}
+        {!expanded && (
+          <div className="flex items-center gap-2 pb-1">
+            {stages.map((stage, i) => {
+              const isLast = i === stages.length - 1;
+              const isActive = stage.state === "active";
+              const isDone = stage.state === "done";
+              const isFailed = stage.state === "failed";
+
+              return (
+                <div key={stage.id} className="flex items-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className="flex h-7 w-7 items-center justify-center rounded-full border text-[9px] font-bold transition-all"
+                      style={{
+                        borderColor: stageColor(stage.state),
+                        background: stageBg(stage.state),
+                        boxShadow: isActive ? "0 0 10px 1px rgba(59,130,246,0.3)" : undefined,
+                      }}
+                    >
+                      {isDone ? (
+                        <Check className="h-3 w-3 text-emerald-400" />
+                      ) : isActive ? (
+                        <div className="h-1.5 w-1.5 rounded-full bg-zephyr-blue animate-pulse" />
+                      ) : isFailed ? (
+                        <AlertTriangle className="h-3 w-3 text-error" />
+                      ) : (
+                        <span className="text-muted-foreground/40">{i + 1}</span>
+                      )}
+                    </div>
+                    <span className="whitespace-nowrap text-[8px] font-medium text-muted-foreground/60">
+                      {stage.label}
+                    </span>
+                    <span className="text-[6px] text-muted-foreground/35">{stage.agent}</span>
+                  </div>
+                  {!isLast && (
+                    <div className="mx-1 mt-[-16px] h-px w-3 bg-white/[0.06]" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Expanded vertical timeline */}
+        {expanded && (
+          <div className="relative flex flex-1 flex-col gap-0">
+            <div className="absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-violet-400/20 via-zephyr-blue/10 to-transparent" />
+
+            {stages.map((stage, i) => {
+              const isActive = stage.state === "active";
+              const isDone = stage.state === "done";
+              const isFailed = stage.state === "failed";
+              const isPending = stage.state === "pending";
+
+              return (
+                <div key={stage.id} className="relative flex items-start gap-4 pb-4 last:pb-0">
+                  <div
+                    className="relative z-10 flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300"
+                    style={{
+                      borderColor: isActive ? "var(--zephyr-blue)" : isDone ? "rgba(52,211,153,0.5)" : isFailed ? "var(--error)" : "rgba(255,255,255,0.12)",
+                      background: isActive ? "rgba(59,130,246,0.15)" : isDone ? "rgba(52,211,153,0.1)" : isFailed ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.04)",
+                      boxShadow: isActive ? "0 0 16px 2px rgba(59,130,246,0.3)" : undefined,
+                    }}
+                  >
+                    {isDone ? (
+                      <Check className="h-4 w-4 text-emerald-400" />
+                    ) : isFailed ? (
+                      <AlertTriangle className="h-4 w-4 text-error" />
+                    ) : isActive ? (
+                      <div className="h-2.5 w-2.5 rounded-full bg-zephyr-blue" style={{ animation: "status-breathe 1.6s ease-in-out infinite" }} />
+                    ) : (
+                      <span className="text-[11px] font-bold text-muted-foreground/40">{i + 1}</span>
+                    )}
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-full border border-zephyr-blue/30" style={{ animation: "node-active-ring 2s ease-in-out infinite" }} />
+                    )}
+                  </div>
+
+                  <div
+                    className="min-w-0 flex-1 rounded-xl border px-3.5 py-2.5 transition-all duration-200"
+                    style={{
+                      borderColor: isActive ? "rgba(59,130,246,0.2)" : isDone ? "rgba(52,211,153,0.1)" : isPending ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.06)",
+                      background: isActive ? "rgba(59,130,246,0.04)" : "rgba(255,255,255,0.02)",
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={cn("text-sm font-semibold",
+                        isActive && "text-zephyr-blue",
+                        isDone && "text-emerald-400/80",
+                        isFailed && "text-error",
+                        isPending && "text-muted-foreground/50"
+                      )}>
+                        {stage.label}
+                      </span>
+                      <span className={cn("rounded-full px-2 py-0.5 text-[8px] font-semibold",
+                        isActive && "bg-zephyr-blue/15 text-zephyr-blue",
+                        isDone && "bg-emerald-400/10 text-emerald-400/70",
+                        isFailed && "bg-error/10 text-error",
+                        isPending && "bg-white/5 text-muted-foreground/40"
+                      )}>
+                        {isActive ? "运行中" : isDone ? "已完成" : isFailed ? "异常" : "待处理"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground/70">{stage.desc}</p>
+                    <p className="mt-1 text-[9px] font-medium text-muted-foreground/50">执行: {stage.agent}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    );
+  };
+  const EventTimeline = () => (
+    <section className="panel-floating relative overflow-hidden p-6 lg:p-8 shadow-xl">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-32"
+        style={{
+          background:
+            "radial-gradient(circle at top right, color-mix(in oklab, var(--zephyr-blue-soft) 65%, transparent) 0%, transparent 52%)",
+        }}
+      />
+      <div className="relative mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            系统动态流
+          </p>
+          <h3 className="mt-2 text-[22px] type-heading text-foreground">
+            系统事件
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-full border border-periwinkle-border bg-background/45 p-0.5 text-xs">
+            {(["all", "errors", "tasks"] as FeedFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFeedFilter(f)}
+                className={cn(
+                  "rounded-full px-3 py-1 font-medium transition-colors duration-150",
+                  feedFilter === f
+                    ? "bg-zephyr-blue-soft text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {f === "all" ? "全部" : f === "errors" ? "错误" : "任务"}
+              </button>
+            ))}
+          </div>
+
+          <select
+            className="rounded-full border border-periwinkle-border bg-background/45 px-4 py-1.5 text-xs text-foreground transition-all duration-200 hover:border-zephyr-blue/35 focus:ring-2 focus:ring-zephyr-blue/20 focus:outline-none"
+            value={logWindow}
+            onChange={(e) => setLogWindow(e.target.value as LogWindow)}
+          >
+            <option value="1h">最近 1 小时</option>
+            <option value="24h">最近 24 小时</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredEvents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-10">
+          <div className="events-empty-icon">
+            <Radar className="h-8 w-8 text-muted-foreground/20" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-muted-foreground/50">
+              当前没有新的系统事件
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground/30">
+              编排系统正在监听任务、Agent 与组织状态变化
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div
+          ref={logsContainerRef}
+          className="scrollbar-auto-hide relative max-h-[420px] overflow-auto rounded-[24px] border border-periwinkle-border"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in oklab, var(--shell-surface-bg) 85%, transparent) 0%, color-mix(in oklab, var(--card) 72%, var(--shell-surface-bg)) 100%)",
+          }}
+        >
+          <div className="pointer-events-none absolute left-[39px] top-0 h-full w-px bg-periwinkle-dim" />
+          {filteredEvents.map((event, idx) => {
+            const level = toLevel(event);
+            const rawName =
+              (event.agentId &&
+                agents?.find((a) => a.id === event.agentId)?.name) ||
+              (event.actorType === "agent" &&
+                agents?.find((a) => a.id === event.actorId)?.name) ||
+              "系统";
+            const agentName =
+              rawName === "系统" ? rawName : cleanVisibleAgentName(rawName);
+
+            return (
+              <EventRow
+                key={event.id}
+                event={event}
+                level={level}
+                agentName={agentName}
+                index={idx}
+              />
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+
+  const PageHeader = () => (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">总览</h1>
+          {runningCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-[10px] font-medium text-emerald-400">Route Live</span>
+            </div>
+          )}
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground/60 tracking-wide">
+          风之灵枢 · AI 编排系统 · Control Plane
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => openNewIssue()}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-zephyr-blue bg-zephyr-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-md"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          新建任务
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/org")}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/40 px-3.5 py-1.5 text-xs font-semibold text-foreground/80 transition-all duration-200 hover:border-zephyr-blue/30 hover:bg-zephyr-blue-soft"
+        >
+          进入组织
+        </button>
+      </div>
+    </div>
+  );
 
   if (!selectedCompanyId) {
     if (companies.length === 0) {
@@ -1018,7 +1887,13 @@ export function Dashboard() {
 
   return (
     <div
-      className="relative mr-auto w-full max-w-[1760px] space-y-5 pb-20 pt-8 text-foreground"
+      className="relative mr-auto w-full pb-20 text-foreground"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+        maxWidth: "var(--content-max-width)",
+      }}
     >
       <style>{`
         @keyframes panelRiseIn {
@@ -1027,68 +1902,61 @@ export function Dashboard() {
         }
       `}</style>
 
+      {/* ═══ PAGE HEADER — compact title + identity + actions ═══ */}
+      <PageHeader />
+
+      {/* ═══ STATS BAR — enhanced with health/completeness ═══ */}
       <section style={{ animation: "panelRiseIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both" }}>
-        <ZephyrHero
-          lastSyncTime={lastSyncTime}
-          departmentCount={departments.length}
-          agentCount={companyAgents.length}
-        />
+        <MissionSnapshot />
       </section>
 
+      {/* ═══ CORE WORKSPACE — balanced 2-column cards ═══ */}
       <section
-        className="grid items-stretch gap-5 lg:grid-cols-2"
+        className="grid grid-cols-12 gap-5"
         style={{
-          animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
-          animationDelay: "0.1s",
+          animation: "panelRiseIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
+          animationDelay: "0.05s",
         }}
       >
-        <MissionControl />
-        <SystemMetricsPanel
-          activeIssuesCount={activeIssues.length}
-          blockedIssuesCount={blockedIssues}
-          successRate={successRate}
-          failedRunsCount={failedRuns}
+        <div className="col-span-7" style={{ minHeight: "320px" }}>
+          <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
+        </div>
+        <div className="col-span-5" style={{ minHeight: "320px" }}>
+          <SystemMetricsPanel />
+        </div>
+      </section>
+
+      {/* ═══ TIER 2 — Command Surface (consolidated detail modules) ═══ */}
+      <section style={{ animation: "panelRiseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both", animationDelay: "0.1s" }}>
+        <CommandSurface
+          tabs={[
+            {
+              id: "pipeline",
+              label: "作业流程",
+              badge: activeIssues.length,
+              content: <PipelineRail />,
+            },
+            {
+              id: "org",
+              label: "组织拓扑",
+              content: <OrgRuntimePanel />,
+            },
+            {
+              id: "agents",
+              label: "Agent 检查",
+              badge: activeAgentRows.length,
+              content: <AgentCoordinationPanel />,
+            },
+            {
+              id: "events",
+              label: "系统事件",
+              badge: alertCount,
+              content: <EventTimeline />,
+            },
+          ]}
         />
       </section>
 
-      <section
-        className="grid items-stretch gap-5 lg:h-[620px] lg:grid-cols-2"
-        style={{
-          animation: "panelRiseIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) both",
-          animationDelay: "0.14s",
-        }}
-      >
-        <OrgRuntimePanel
-          selectedDept={selectedDept}
-          setSelectedDept={setSelectedDept}
-          orgUnits={orgUnits}
-          deptRuntimeMap={deptRuntimeMap}
-          agentLayerCounts={agentLayerCounts}
-          orgDepartmentOptions={orgDepartmentOptions}
-        />
-        <ActiveAgentsPanel
-          selectedDept={selectedDept}
-          setSelectedDept={setSelectedDept}
-          selectedDeptAgentRows={selectedDeptAgentRows}
-          agentLayerCounts={agentLayerCounts}
-          activeAgentRowsByLayer={activeAgentRowsByLayer}
-        />
-      </section>
-
-      <section
-        style={{
-        animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
-        animationDelay: "0.2s",
-      }}>
-        <EventTimeline
-          feedFilter={feedFilter}
-          setFeedFilter={setFeedFilter}
-          logWindow={logWindow}
-          setLogWindow={setLogWindow}
-          filteredEvents={filteredEvents}
-          agents={agents}
-        />
-      </section>
 
       {/* Overlays & Modals */}
       <Dialog open={blockedModalOpen} onOpenChange={setBlockedModalOpen}>

@@ -650,9 +650,8 @@ export function AgentDetail() {
           <AgentIconPicker
             value={agent.icon}
             onChange={(icon) => updateIcon.mutate(icon)}
-            disabled={!canManageAgents}
           >
-            <button 
+            <button
               disabled={!canManageAgents}
               className={cn("shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-accent hover:bg-accent/80 transition-colors overflow-hidden", !canManageAgents && "cursor-not-allowed opacity-80 hover:bg-accent")}
             >

@@ -11,6 +11,7 @@ import { PanelProvider } from "./context/PanelContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { DialogProvider } from "./context/DialogContext";
 import { ToastProvider } from "./context/ToastContext";
+import { RuntimeProvider } from "./context/RuntimeContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "@mdxeditor/editor/style.css";
@@ -45,7 +46,9 @@ createRoot(document.getElementById("root")!).render(
                       <SidebarProvider>
                         <PanelProvider>
                           <DialogProvider>
-                            <App />
+                            <RuntimeProvider>
+                              <App />
+                            </RuntimeProvider>
                           </DialogProvider>
                         </PanelProvider>
                       </SidebarProvider>

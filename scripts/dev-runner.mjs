@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 
@@ -44,7 +44,27 @@ if (tailscaleAuth) {
   console.log("[zephyr-nexus] dev mode: local_trusted (default)");
 }
 
-const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+// Resolve how to invoke pnpm. Prefer a direct pnpm binary on PATH; fall back to
+// `corepack pnpm` when pnpm isn't installed globally (Node 16+ ships corepack,
+// and package.json declares the pnpm version via the `packageManager` field).
+function resolvePnpmInvocation() {
+  const isWin = process.platform === "win32";
+  const direct = isWin ? "pnpm.cmd" : "pnpm";
+  const probe = spawnSync(direct, ["--version"], {
+    stdio: "ignore",
+    shell: isWin,
+  });
+  if (probe.status === 0) {
+    return { bin: direct, prefix: [] };
+  }
+  const corepack = isWin ? "corepack.cmd" : "corepack";
+  console.log(
+    "[zephyr-nexus] pnpm not found on PATH; falling back to `corepack pnpm`.",
+  );
+  return { bin: corepack, prefix: ["pnpm"] };
+}
+
+const { bin: pnpmBin, prefix: pnpmPrefix } = resolvePnpmInvocation();
 
 function formatPendingMigrationSummary(migrations) {
   if (migrations.length === 0) return "none";
@@ -55,7 +75,7 @@ function formatPendingMigrationSummary(migrations) {
 
 async function runPnpm(args, options = {}) {
   return await new Promise((resolve, reject) => {
-    const child = spawn(pnpmBin, args, {
+    const child = spawn(pnpmBin, [...pnpmPrefix, ...args], {
       stdio: options.stdio ?? ["ignore", "pipe", "pipe"],
       env: options.env ?? process.env,
       shell: process.platform === "win32",
@@ -137,7 +157,7 @@ async function maybePreflightMigrations() {
 
   if (!shouldApply) return;
 
-  const migrate = spawn(pnpmBin, ["db:migrate"], {
+  const migrate = spawn(pnpmBin, [...pnpmPrefix, "db:migrate"], {
     stdio: "inherit",
     env,
     shell: process.platform === "win32",
@@ -163,7 +183,7 @@ if (mode === "watch") {
 const serverScript = mode === "watch" ? "dev:watch" : "dev";
 const child = spawn(
   pnpmBin,
-  ["--filter", "@zephyr-nexus/server", serverScript, ...forwardedArgs],
+  [...pnpmPrefix, "--filter", "@zephyr-nexus/server", serverScript, ...forwardedArgs],
   { stdio: "inherit", env, shell: process.platform === "win32" },
 );
 

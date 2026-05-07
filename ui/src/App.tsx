@@ -22,9 +22,7 @@ import { Costs } from "./pages/Costs";
 import { Activity } from "./pages/Activity";
 import { Inbox } from "./pages/Inbox";
 import { CompanySettings } from "./pages/CompanySettings";
-import { DesignGuide } from "./pages/DesignGuide";
 import { OrgChart } from "./pages/OrgChart";
-import { FlowPage } from "./pages/Flow";
 import { NewAgent } from "./pages/NewAgent";
 import { AuthPage } from "./pages/Auth";
 import { BoardClaimPage } from "./pages/BoardClaim";
@@ -37,16 +35,9 @@ function DocsPage() {
       <div className="text-center space-y-3">
         <h1 className="text-xl font-semibold">文档</h1>
         <p className="text-sm text-muted-foreground">
-          本地部署版暂无内置文档，请访问在线文档。
+          本地部署版暂无内置文档。请查看仓库根目录的 README.md 与
+          docs/ 目录。
         </p>
-        <a
-          href="https://github.com/paperclipai/paperclip"
-          target="_blank"
-          rel="noreferrer"
-          className="text-sm text-blue-500 hover:underline"
-        >
-          GitHub 文档 →
-        </a>
       </div>
     </div>
   );
@@ -156,7 +147,6 @@ function boardRoutes() {
       <Route path="companies" element={<Companies />} />
       <Route path="company/settings" element={<CompanySettings />} />
       <Route path="org" element={<OrgChart />} />
-      <Route path="flow" element={<FlowPage />} />
       <Route path="agents" element={<Navigate to="/agents/all" replace />} />
       <Route path="agents/all" element={<Agents />} />
       <Route path="agents/active" element={<Agents />} />
@@ -202,7 +192,6 @@ function boardRoutes() {
       <Route path="inbox" element={<Navigate to="/inbox/new" replace />} />
       <Route path="inbox/new" element={<Inbox />} />
       <Route path="inbox/all" element={<Inbox />} />
-      <Route path="design-guide" element={<DesignGuide />} />
       <Route path="*" element={<NotFoundPage scope="board" />} />
     </>
   );

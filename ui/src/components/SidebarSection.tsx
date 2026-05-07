@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useSidebar } from "../context/SidebarContext";
 
 interface SidebarSectionProps {
   label: string;
@@ -7,6 +8,12 @@ interface SidebarSectionProps {
 }
 
 export function SidebarSection({ label, meta, children }: SidebarSectionProps) {
+  const { sidebarCollapsed } = useSidebar();
+
+  if (sidebarCollapsed) {
+    return <section className="mt-1 first:mt-0">{children}</section>;
+  }
+
   return (
     <section className="mt-1 first:mt-0">
       <div className="mb-1.5 flex items-center gap-2 px-2">

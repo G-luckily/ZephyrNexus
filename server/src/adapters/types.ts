@@ -15,5 +15,6 @@ export type {
   AdapterEnvironmentTestContext,
   AdapterSessionCodec,
   AdapterModel,
+  AdapterMaturity,
   ServerAdapterModule,
 } from "@zephyr-nexus/adapter-utils";

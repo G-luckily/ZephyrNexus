@@ -56,6 +56,7 @@ const claudeLocalAdapter: ServerAdapterModule = {
   models: claudeModels,
   supportsLocalAgentJwt: true,
   agentConfigurationDoc: claudeAgentConfigurationDoc,
+  maturity: "stable",
 };
 
 const codexLocalAdapter: ServerAdapterModule = {
@@ -67,6 +68,7 @@ const codexLocalAdapter: ServerAdapterModule = {
   listModels: listCodexModels,
   supportsLocalAgentJwt: true,
   agentConfigurationDoc: codexAgentConfigurationDoc,
+  maturity: "stable",
 };
 
 const cursorLocalAdapter: ServerAdapterModule = {
@@ -78,6 +80,7 @@ const cursorLocalAdapter: ServerAdapterModule = {
   listModels: listCursorModels,
   supportsLocalAgentJwt: true,
   agentConfigurationDoc: cursorAgentConfigurationDoc,
+  maturity: "beta",
 };
 
 const openclawGatewayAdapter: ServerAdapterModule = {
@@ -87,6 +90,7 @@ const openclawGatewayAdapter: ServerAdapterModule = {
   models: openclawGatewayModels,
   supportsLocalAgentJwt: false,
   agentConfigurationDoc: openclawGatewayAgentConfigurationDoc,
+  maturity: "experimental",
 };
 
 const openCodeLocalAdapter: ServerAdapterModule = {
@@ -98,6 +102,7 @@ const openCodeLocalAdapter: ServerAdapterModule = {
   listModels: listOpenCodeModels,
   supportsLocalAgentJwt: true,
   agentConfigurationDoc: openCodeAgentConfigurationDoc,
+  maturity: "beta",
 };
 
 const piLocalAdapter: ServerAdapterModule = {
@@ -109,6 +114,7 @@ const piLocalAdapter: ServerAdapterModule = {
   listModels: listPiModels,
   supportsLocalAgentJwt: true,
   agentConfigurationDoc: piAgentConfigurationDoc,
+  maturity: "deprecated",
 };
 
 const adaptersByType = new Map<string, ServerAdapterModule>(
