@@ -169,7 +169,7 @@
   --secondary: #edf2ff;
   --secondary-foreground: #162033;
   --muted: #ecf1fb;
-  --muted-foreground: #5f6e89;
+  --muted-foreground: #4f5e78;
 
   /* Status Colors */
   --destructive: #d8617d;
@@ -271,7 +271,7 @@
   --secondary: #181a20;
   --secondary-foreground: #c4c5d0;
   --muted: #181a20;
-  --muted-foreground: #6b7080;
+  --muted-foreground: #9ba1b0;
 
   /* ── Status Colors — 哑光，非发光 ── */
   --destructive: #e05c6e;
@@ -295,7 +295,7 @@
 
   /* ── Sidebar — AI Workspace Rail ── */
   --sidebar: rgba(15, 16, 21, 0.85);
-  --sidebar-foreground: #8b8d96;
+  --sidebar-foreground: #a8aab4;
   --sidebar-primary: #7a8ba8;
   --sidebar-primary-foreground: #090a0d;
   --sidebar-accent: #1c1f26;

@@ -1557,145 +1557,150 @@ export function Dashboard() {
   const OrchestrationLane = () => {
     const status = liveTask?.status ?? "todo";
     const blocked = status === "blocked";
+
+    // 6-step pipeline with agent assignments
     const stages = [
       {
-        id: "start",
-        label: "启动",
+        id: "input",
+        label: "任务输入",
+        agent: "发起人",
         state: status === "todo" ? "active" : "done",
       },
       {
-        id: "schedule",
-        label: "任务调度",
-        state:
-          status === "todo"
-            ? "pending"
-            : blocked
-            ? "failed"
-            : status === "in_progress"
-            ? "active"
-            : "done",
+        id: "decompose",
+        label: "任务拆解",
+        agent: "CEO 智能体",
+        state: status === "todo" ? "pending" : blocked ? "failed" : status === "in_progress" ? "active" : "done",
       },
       {
-        id: "query",
-        label: "指标查询",
-        state:
-          status === "in_review" || status === "done"
-            ? status === "done"
-              ? "done"
-              : "active"
-            : "pending",
+        id: "dispatch",
+        label: "Agent 分派",
+        agent: "调度器",
+        state: status === "in_progress" ? "active" : status === "in_review" || status === "done" ? "done" : "pending",
       },
       {
-        id: "review",
-        label: "人工复核",
-        state:
-          status === "done"
-            ? "done"
-            : status === "in_review"
-            ? "active"
-            : "pending",
+        id: "execute",
+        label: "工具调用",
+        agent: "执行引擎",
+        state: status === "in_review" ? "active" : status === "done" ? "done" : "pending",
+      },
+      {
+        id: "aggregate",
+        label: "结果汇总",
+        agent: "CEO 智能体",
+        state: status === "done" ? "active" : status === "in_review" ? "done" : "pending",
+      },
+      {
+        id: "confirm",
+        label: "人工确认",
+        agent: "人工",
+        state: status === "done" ? "done" : status === "in_review" ? "active" : "pending",
       },
     ] as const;
 
     const terminalIndex = stages.reduce((acc, stage, index) => {
-      if (
-        stage.state === "done" ||
-        stage.state === "active" ||
-        stage.state === "failed"
-      ) {
+      if (stage.state === "done" || stage.state === "active" || stage.state === "failed") {
         return index;
       }
       return acc;
     }, 0);
-    const progress = Math.max(
-      8,
-      Math.round((terminalIndex / (stages.length - 1)) * 100)
-    );
+    const progress = Math.max(8, Math.round((terminalIndex / (stages.length - 1)) * 100));
     const progressBar = stages.some((stage) => stage.state === "failed")
       ? "linear-gradient(90deg, color-mix(in oklab, var(--zephyr-blue) 35%, var(--warning)) 0%, var(--error) 100%)"
-      : "linear-gradient(90deg, var(--zephyr-blue) 0%, var(--periwinkle) 100%)";
+      : "linear-gradient(90deg, var(--zephyr-blue) 0%, var(--violet-soft) 100%)";
 
     return (
-      <div className="relative px-2 py-1.5">
-        <div className="absolute left-4 right-4 top-[22px] h-[2px] rounded-full bg-periwinkle-dim" />
+      <div className="relative px-2 py-2">
+        {/* Background track */}
+        <div className="absolute left-6 right-6 top-[28px] h-[3px] rounded-full bg-white/[0.06]" />
+
+        {/* Active progress track */}
         <div
-          className="absolute left-4 top-[22px] h-[2px] rounded-full transition-[width] duration-500"
+          className="absolute left-6 top-[28px] h-[3px] rounded-full transition-all duration-700"
           style={{
-            width: `calc((100% - 2rem) * ${progress / 100})`,
+            width: `calc((100% - 3rem) * ${progress / 100})`,
             background: progressBar,
+            boxShadow: "0 0 8px 0 rgba(59, 130, 246, 0.4)",
           }}
         />
 
-        <div className="relative grid grid-cols-4 gap-2">
-          {stages.map((stage) => {
+        {/* Pipeline steps */}
+        <div className="relative flex items-start justify-between gap-1">
+          {stages.map((stage, i) => {
             const isActive = stage.state === "active";
             const isDone = stage.state === "done";
             const isFailed = stage.state === "failed";
+            const isPending = stage.state === "pending";
+            const isLast = i === stages.length - 1;
 
             return (
-              <div
-                key={stage.id}
-                className={cn(
-                  "rounded-2xl border bg-background/55 px-2.5 py-2.5 transition-colors duration-150",
-                  isActive
-                    ? "border-zephyr-blue/40 bg-zephyr-blue-soft/70"
-                    : isDone
-                    ? "border-success/35 bg-success/10"
-                    : isFailed
-                    ? "border-error/35 bg-error/10"
-                    : "border-periwinkle-border bg-background/40"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "inline-flex h-5 w-5 items-center justify-center rounded-full border",
-                      isActive
-                        ? "border-zephyr-blue bg-zephyr-blue-soft"
-                        : isDone
-                        ? "border-success/45 bg-success/12"
-                        : isFailed
-                        ? "border-error/45 bg-error/12"
-                        : "border-periwinkle-border bg-background/70"
-                    )}
-                  >
-                    {isDone ? (
-                      <Check className="h-3.5 w-3.5 text-success" />
-                    ) : isFailed ? (
-                      <AlertTriangle className="h-3.5 w-3.5 text-error" />
-                    ) : (
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          isActive ? "animate-pulse bg-zephyr-blue" : "bg-muted-foreground/45"
-                        )}
-                      />
-                    )}
-                  </span>
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground">
-                    {stage.label}
-                  </p>
-                </div>
-                <p
+              <div key={stage.id} className="flex flex-1 flex-col items-center">
+                {/* Step node */}
+                <div
                   className={cn(
-                    "mt-1.5 text-[10px] font-medium uppercase tracking-[0.1em]",
-                    isActive
-                      ? "text-zephyr-blue"
-                      : isDone
-                      ? "text-success"
-                      : isFailed
-                      ? "text-error"
-                      : "text-muted-foreground"
+                    "relative z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300",
+                    isActive && "border-zephyr-blue bg-zephyr-blue/20 shadow-[0_0_16px_2px_rgba(59,130,246,0.35)]",
+                    isDone && "border-emerald-400/60 bg-emerald-400/15",
+                    isFailed && "border-error/60 bg-error/15",
+                    isPending && "border-white/20 bg-white/5"
                   )}
                 >
-                  {isActive
-                    ? "运行中"
-                    : isDone
-                    ? "已完成"
-                    : isFailed
-                    ? "失败"
-                    : "待处理"}
-                </p>
+                  {isDone ? (
+                    <Check className="h-4 w-4 text-emerald-400" />
+                  ) : isFailed ? (
+                    <AlertTriangle className="h-4 w-4 text-error" />
+                  ) : isActive ? (
+                    <div className="h-2 w-2 rounded-full bg-zephyr-blue animate-pulse" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-muted-foreground/40">{i + 1}</span>
+                  )}
+
+                  {/* Active ring */}
+                  {isActive && (
+                    <div
+                      className="absolute inset-0 rounded-full border border-zephyr-blue/30"
+                      style={{ animation: "node-active-ring 2s ease-in-out infinite" }}
+                    />
+                  )}
+                </div>
+
+                {/* Labels */}
+                <div className="mt-2 flex flex-col items-center">
+                  <span
+                    className={cn(
+                      "text-[9px] font-semibold leading-tight",
+                      isActive && "text-zephyr-blue",
+                      isDone && "text-emerald-400/80",
+                      isFailed && "text-error",
+                      isPending && "text-muted-foreground/50"
+                    )}
+                  >
+                    {stage.label}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[7px] leading-tight",
+                      isActive && "text-zephyr-blue/60",
+                      isDone && "text-muted-foreground/40",
+                      isPending && "text-muted-foreground/30"
+                    )}
+                  >
+                    {stage.agent}
+                  </span>
+                </div>
+
+                {/* Status badge */}
+                <div
+                  className={cn(
+                    "mt-1.5 rounded-full px-1.5 py-0.5 text-[7px] font-medium",
+                    isActive && "bg-zephyr-blue/15 text-zephyr-blue",
+                    isDone && "bg-emerald-400/10 text-emerald-400/70",
+                    isFailed && "bg-error/10 text-error",
+                    isPending && "bg-white/5 text-muted-foreground/40"
+                  )}
+                >
+                  {isActive ? "● 运行中" : isDone ? "✓ 完成" : isFailed ? "✕ 失败" : "○ 等待"}
+                </div>
               </div>
             );
           })}

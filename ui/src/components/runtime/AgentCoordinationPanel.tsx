@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import {
   AGENT_COORDINATION_CONFIGS,
   type AgentInstance,
-  type CoordinationRelation,
 } from "../../lib/runtime";
 import { useRuntime } from "../../context/RuntimeContext";
+import { Check, X, Loader } from "lucide-react";
 
 interface AgentNodeProps {
   agent: AgentInstance;
@@ -18,18 +18,11 @@ interface AgentNodeProps {
 function AgentNode({ agent, isActive, isSelected, onSelect, style }: AgentNodeProps) {
   const config = AGENT_COORDINATION_CONFIGS[agent.coordinationState];
 
-  const layerColors: Record<string, string> = {
-    ORG: "border-amber-400/40",
-    "V1-PROJECT": "border-violet-400/40",
-    "V2-PIPELINE": "border-zephyr-blue/40",
-    INFRA: "border-emerald-400/40",
-  };
-
-  const layerBg: Record<string, string> = {
-    ORG: "bg-amber-400/5",
-    "V1-PROJECT": "bg-violet-400/5",
-    "V2-PIPELINE": "bg-zephyr-blue/5",
-    INFRA: "bg-emerald-400/5",
+  const layerAccents: Record<string, string> = {
+    ORG: "from-amber-400/20 to-amber-400/5",
+    "V1-PROJECT": "from-violet-400/20 to-violet-400/5",
+    "V2-PIPELINE": "from-zephyr-blue/20 to-zephyr-blue/5",
+    INFRA: "from-emerald-400/20 to-emerald-400/5",
   };
 
   return (
@@ -37,68 +30,54 @@ function AgentNode({ agent, isActive, isSelected, onSelect, style }: AgentNodePr
       type="button"
       onClick={() => onSelect?.(isSelected ? null : agent)}
       className={cn(
-        "absolute flex flex-col items-center gap-1.5 rounded-xl border py-2.5 px-3 transition-all duration-300",
-        "hover:scale-105 hover:z-10 hover:cursor-pointer",
-        config.bgColor,
-        config.borderColor,
-        layerColors[agent.layer],
-        layerBg[agent.layer],
+        "absolute flex flex-col rounded-lg border p-2 transition-all duration-200",
+        "hover:scale-105 hover:z-20 hover:cursor-pointer",
+        "bg-gradient-to-b backdrop-blur-sm",
+        layerAccents[agent.layer],
         isActive && "runtime-node-active",
-        isSelected && "ring-2 ring-offset-2 ring-offset-background"
+        isSelected && "ring-2 ring-violet-400/50 ring-offset-1 ring-offset-black/20"
       )}
       style={{
-        width: 90,
+        width: 72,
+        minHeight: 56,
         boxShadow: isActive
-          ? `0 0 20px 2px ${config.glowColor}, 0 0 40px 0 ${config.glowColor}30`
-          : config.glowColor
-          ? `0 0 8px 0 ${config.glowColor}40`
-          : undefined,
+          ? `0 0 16px 1px ${config.glowColor}, 0 0 32px 0 ${config.glowColor}20`
+          : `0 2px 8px 0 rgba(0,0,0,0.3)`,
         ...style,
       }}
     >
       {/* Active pulse indicator */}
       {isActive && (
         <div
-          className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full"
+          className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full"
           style={{
             backgroundColor: config.color.replace("text-", ""),
-            boxShadow: `0 0 8px 2px ${config.glowColor}`,
+            boxShadow: `0 0 6px 1px ${config.glowColor}`,
             animation: "status-breathe 2s ease-in-out infinite",
           }}
         />
       )}
 
-      {/* Agent avatar */}
-      <div
-        className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-lg border",
-          config.bgColor,
-          config.borderColor
-        )}
-      >
-        <span className={cn("text-xs font-bold", config.color)}>
-          {agent.name.slice(0, 2)}
-        </span>
+      {/* Agent icon/avatar */}
+      <div className="mb-1 flex items-center justify-center">
+        <div className={cn("flex h-6 w-6 items-center justify-center rounded-md border", config.bgColor, config.borderColor)}>
+          <span className={cn("text-[9px] font-bold", config.color)}>
+            {agent.name.slice(0, 2)}
+          </span>
+        </div>
       </div>
 
       {/* Agent name */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className={cn("text-[10px] font-semibold", config.color)}>
-          {agent.name.length > 8 ? agent.name.slice(0, 8) + "…" : agent.name}
-        </span>
-        <span className="rounded-full bg-white/5 px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-wider text-muted-foreground/70">
-          {agent.layer}
-        </span>
-      </div>
+      <span className={cn("text-[9px] font-semibold leading-tight text-foreground/90")}>
+        {agent.name.length > 6 ? agent.name.slice(0, 6) : agent.name}
+      </span>
 
-      {/* State badge */}
-      <div
-        className={cn(
-          "rounded-full px-1.5 py-0.5 text-[8px] font-medium",
-          isActive ? "bg-current/10" : "bg-white/5"
-        )}
-      >
-        <span className={cn(config.color)}>{config.label}</span>
+      {/* State indicator */}
+      <div className="mt-0.5 flex items-center justify-center gap-0.5">
+        <span className={cn("h-1 w-1 rounded-full", config.color.replace("text-", "bg-"))} />
+        <span className={cn("text-[7px] font-medium", config.color)}>
+          {config.label}
+        </span>
       </div>
     </button>
   );
@@ -116,20 +95,23 @@ export function AgentCoordinationPanel({ className }: AgentCoordinationPanelProp
   const isActive = useCallback(
     (agent: AgentInstance) =>
       agent.coordinationState === "speaking" ||
-      agent.coordinationState === "coordinating",
+      agent.coordinationState === "coordinating" ||
+      agent.coordinationState === "thinking",
     []
   );
 
-  // Calculate node positions based on layer
+  // Fixed layer configuration - compact 4-row layout
+  const layerConfig = {
+    ORG: { y: 8, label: "决策层" },
+    "V1-PROJECT": { y: 78, label: "研究层" },
+    "V2-PIPELINE": { y: 148, label: "执行层" },
+    INFRA: { y: 218, label: "基础设施" },
+  };
+
+  // Calculate node positions based on layer - center nodes in canvas
   const nodePositions = useMemo(() => {
     const positions: Record<string, { x: number; y: number }> = {};
-    const layerOrder = ["ORG", "V1-PROJECT", "V2-PIPELINE", "INFRA"];
-    const layerY: Record<string, number> = {
-      ORG: 15,
-      "V1-PROJECT": 85,
-      "V2-PIPELINE": 155,
-      INFRA: 225,
-    };
+    const canvasWidth = 340;
     const perLayer: Record<string, number> = {};
 
     agents.forEach((agent) => {
@@ -137,23 +119,15 @@ export function AgentCoordinationPanel({ className }: AgentCoordinationPanelProp
       const idx = perLayer[layer] ?? 0;
       perLayer[layer] = idx + 1;
       const layerAgents = agents.filter((a) => a.layer === layer).length;
-      const totalWidth = Math.min(layerAgents * 110, 320);
-      const startX = (320 - totalWidth) / 2 + idx * 110 + 55 - 45;
-      positions[agent.id] = { x: startX, y: layerY[layer] };
+      // Spread nodes evenly within the layer
+      const spacing = Math.min(100, (canvasWidth - 80) / Math.max(layerAgents, 1));
+      const totalWidth = spacing * (layerAgents - 1);
+      const startX = (canvasWidth - totalWidth) / 2 - 40;
+      positions[agent.id] = { x: startX + idx * spacing, y: layerConfig[layer].y };
     });
 
     return positions;
   }, [agents]);
-
-  // Filter active relations (between active agents)
-  const activeRelations = useMemo(
-    () => relations.filter((r) => r.isActive),
-    [relations]
-  );
-
-  const selectedConfig = selectedAgent
-    ? AGENT_COORDINATION_CONFIGS[selectedAgent.coordinationState]
-    : null;
 
   // Build relation lines with proper positioning
   const relationLines = useMemo(() => {
@@ -177,97 +151,107 @@ export function AgentCoordinationPanel({ className }: AgentCoordinationPanelProp
     }).filter(Boolean);
   }, [relations, nodePositions, agents]);
 
+  const selectedConfig = selectedAgent
+    ? AGENT_COORDINATION_CONFIGS[selectedAgent.coordinationState]
+    : null;
+
+  // Determine active collaboration path
+  const activePath = useMemo(() => {
+    const activeIds = new Set(
+      agents.filter(isActive).map((a) => a.id)
+    );
+    return relationLines
+      .filter((line) => line && activeIds.has(line.fromAgent.id) && activeIds.has(line.toAgent.id))
+      .map((line) => line!.relation.id);
+  }, [relationLines, isActive, agents]);
+
   return (
-    <div className={cn("panel-floating relative overflow-hidden", className)}>
+    <div className={cn("panel-floating relative flex flex-col overflow-hidden", className)}>
       {/* Ambient glow */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-50"
+        className="pointer-events-none absolute inset-0 opacity-40"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 50% at 50% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 70%)",
         }}
       />
 
       {/* Header */}
-      <div className="relative flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
+      <div className="relative flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5 shrink-0">
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-400/10">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="h-3.5 w-3.5 text-violet-400"
-            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5 text-violet-400">
               <circle cx="12" cy="12" r="3" />
               <circle cx="19" cy="12" r="2" />
               <circle cx="5" cy="12" r="2" />
               <path d="M12 9V6M12 15v3M9 12H6M15 12h3" />
             </svg>
           </div>
-          <span className="text-sm font-medium">智能体协同</span>
+          <span className="text-sm font-medium">协同网络</span>
+          {activePath.length > 0 && (
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-medium text-emerald-400">
+              <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
+              {activePath.length} 条活跃链路
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-1.5 w-1.5">
-            <span
-              className="absolute inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400"
-              style={{ animation: "status-breathe 2s ease-in-out infinite" }}
-            />
-            <span className="absolute inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping opacity-50" />
-          </span>
-          <span className="text-[10px] text-muted-foreground">实时同步</span>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground/80">
+          <span>{agents.length} 个智能体</span>
         </div>
       </div>
 
-      {/* Graph canvas */}
-      <div ref={containerRef} className="relative h-[280px] w-full overflow-hidden">
-        {/* Layer background stripes */}
+      {/* Collaboration Graph Canvas */}
+      <div ref={containerRef} className="relative flex-1 overflow-hidden" style={{ minHeight: 280 }}>
+        {/* Layer row labels */}
         <div className="pointer-events-none absolute inset-0">
-          {["ORG", "V1-PROJECT", "V2-PIPELINE", "INFRA"].map((layer, i) => (
+          {(Object.entries(layerConfig) as [string, { y: number; label: string }][]).map(([layer, config]) => (
             <div
               key={layer}
-              className="absolute left-0 right-0 h-[70px] border-b border-white/[0.03]"
-              style={{ top: i * 70 + 15 }}
-            />
+              className="absolute left-1 top-0 flex items-center"
+              style={{ top: config.y + 8 }}
+            >
+              <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/40">
+                {config.label}
+              </span>
+            </div>
           ))}
         </div>
 
         {/* SVG Connection lines */}
-        <svg className="absolute inset-0 h-full w-full pointer-events-none">
+        <svg className="absolute inset-0 h-full w-full pointer-events-none" style={{ marginLeft: 35 }}>
           <defs>
-            {relationLines.map(
-              (line: (typeof relationLines)[0]) =>
-                line && (
-                  <linearGradient
-                    key={`grad-${line.relation.id}`}
-                    id={`relation-grad-${line.relation.id}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="0%"
-                  >
-                    <stop
-                      offset="0%"
-                      stopColor={
-                        AGENT_COORDINATION_CONFIGS[line.fromAgent.coordinationState]
-                          .color.replace("text-", "") || "#7a8ba8"
-                      }
-                      stopOpacity={line.isActive ? 0.8 : 0.2}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={
-                        AGENT_COORDINATION_CONFIGS[line.toAgent.coordinationState]
-                          .color.replace("text-", "") || "#7a8ba8"
-                      }
-                      stopOpacity={line.isActive ? 0.8 : 0.2}
-                    />
-                  </linearGradient>
-                )
+            {relationLines.map((line) =>
+              line && (
+                <linearGradient
+                  key={`grad-${line.relation.id}`}
+                  id={`relation-grad-${line.relation.id}`}
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={
+                      AGENT_COORDINATION_CONFIGS[line.fromAgent.coordinationState]
+                        .color.replace("text-", "") || "#64748b"
+                    }
+                    stopOpacity={line.isActive ? 0.9 : 0.15}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={
+                      AGENT_COORDINATION_CONFIGS[line.toAgent.coordinationState]
+                        .color.replace("text-", "") || "#64748b"
+                    }
+                    stopOpacity={line.isActive ? 0.9 : 0.15}
+                  />
+                </linearGradient>
+              )
             )}
-            <filter id="line-glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <filter id="agent-line-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
               <feMerge>
                 <feMergeNode in="coloredBlur" />
                 <feMergeNode in="SourceGraphic" />
@@ -275,63 +259,60 @@ export function AgentCoordinationPanel({ className }: AgentCoordinationPanelProp
             </filter>
           </defs>
 
-          {relationLines.map(
-            (line: (typeof relationLines)[0]) =>
-              line && (
-                <g key={line.relation.id}>
-                  {/* Connection line */}
-                  <path
-                    d={`M ${line.fromPos.x + 45} ${line.fromPos.y + 35}
-                        C ${line.fromPos.x + 45} ${(line.fromPos.y + line.toPos.y) / 2 + 17},
-                          ${line.toPos.x + 45} ${(line.fromPos.y + line.toPos.y) / 2 + 17},
-                          ${line.toPos.x + 45} ${line.toPos.y + 20}`}
-                    stroke={`url(#relation-grad-${line.relation.id})`}
-                    strokeWidth={line.isActive ? 2 : 1}
-                    strokeDasharray={
-                      line.relation.type === "observation" ? "4 3" : "none"
-                    }
-                    fill="none"
-                    filter={line.isActive ? "url(#line-glow)" : undefined}
-                    opacity={line.isActive ? 1 : 0.4}
-                  />
-                  {/* Arrow head */}
-                  <circle
-                    cx={line.toPos.x + 45}
-                    cy={line.toPos.y + 20}
-                    r={3}
-                    fill={
-                      AGENT_COORDINATION_CONFIGS[line.toAgent.coordinationState]
-                        .color.replace("text-", "") || "#7a8ba8"
-                    }
-                    opacity={line.isActive ? 0.8 : 0.3}
-                  />
-                </g>
-              )
+          {relationLines.map((line) =>
+            line && (
+              <g key={line.relation.id}>
+                {/* Connection bezier curve */}
+                <path
+                  d={`M ${line.fromPos.x + 36} ${line.fromPos.y + 28}
+                      C ${line.fromPos.x + 36} ${(line.fromPos.y + line.toPos.y) / 2 + 14},
+                        ${line.toPos.x + 36} ${(line.fromPos.y + line.toPos.y) / 2 + 14},
+                        ${line.toPos.x + 36} ${line.toPos.y + 14}`}
+                  stroke={`url(#relation-grad-${line.relation.id})`}
+                  strokeWidth={line.isActive ? 1.5 : 0.75}
+                  strokeDasharray={line.relation.type === "observation" ? "3 2" : "none"}
+                  fill="none"
+                  filter={line.isActive ? "url(#agent-line-glow)" : undefined}
+                  opacity={line.isActive ? 1 : 0.35}
+                />
+                {/* Arrow head */}
+                <circle
+                  cx={line.toPos.x + 36}
+                  cy={line.toPos.y + 14}
+                  r={line.isActive ? 2.5 : 1.5}
+                  fill={
+                    AGENT_COORDINATION_CONFIGS[line.toAgent.coordinationState]
+                      .color.replace("text-", "") || "#64748b"
+                  }
+                  opacity={line.isActive ? 0.9 : 0.25}
+                />
+              </g>
+            )
           )}
         </svg>
 
         {/* Agent nodes */}
-        {agents.map((agent) => (
-          <AgentNode
-            key={agent.id}
-            agent={agent}
-            isActive={isActive(agent)}
-            isSelected={selectedAgent?.id === agent.id}
-            onSelect={setSelectedAgent}
-            style={{
-              left: nodePositions[agent.id]?.x ?? 0,
-              top: nodePositions[agent.id]?.y ?? 0,
-            }}
-          />
-        ))}
+        <div className="absolute inset-0" style={{ marginLeft: 35, paddingTop: 4 }}>
+          {agents.map((agent) => (
+            <AgentNode
+              key={agent.id}
+              agent={agent}
+              isActive={isActive(agent)}
+              isSelected={selectedAgent?.id === agent.id}
+              onSelect={setSelectedAgent}
+              style={{
+                left: nodePositions[agent.id]?.x ?? 0,
+                top: nodePositions[agent.id]?.y ?? 0,
+              }}
+            />
+          ))}
+        </div>
 
         {/* Selected agent detail panel */}
         {selectedAgent && selectedConfig && (
           <div
-            className="absolute inset-x-3 bottom-3 rounded-xl border border-white/[0.08] bg-black/40 p-3 backdrop-blur-md"
-            style={{
-              boxShadow: `0 0 20px 0 ${selectedConfig.glowColor}30`,
-            }}
+            className="absolute inset-x-2 bottom-2 rounded-lg border border-white/[0.1] bg-black/50 p-2.5 backdrop-blur-md"
+            style={{ boxShadow: `0 0 16px 0 ${selectedConfig.glowColor}25` }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 flex-col gap-0.5">
@@ -339,35 +320,23 @@ export function AgentCoordinationPanel({ className }: AgentCoordinationPanelProp
                   <span className={cn("text-sm font-bold", selectedConfig.color)}>
                     {selectedAgent.name}
                   </span>
-                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground">
+                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-muted-foreground/80">
                     {selectedAgent.layer}
                   </span>
-                </div>
-                <div className={cn("text-[10px]", selectedConfig.color)}>
-                  {selectedConfig.label} · {selectedConfig.description}
+                  <span className={cn("text-[9px]", selectedConfig.color)}>
+                    {selectedConfig.label}
+                  </span>
                 </div>
                 {selectedAgent.currentTask && (
-                  <div className="mt-1 text-[10px] text-muted-foreground">
-                    任务: {selectedAgent.currentTask}
-                  </div>
-                )}
-                {selectedAgent.connections.length > 0 && (
-                  <div className="mt-0.5 flex gap-1">
-                    {selectedAgent.connections.map((conn) => (
-                      <span
-                        key={conn}
-                        className="rounded-full bg-white/5 px-1.5 py-0.5 text-[8px] text-muted-foreground/70"
-                      >
-                        {conn}
-                      </span>
-                    ))}
+                  <div className="text-[10px] text-muted-foreground/80">
+                    当前任务: {selectedAgent.currentTask}
                   </div>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedAgent(null)}
-                className="shrink-0 rounded-lg bg-white/10 px-2 py-1 text-[10px] hover:bg-white/20"
+                className="shrink-0 rounded-lg bg-white/10 px-2 py-0.5 text-[9px] hover:bg-white/20"
               >
                 关闭
               </button>
@@ -377,11 +346,11 @@ export function AgentCoordinationPanel({ className }: AgentCoordinationPanelProp
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 border-t border-white/[0.06] px-4 py-2">
+      <div className="flex items-center justify-center gap-3 border-t border-white/[0.06] px-4 py-1.5 shrink-0">
         {(["idle", "thinking", "speaking", "coordinating"] as const).map((state) => {
           const config = AGENT_COORDINATION_CONFIGS[state];
           return (
-            <div key={state} className="flex items-center gap-1.5">
+            <div key={state} className="flex items-center gap-1">
               <div
                 className="h-1.5 w-1.5 rounded-full"
                 style={{
@@ -389,7 +358,7 @@ export function AgentCoordinationPanel({ className }: AgentCoordinationPanelProp
                   boxShadow: config.glowColor ? `0 0 4px 0 ${config.glowColor}` : undefined,
                 }}
               />
-              <span className="text-[9px] text-muted-foreground">{config.label}</span>
+              <span className="text-[8px] text-muted-foreground/70">{config.label}</span>
             </div>
           );
         })}
