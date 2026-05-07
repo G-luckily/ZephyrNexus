@@ -218,27 +218,21 @@ export function Layout() {
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-shell-page text-foreground pt-[env(safe-area-inset-top)]">
+      {/* Atmospheric depth — subtle cold blue light from top */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at 12% -4%, color-mix(in oklab, var(--zephyr-blue-soft) 70%, transparent) 0%, transparent 45%), radial-gradient(circle at 82% 0%, color-mix(in oklab, var(--violet-mist) 80%, transparent) 0%, transparent 36%), linear-gradient(180deg, color-mix(in oklab, var(--shell-page-bg) 80%, var(--background)) 0%, var(--background) 65%, color-mix(in oklab, var(--shell-page-bg) 72%, var(--background)) 100%)",
+            "radial-gradient(circle at 50% -10%, rgba(122, 139, 168, 0.035) 0%, transparent 50%), radial-gradient(circle at 80% 100%, rgba(100, 90, 80, 0.02) 0%, transparent 40%)",
         }}
       />
+      {/* Left sidebar subtle light edge */}
       <div
         className="pointer-events-none absolute inset-y-0 left-0 hidden md:block"
         style={{
-          width: "32rem",
+          width: "20rem",
           background:
-            "linear-gradient(90deg, color-mix(in oklab, var(--periwinkle-dim) 72%, transparent) 0%, color-mix(in oklab, var(--zephyr-blue-soft) 42%, transparent) 46%, transparent 100%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at center, var(--foreground) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
+            "linear-gradient(90deg, rgba(122, 139, 168, 0.015) 0%, transparent 50%)",
         }}
       />
       <a
@@ -273,7 +267,7 @@ export function Layout() {
             <CompanyRail />
             <Sidebar />
           </div>
-          <div className="border-t border-r border-sidebar-border bg-sidebar px-3 py-2">
+          <div className="border-t border-white/[0.04] bg-sidebar px-3 py-2">
             <div className="flex items-center gap-1">
               <SidebarNavItem
                 to="/docs"
@@ -285,7 +279,7 @@ export function Layout() {
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="shrink-0 text-muted-foreground hover:bg-surface-overlay hover:text-sidebar-foreground"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
@@ -314,7 +308,7 @@ export function Layout() {
               <Sidebar />
             </div>
           </div>
-          <div className="border-t border-r border-sidebar-border bg-sidebar px-3 py-2">
+          <div className="border-t border-white/[0.04] bg-sidebar px-3 py-2">
             <div className="flex items-center gap-1">
               <SidebarNavItem
                 to="/docs"
@@ -326,7 +320,7 @@ export function Layout() {
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="shrink-0 text-muted-foreground hover:bg-surface-overlay hover:text-sidebar-foreground"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "dark" ? "切换到浅色模式" : "切换到深色模式"

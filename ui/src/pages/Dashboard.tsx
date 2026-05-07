@@ -17,12 +17,6 @@ import {
   TaskFlowBoard,
   type FlowNodeDetail,
 } from "../components/dashboard/TaskFlowBoard";
-import { OrgRuntimePanel } from "../components/dashboard/OrgRuntimePanel";
-import { ActiveAgentsPanel } from "../components/dashboard/ActiveAgentsPanel";
-import { ZephyrHero } from "../components/dashboard/ZephyrHero";
-import { SystemMetricsPanel } from "../components/dashboard/SystemMetricsPanel";
-import { OrchestrationLane } from "../components/dashboard/OrchestrationLane";
-import { EventTimeline } from "../components/dashboard/EventTimeline";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { cn, relativeTime } from "../lib/utils";
 import { tStatus } from "../lib/i18n";
@@ -73,22 +67,13 @@ import type {
   HeartbeatRun,
   Issue,
 } from "@zephyr-nexus/shared";
+import { RuntimePanel, AgentCoordinationPanel } from "../components/runtime";
 
 type LogWindow = "15m" | "1h" | "24h";
 type SuccessWindow = "24h" | "7d" | "30d";
 type FeedFilter = "all" | "errors" | "tasks";
 type EventLevel = "信息" | "警告" | "错误";
 type AgentLayer = "ORG" | "V1-PROJECT" | "V2-PIPELINE" | "INFRA";
-
-// Dashboard metric constants
-const CHART_BAR_MIN_HEIGHT = 2;
-const CHART_BAR_MAX_HEIGHT = 26;
-const CARD_HEIGHT_PX = 140;
-const ACTION_QUEUE_SLICE_LIMIT = 160;
-const RECENT_ISSUES_LIMIT = 5;
-const AGENT_LOGS_LIMIT = 5;
-const ORG_UNITS_DISPLAY_LIMIT = 12;
-const HEALTH_CHECK_PASS_PERCENT = 96;
 
 type ActiveAgentRow = {
   id: string;
@@ -321,6 +306,85 @@ function translateAction(action: string): string {
   return MAP[action] ?? action;
 }
 
+function EventRow({
+  event,
+  level,
+  agentName,
+  index = 0,
+}: {
+  event: ActivityEvent;
+  level: EventLevel;
+  agentName: string;
+  index?: number;
+}) {
+  const levelClass =
+    level === "错误"
+      ? "text-[#ff8c82]"
+      : level === "警告"
+      ? "text-[#f6bd60]"
+      : "text-[#81ddff]";
+  const dotColor =
+    level === "错误" ? "#ff5d73" : level === "警告" ? "#ffb347" : "#4fd1ff";
+  const outerAnim =
+    level === "错误"
+      ? "eventDotBreathStrong"
+      : level === "警告"
+      ? "eventDotBreathSoft"
+      : "eventDotBreathSoft";
+  const innerShadow =
+    level === "错误"
+      ? "0 0 0 3px rgba(255,93,115,0.35)"
+      : level === "警告"
+      ? "0 0 0 3px rgba(255,179,71,0.3)"
+      : "0 0 0 2px rgba(79,209,255,0.28)";
+
+  return (
+    <div
+      className="relative flex items-start gap-3 border-b border-border/50 px-3 py-3 text-sm last:border-b-0"
+      style={{
+        animation: "eventRowIn 0.25s ease both",
+        animationDelay: `${index * 55}ms`,
+      }}
+    >
+      <div className="mt-1.5 flex w-[74px] shrink-0 flex-col items-start gap-1">
+        <span className="relative inline-flex h-3 w-3">
+          <span
+            className="absolute inline-flex h-full w-full rounded-full"
+            style={{
+              backgroundColor: dotColor,
+              opacity: level === "信息" ? 0.35 : 0.55,
+              animation: `${outerAnim} ${
+                level === "错误" ? 2.1 : level === "警告" ? 2.4 : 2.9
+              }s ease-in-out infinite`,
+            }}
+          />
+          <span
+            className="relative h-2.5 w-2.5 rounded-full"
+            style={{
+              backgroundColor: dotColor,
+              boxShadow: innerShadow,
+            }}
+          />
+        </span>
+        <span className="text-[11px] text-muted-foreground">
+          {new Date(event.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={cn("text-xs font-semibold", levelClass)}>
+          {level} · {agentName}
+        </p>
+        <p className="mt-1 truncate text-xs text-muted-foreground">
+          {translateAction(event.action)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function MetricCard({
   title,
   value,
@@ -340,11 +404,7 @@ function MetricCard({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        `premium-panel glass-surface hover-lift group relative h-[${CARD_HEIGHT_PX}px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300`,
-        kind === "accent" && "border-primary/20",
-        kind === "warning" && "border-warning/30"
-      )}
+      className="panel group relative h-[140px] overflow-hidden px-6 py-6 text-left transition-all duration-200"
     >
       <div className="relative flex h-full flex-col justify-between z-10">
         <div className="flex items-center justify-between">
@@ -402,7 +462,7 @@ function SuccessRateCard({
     <button
       type="button"
       onClick={onClick}
-      className={`premium-panel glass-surface hover-lift group relative h-[${CARD_HEIGHT_PX}px] overflow-hidden rounded-[var(--radius-card)] px-6 py-6 text-left transition-all duration-300`}
+      className="panel group relative h-[140px] overflow-hidden px-6 py-6 text-left transition-all duration-200"
     >
       <div className="relative flex h-full flex-col justify-between z-10">
         <div className="flex items-center justify-between">
@@ -421,8 +481,8 @@ function SuccessRateCard({
             {bars.map((b, i) => {
               const h =
                 b.total === 0
-                  ? CHART_BAR_MIN_HEIGHT
-                  : Math.max(4, Math.round((b.total / maxTotal) * CHART_BAR_MAX_HEIGHT));
+                  ? 2
+                  : Math.max(4, Math.round((b.total / maxTotal) * 26));
               const successFrac = b.total === 0 ? 1 : b.ok / b.total;
               const barColor =
                 b.total === 0
@@ -668,10 +728,7 @@ export function Dashboard() {
     const allRuns = runs ?? [];
     if (scopeView === "company") return allRuns;
     return allRuns.filter((run) => {
-      const issueId =
-        typeof run === "object" && run !== null && "issueId" in run
-          ? (run as unknown as { issueId?: string }).issueId
-          : undefined;
+      const issueId = (run as { issueId?: string }).issueId;
       if (scopeView === "project") {
         if (projectFilter === "all") return true;
         return !!issueId && scopeIssueIds.has(issueId);
@@ -756,10 +813,7 @@ export function Dashboard() {
     const all = activity ?? [];
     if (scopeView === "company") return all;
     return all.filter((event) => {
-      const issueId =
-        typeof event === "object" && event !== null && "issueId" in event
-          ? (event as unknown as { issueId?: string }).issueId
-          : undefined;
+      const issueId = (event as { issueId?: string }).issueId;
       if (scopeView === "project") {
         if (projectFilter === "all") return true;
         return !!issueId && scopeIssueIds.has(issueId);
@@ -775,7 +829,7 @@ export function Dashboard() {
   }, [activity, scopeView, projectFilter, scopeIssueIds, scopeAgentIds]);
 
   const recentActivity = useMemo(
-    () => scopedActivity.slice(0, ACTION_QUEUE_SLICE_LIMIT),
+    () => scopedActivity.slice(0, 160),
     [scopedActivity]
   );
 
@@ -790,7 +844,7 @@ export function Dashboard() {
           event.entityType.toLowerCase().includes("task")
         );
       })
-      .slice(0, ORG_UNITS_DISPLAY_LIMIT);
+      .slice(0, 12);
   }, [recentActivity, feedFilter, logWindow]);
 
   useEffect(() => {
@@ -943,7 +997,7 @@ export function Dashboard() {
         action.includes("task")
       );
     });
-    return hits.slice(0, AGENT_LOGS_LIMIT);
+    return hits.slice(0, 5);
   }, [recentActivity, selectedFlowNode]);
 
   const departments = useMemo(() => {
@@ -970,15 +1024,692 @@ export function Dashboard() {
     );
   }, [deptRuntimeMap]);
 
+  const OrgRuntimePanel = () => (
+    <section className="panel-floating relative flex h-full min-h-0 flex-col overflow-hidden p-5 lg:p-6">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-28"
+        style={{
+          background:
+            "radial-gradient(circle at 12% 0%, color-mix(in oklab, var(--zephyr-blue-soft) 75%, transparent) 0%, transparent 66%)",
+        }}
+      />
+      <div className="relative mb-4 flex items-start justify-between gap-3">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-periwinkle-dim px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-shell-chip-foreground">
+            <Layers3 className="h-3.5 w-3.5 text-zephyr-blue" />
+            组织运行态
+          </div>
+          <h3 className="mt-3 text-[20px] type-heading text-foreground">
+            组织运行拓扑
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            指挥链与执行单元同步密度。
+          </p>
+        </div>
+        <Link
+          to="/org"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/40 px-3.5 py-1.5 text-[11px] font-semibold text-foreground no-underline transition-all duration-200 hover:border-zephyr-blue/35 hover:bg-zephyr-blue-soft"
+        >
+          进入组织页
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      <div className="mb-4 grid grid-cols-4 gap-2 text-[11px]">
+        <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+          <p className="font-semibold text-zephyr-blue">{runtimeTotals.running}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            运行中
+          </p>
+        </div>
+        <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+          <p className="font-semibold text-foreground">{runtimeTotals.waiting}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            待命
+          </p>
+        </div>
+        <div className="rounded-xl border border-rose-400/20 bg-rose-500/8 px-3 py-2 text-center">
+          <p className="font-semibold text-rose-500 dark:text-rose-200">{runtimeTotals.failed}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            异常
+          </p>
+        </div>
+        <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+          <p className="font-semibold text-foreground">{runtimeTotals.total}</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            智能体
+          </p>
+        </div>
+      </div>
+
+      <div className="relative flex min-h-0 flex-1 flex-col rounded-[22px] border border-periwinkle-border bg-background/35 p-3">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            指挥链
+          </span>
+          <div className="h-px flex-1 bg-periwinkle-dim" />
+          <span className="text-[10px] font-medium text-zephyr-blue">
+            {selectedDept === "all" ? "全组织" : selectedDept}
+          </span>
+        </div>
+
+        <div className="scrollbar-auto-hide min-h-0 flex-1 space-y-2 overflow-auto pr-1">
+          {orgUnits.map((unit) => {
+            const dept = departmentLabelFromKey(unit.key, orgDepartmentOptions);
+            const runtime = deptRuntimeMap.get(unit.key) ?? {
+              total: 0,
+              running: 0,
+              waiting: 0,
+              failed: 0,
+              status: "idle" as DeptRuntimeStatus,
+              agents: [],
+            };
+            const badge = statusBadge(runtime.status);
+            const selected = selectedDept === dept;
+
+            return (
+              <button
+                key={unit.key}
+                type="button"
+                onClick={() => setSelectedDept(selected ? "all" : dept)}
+                className={cn(
+                  "group w-full rounded-2xl border px-3 py-2 text-left transition-all duration-200",
+                  selected
+                    ? "border-zephyr-blue/35 bg-zephyr-blue-soft"
+                    : "border-periwinkle-border bg-background/45 hover:border-zephyr-blue/30 hover:bg-background/60"
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {unit.label}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      运行 {runtime.running} · 等待 {runtime.waiting} · 异常{" "}
+                      {runtime.failed}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-periwinkle-border bg-background/50 text-zephyr-blue">
+                      {orgUnitIcon(unit.key)}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex h-5 items-center rounded-full border px-2 text-[9px] font-semibold uppercase tracking-[0.1em]",
+                        badge.cls
+                      )}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 border-t border-periwinkle-border pt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            拓扑密度
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {(Object.keys(agentLayerCounts) as AgentLayer[]).map((layer) => {
+              const meta = layerMeta(layer);
+              return (
+                <div
+                  key={layer}
+                  className="rounded-xl border border-periwinkle-border bg-background/45 px-2.5 py-2"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    {meta.label}
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-foreground">
+                    {agentLayerCounts[layer]}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
+  const ActiveAgentsPanel = () => {
+    const counts = useMemo(() => {
+      const all = selectedDeptAgentRows;
+      return {
+        active: all.filter((r) => r.status === "执行中").length,
+        waiting: all.filter((r) => r.status === "等待中").length,
+        failed: all.filter((r) => r.status === "异常").length,
+        total: all.length,
+      };
+    }, [selectedDeptAgentRows]);
+
+    return (
+      <section className="panel-floating relative flex h-full min-h-0 flex-col overflow-hidden p-5 lg:p-6">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-28"
+          style={{
+            background:
+              "radial-gradient(circle at 78% 0%, color-mix(in oklab, var(--violet-mist) 75%, transparent) 0%, transparent 68%)",
+          }}
+        />
+        <div className="relative mb-4 flex items-start justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-periwinkle-dim px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-shell-chip-foreground">
+              <Bot className="h-3.5 w-3.5 text-zephyr-blue" />
+              活跃智能体
+            </div>
+            <h3 className="mt-3 text-[20px] type-heading text-foreground">
+              智能体群协同面板
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              群体摘要与实时名册同步联动。
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedDept !== "all" && (
+              <button
+                type="button"
+                onClick={() => setSelectedDept("all")}
+                className="rounded-full border border-border bg-background/40 px-3.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-all duration-200 hover:bg-zephyr-blue-soft hover:text-foreground"
+              >
+                重置部门
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => openNewAgent()}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/40 px-3.5 py-1.5 text-[11px] font-semibold text-foreground transition-all duration-200 hover:border-zephyr-blue/35 hover:bg-zephyr-blue-soft"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              新建智能体
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-4 grid grid-cols-4 gap-2 text-[11px]">
+          <div className="rounded-xl border border-zephyr-blue/25 bg-zephyr-blue-soft px-3 py-2 text-center">
+            <p className="font-semibold text-zephyr-blue">{counts.active}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              活跃
+            </p>
+          </div>
+          <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+            <p className="font-semibold text-foreground">{counts.waiting}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              待命
+            </p>
+          </div>
+          <div className="rounded-xl border border-rose-400/20 bg-rose-500/8 px-3 py-2 text-center">
+            <p className="font-semibold text-rose-500 dark:text-rose-200">{counts.failed}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              异常
+            </p>
+          </div>
+          <div className="rounded-xl border border-periwinkle-border bg-background/45 px-3 py-2 text-center">
+            <p className="font-semibold text-foreground">{counts.total}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              总计
+            </p>
+          </div>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col rounded-[22px] border border-periwinkle-border bg-background/35 p-3">
+          <div className="mb-3 flex shrink-0 items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              实时名册
+            </span>
+            <div className="h-px flex-1 bg-periwinkle-dim" />
+            <span className="text-[10px] font-medium text-zephyr-blue">
+              {selectedDept === "all" ? "全部部门" : selectedDept}
+            </span>
+          </div>
+
+          {selectedDeptAgentRows.length === 0 ? (
+            <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-periwinkle-border bg-background/35 px-4 py-8 text-center text-sm text-muted-foreground">
+              当前筛选下暂无活跃智能体
+            </div>
+          ) : (
+            <div className="scrollbar-auto-hide min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+              {(Object.keys(agentLayerCounts) as AgentLayer[]).map((layer) => {
+                const rows = activeAgentRowsByLayer.get(layer) ?? [];
+                if (rows.length === 0) return null;
+                const meta = layerMeta(layer);
+
+                return (
+                  <div
+                    key={layer}
+                    className="rounded-2xl border border-periwinkle-border bg-background/45 p-2.5"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {meta.label} · {meta.description}
+                      </p>
+                      <span className="rounded-full border border-periwinkle-border bg-periwinkle-dim px-2 py-0.5 text-[10px] font-medium text-shell-chip-foreground">
+                        {rows.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      {rows.map((row) => {
+                        const statusCls =
+                          row.status === "执行中"
+                            ? "bg-zephyr-blue-soft text-zephyr-blue ring-zephyr-blue/25"
+                            : row.status === "异常"
+                            ? "bg-rose-500/12 text-rose-500 dark:text-rose-200 ring-rose-500/22"
+                            : row.status === "等待中"
+                            ? "bg-periwinkle-dim text-shell-chip-foreground ring-periwinkle-border"
+                            : "bg-muted text-muted-foreground ring-border";
+
+                        return (
+                          <button
+                            key={row.id}
+                            type="button"
+                            onClick={() => navigate(row.route)}
+                            className="group flex w-full items-center justify-between gap-2.5 rounded-xl border border-transparent bg-background/35 px-2.5 py-1.5 text-left transition-all duration-150 hover:border-zephyr-blue/25 hover:bg-background/55"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-foreground">
+                                {row.displayName}
+                              </p>
+                              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                {row.subtitle}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold ring-1 ring-inset",
+                                  statusCls
+                                )}
+                              >
+                                {row.status}
+                              </span>
+                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/80 transition-transform duration-150 group-hover:translate-x-0.5" />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="mt-3 flex shrink-0 items-center justify-between border-t border-periwinkle-border pt-2">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              名册密度
+            </span>
+            <span className="text-[10px] font-medium text-zephyr-blue">
+              已纳管 {counts.total} 个智能体
+            </span>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  const ZephyrHero = () => {
+    return (
+      <section className="panel relative overflow-hidden border border-white/[0.06] shadow-xl">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(120deg, color-mix(in oklab, var(--shell-surface-bg) 86%, transparent) 0%, color-mix(in oklab, var(--shell-surface-bg) 62%, transparent) 46%, transparent 100%)",
+          }}
+        />
+        <div className="pointer-events-none absolute inset-0 z-[1]">
+          <ConstellationWindField className="h-full w-full opacity-[0.95] dark:opacity-[0.98]" />
+        </div>
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[64%]"
+          style={{
+            background:
+              "linear-gradient(90deg, var(--card) 0%, color-mix(in oklab, var(--card) 88%, transparent) 35%, transparent 100%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-[40%] z-[2] w-[30%]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 22% 50%, var(--violet-glow) 0%, transparent 72%)",
+          }}
+        />
+
+        <div className="relative z-10 flex min-h-[350px] flex-col justify-between p-7 md:p-9 lg:p-11">
+          <div className="max-w-[700px] space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-periwinkle-border bg-background/55 px-3.5 py-1 backdrop-blur-xl">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zephyr-blue opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-zephyr-blue" />
+              </span>
+              <span className="type-label text-foreground/80">
+                系统在线 · {lastSyncTime}
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <h1 className="type-display text-4xl text-foreground md:text-5xl lg:text-[3.25rem]">
+                风之灵枢
+              </h1>
+              <h2 className="text-lg font-light tracking-[0.22em] text-muted-foreground md:text-xl lg:text-2xl">
+                AI 编排系统
+              </h2>
+            </div>
+
+            <div className="rounded-[20px] border border-periwinkle-border bg-background/48 px-4 py-3 backdrop-blur-sm">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                <div>
+                  <p className="text-2xl font-semibold leading-none text-foreground">
+                    {departments.length}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    部门
+                  </p>
+                </div>
+                <div className="sm:border-l sm:border-periwinkle-border sm:pl-4">
+                  <p className="text-2xl font-semibold leading-none text-foreground">
+                    {companyAgents.length}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    智能体
+                  </p>
+                </div>
+                <div className="sm:border-l sm:border-periwinkle-border sm:pl-4">
+                  <p className="text-2xl font-semibold leading-none text-foreground">
+                    96%
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    健康度
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => openNewIssue()}
+                className="inline-flex items-center gap-2 rounded-xl border border-zephyr-blue bg-zephyr-blue px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_22px_-14px_var(--zephyr-blue-glow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_28px_-14px_var(--zephyr-blue-glow)]"
+              >
+                <Plus className="h-4 w-4" />
+                新建任务
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+            <span>风灵群体｜智能体群</span>
+            <span className="h-[3px] w-[3px] rounded-full bg-current opacity-40" />
+            <span>风脉路径｜任务流</span>
+            <span className="h-[3px] w-[3px] rounded-full bg-current opacity-40" />
+            <span>风灵协同｜协同网络</span>
+            <span className="h-[3px] w-[3px] rounded-full bg-current opacity-40" />
+            <span>风擎引擎｜执行引擎</span>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  const SystemMetricsPanel = () => {
+    const metrics = [
+      {
+        label: "活跃任务",
+        value: activeIssues.length,
+        sub: "执行负载",
+        icon: <Activity className="h-4 w-4" />,
+        tone: "blue" as const,
+        accent: "border-zephyr-blue/30 bg-zephyr-blue-soft/50",
+      },
+      {
+        label: "人工升级",
+        value: blockedIssues,
+        sub: "人工介入",
+        icon: <AlertTriangle className="h-4 w-4" />,
+        tone: "warm" as const,
+        accent: "border-amber-400/30 bg-amber-400/10",
+      },
+      {
+        label: "系统成功率",
+        value: `${successRate}%`,
+        sub: "运行质量",
+        icon: <ShieldCheck className="h-4 w-4" />,
+        tone: "emerald" as const,
+        accent: "border-emerald-400/30 bg-emerald-400/10",
+      },
+      {
+        label: "通信机器人",
+        value: "活跃",
+        sub: "同步中",
+        icon: <Bot className="h-4 w-4" />,
+        tone: "violet" as const,
+        accent: "border-violet-400/30 bg-violet-400/10",
+      },
+    ] as const;
+
+    return (
+      <section className="panel-floating relative flex h-full min-h-[260px] flex-col overflow-hidden p-5 lg:p-6">
+        {/* Atmospheric glow */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-40"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(56, 121, 234, 0.12) 0%, transparent 70%)",
+          }}
+        />
+
+        <div className="relative mb-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            实时监控
+          </p>
+          <h3 className="mt-2 text-[20px] type-heading text-foreground">
+            执行监控
+          </h3>
+        </div>
+
+        <div className="grid flex-1 grid-cols-2 gap-2.5">
+          {metrics.map((metric) => (
+            <div
+              key={metric.label}
+              className={cn(
+                "group relative flex flex-col justify-between rounded-xl border p-3.5 transition-all duration-200 hover:scale-[1.02] hover:border-white/15",
+                metric.accent
+              )}
+            >
+              {/* Glow effect on hover */}
+              <div
+                className="absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                style={{
+                  background:
+                    "radial-gradient(ellipse 60% 40% at 30% 0%, rgba(56, 121, 234, 0.08) 0%, transparent 70%)",
+                }}
+              />
+              <div className="relative">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                    {metric.sub}
+                  </span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5">
+                    <span className="text-muted-foreground">{metric.icon}</span>
+                  </div>
+                </div>
+                <p className="text-xl font-semibold text-foreground tabular-nums">
+                  {metric.value}
+                </p>
+                <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+                  {metric.label}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const OrchestrationLane = () => {
+    const status = liveTask?.status ?? "todo";
+    const blocked = status === "blocked";
+    const stages = [
+      {
+        id: "start",
+        label: "启动",
+        state: status === "todo" ? "active" : "done",
+      },
+      {
+        id: "schedule",
+        label: "任务调度",
+        state:
+          status === "todo"
+            ? "pending"
+            : blocked
+            ? "failed"
+            : status === "in_progress"
+            ? "active"
+            : "done",
+      },
+      {
+        id: "query",
+        label: "指标查询",
+        state:
+          status === "in_review" || status === "done"
+            ? status === "done"
+              ? "done"
+              : "active"
+            : "pending",
+      },
+      {
+        id: "review",
+        label: "人工复核",
+        state:
+          status === "done"
+            ? "done"
+            : status === "in_review"
+            ? "active"
+            : "pending",
+      },
+    ] as const;
+
+    const terminalIndex = stages.reduce((acc, stage, index) => {
+      if (
+        stage.state === "done" ||
+        stage.state === "active" ||
+        stage.state === "failed"
+      ) {
+        return index;
+      }
+      return acc;
+    }, 0);
+    const progress = Math.max(
+      8,
+      Math.round((terminalIndex / (stages.length - 1)) * 100)
+    );
+    const progressBar = stages.some((stage) => stage.state === "failed")
+      ? "linear-gradient(90deg, color-mix(in oklab, var(--zephyr-blue) 35%, var(--warning)) 0%, var(--error) 100%)"
+      : "linear-gradient(90deg, var(--zephyr-blue) 0%, var(--periwinkle) 100%)";
+
+    return (
+      <div className="relative px-2 py-1.5">
+        <div className="absolute left-4 right-4 top-[22px] h-[2px] rounded-full bg-periwinkle-dim" />
+        <div
+          className="absolute left-4 top-[22px] h-[2px] rounded-full transition-[width] duration-500"
+          style={{
+            width: `calc((100% - 2rem) * ${progress / 100})`,
+            background: progressBar,
+          }}
+        />
+
+        <div className="relative grid grid-cols-4 gap-2">
+          {stages.map((stage) => {
+            const isActive = stage.state === "active";
+            const isDone = stage.state === "done";
+            const isFailed = stage.state === "failed";
+
+            return (
+              <div
+                key={stage.id}
+                className={cn(
+                  "rounded-2xl border bg-background/55 px-2.5 py-2.5 transition-colors duration-150",
+                  isActive
+                    ? "border-zephyr-blue/40 bg-zephyr-blue-soft/70"
+                    : isDone
+                    ? "border-success/35 bg-success/10"
+                    : isFailed
+                    ? "border-error/35 bg-error/10"
+                    : "border-periwinkle-border bg-background/40"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "inline-flex h-5 w-5 items-center justify-center rounded-full border",
+                      isActive
+                        ? "border-zephyr-blue bg-zephyr-blue-soft"
+                        : isDone
+                        ? "border-success/45 bg-success/12"
+                        : isFailed
+                        ? "border-error/45 bg-error/12"
+                        : "border-periwinkle-border bg-background/70"
+                    )}
+                  >
+                    {isDone ? (
+                      <Check className="h-3.5 w-3.5 text-success" />
+                    ) : isFailed ? (
+                      <AlertTriangle className="h-3.5 w-3.5 text-error" />
+                    ) : (
+                      <span
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          isActive ? "animate-pulse bg-zephyr-blue" : "bg-muted-foreground/45"
+                        )}
+                      />
+                    )}
+                  </span>
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground">
+                    {stage.label}
+                  </p>
+                </div>
+                <p
+                  className={cn(
+                    "mt-1.5 text-[10px] font-medium uppercase tracking-[0.1em]",
+                    isActive
+                      ? "text-zephyr-blue"
+                      : isDone
+                      ? "text-success"
+                      : isFailed
+                      ? "text-error"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {isActive
+                    ? "运行中"
+                    : isDone
+                    ? "已完成"
+                    : isFailed
+                    ? "失败"
+                    : "待处理"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const MissionControl = () => {
     return (
-      <section className="premium-panel glass-surface relative flex h-full min-h-[260px] flex-col overflow-hidden rounded-[var(--radius-panel)] p-5 lg:p-6">
+      <section className="panel-floating relative flex h-full min-h-[260px] flex-col overflow-hidden p-5 lg:p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
               任务流程
             </p>
-            <h3 className="mt-2 text-[20px] font-semibold tracking-tight text-foreground">
+            <h3 className="mt-2 text-[20px] type-heading text-foreground">
               任务执行链
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -992,11 +1723,98 @@ export function Dashboard() {
         </div>
 
         <div className="rounded-[22px] border border-periwinkle-border bg-background/36 p-2">
-          <OrchestrationLane liveTaskStatus={liveTask?.status} />
+          <OrchestrationLane />
         </div>
       </section>
     );
   };
+
+  const EventTimeline = () => (
+    <section className="panel-floating relative overflow-hidden p-6 lg:p-8 shadow-xl">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-32"
+        style={{
+          background:
+            "radial-gradient(circle at top right, color-mix(in oklab, var(--zephyr-blue-soft) 65%, transparent) 0%, transparent 52%)",
+        }}
+      />
+      <div className="relative mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            系统动态流
+          </p>
+          <h3 className="mt-2 text-[22px] type-heading text-foreground">
+            系统事件
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-full border border-periwinkle-border bg-background/45 p-0.5 text-xs">
+            {(["all", "errors", "tasks"] as FeedFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFeedFilter(f)}
+                className={cn(
+                  "rounded-full px-3 py-1 font-medium transition-colors duration-150",
+                  feedFilter === f
+                    ? "bg-zephyr-blue-soft text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {f === "all" ? "全部" : f === "errors" ? "错误" : "任务"}
+              </button>
+            ))}
+          </div>
+
+          <select
+            className="rounded-full border border-periwinkle-border bg-background/45 px-4 py-1.5 text-xs text-foreground transition-all duration-200 hover:border-zephyr-blue/35 focus:ring-2 focus:ring-zephyr-blue/20 focus:outline-none"
+            value={logWindow}
+            onChange={(e) => setLogWindow(e.target.value as LogWindow)}
+          >
+            <option value="1h">最近 1 小时</option>
+            <option value="24h">最近 24 小时</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredEvents.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          当前筛选下暂无事件。
+        </p>
+      ) : (
+        <div
+          ref={logsContainerRef}
+          className="relative max-h-[420px] overflow-auto rounded-[24px] border border-periwinkle-border"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in oklab, var(--shell-surface-bg) 85%, transparent) 0%, color-mix(in oklab, var(--card) 72%, var(--shell-surface-bg)) 100%)",
+          }}
+        >
+          <div className="pointer-events-none absolute left-[39px] top-0 h-full w-px bg-periwinkle-dim" />
+          {filteredEvents.map((event, idx) => {
+            const level = toLevel(event);
+            const rawName =
+              (event.agentId &&
+                agents?.find((a) => a.id === event.agentId)?.name) ||
+              (event.actorType === "agent" &&
+                agents?.find((a) => a.id === event.actorId)?.name) ||
+              "系统";
+            const agentName =
+              rawName === "系统" ? rawName : cleanVisibleAgentName(rawName);
+
+            return (
+              <EventRow
+                key={event.id}
+                event={event}
+                level={level}
+                agentName={agentName}
+                index={idx}
+              />
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
 
   if (!selectedCompanyId) {
     if (companies.length === 0) {
@@ -1018,7 +1836,12 @@ export function Dashboard() {
 
   return (
     <div
-      className="relative mr-auto w-full max-w-[1760px] space-y-5 pb-20 pt-8 text-foreground"
+      className="relative mr-auto w-full max-w-[1760px] pb-20 pt-8 text-foreground"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "48px",
+      }}
     >
       <style>{`
         @keyframes panelRiseIn {
@@ -1027,67 +1850,64 @@ export function Dashboard() {
         }
       `}</style>
 
+      {/* Hero section */}
       <section style={{ animation: "panelRiseIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both" }}>
-        <ZephyrHero
-          lastSyncTime={lastSyncTime}
-          departmentCount={departments.length}
-          agentCount={companyAgents.length}
-        />
+        <ZephyrHero />
       </section>
 
+      {/* System Status Row - A层：系统总状态 */}
       <section
-        className="grid items-stretch gap-5 lg:grid-cols-2"
         style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "24px",
+          animation: "panelRiseIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
+          animationDelay: "0.05s",
+        }}
+      >
+        {/* Runtime Status - 系统运行时状态 */}
+        <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
+
+        {/* Agent Coordination - 智能体协同拓扑 */}
+        <AgentCoordinationPanel />
+      </section>
+
+      {/* Primary execution row */}
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+          gap: "32px",
           animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
           animationDelay: "0.1s",
         }}
       >
         <MissionControl />
-        <SystemMetricsPanel
-          activeIssuesCount={activeIssues.length}
-          blockedIssuesCount={blockedIssues}
-          successRate={successRate}
-          failedRunsCount={failedRuns}
-        />
+        <SystemMetricsPanel />
       </section>
 
+      {/* Agent coordination row */}
       <section
-        className="grid items-stretch gap-5 lg:h-[620px] lg:grid-cols-2"
         style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+          gap: "32px",
           animation: "panelRiseIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) both",
           animationDelay: "0.14s",
         }}
       >
-        <OrgRuntimePanel
-          selectedDept={selectedDept}
-          setSelectedDept={setSelectedDept}
-          orgUnits={orgUnits}
-          deptRuntimeMap={deptRuntimeMap}
-          agentLayerCounts={agentLayerCounts}
-          orgDepartmentOptions={orgDepartmentOptions}
-        />
-        <ActiveAgentsPanel
-          selectedDept={selectedDept}
-          setSelectedDept={setSelectedDept}
-          selectedDeptAgentRows={selectedDeptAgentRows}
-          agentLayerCounts={agentLayerCounts}
-          activeAgentRowsByLayer={activeAgentRowsByLayer}
-        />
+        <OrgRuntimePanel />
+        <ActiveAgentsPanel />
       </section>
 
+      {/* Timeline — full width */}
       <section
         style={{
-        animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
-        animationDelay: "0.2s",
-      }}>
-        <EventTimeline
-          feedFilter={feedFilter}
-          setFeedFilter={setFeedFilter}
-          logWindow={logWindow}
-          setLogWindow={setLogWindow}
-          filteredEvents={filteredEvents}
-          agents={agents}
-        />
+          animation: "panelRiseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
+          animationDelay: "0.2s",
+        }}
+      >
+        <EventTimeline />
       </section>
 
       {/* Overlays & Modals */}
