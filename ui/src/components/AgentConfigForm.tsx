@@ -60,7 +60,7 @@ type AgentConfigFormProps = {
   onCancelActionChange?: (cancel: (() => void) | null) => void;
   hideInlineSave?: boolean;
   /** "cards" renders each section as heading + bordered card (for settings pages). Default: "inline" (border-b dividers). */
-  sectionLayout?: "inline" | "cards";
+  sectionLayout?: "inline" | "cards" | "settings-rows";
 } & (
   | {
       mode: "create";
