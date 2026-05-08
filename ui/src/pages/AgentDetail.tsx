@@ -1441,7 +1441,7 @@ function ConfigurationTab({
         onSaveActionChange={onSaveActionChange}
         onCancelActionChange={onCancelActionChange}
         hideInlineSave
-        sectionLayout="cards"
+        sectionLayout="settings-rows"
       />
 
       <div>
