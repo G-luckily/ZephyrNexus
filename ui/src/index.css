@@ -210,6 +210,11 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.03), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
 
+  /* ── Atmospheric Orbs (light mode — subtle pearl/blue) ── */
+  --orb-1-opacity: 0.12;
+  --orb-2-opacity: 0.09;
+  --orb-3-opacity: 0.07;
+
   /* Sidebar */
   --sidebar: var(--shell-pane-bg);
   --sidebar-foreground: var(--foreground);
@@ -322,6 +327,26 @@
   --graph-node-active-stroke: rgba(167, 139, 250, 0.55);
   --graph-node-active-inner: rgba(167, 139, 250, 0.75);
   --graph-ghost-node: rgba(148, 163, 184, 0.08);
+
+  /* ── Atmospheric Orbs — Deep Space direction ── */
+  /* Positions: orb-1 (top-left), orb-2 (bottom-right), orb-3 (center-right) */
+  --orb-1-x: 8%;
+  --orb-1-y: -5%;
+  --orb-1-size: 55vw;
+  --orb-1-color: #7a8ba8;
+  --orb-1-opacity: 0.18;
+
+  --orb-2-x: 75%;
+  --orb-2-y: 70%;
+  --orb-2-size: 50vw;
+  --orb-2-color: #8d79f2;
+  --orb-2-opacity: 0.14;
+
+  --orb-3-x: 55%;
+  --orb-3-y: 25%;
+  --orb-3-size: 40vw;
+  --orb-3-color: #2d6be4;
+  --orb-3-opacity: 0.10;
   --graph-ghost-stroke: rgba(148, 163, 184, 0.06);
   --graph-text: rgba(148, 163, 184, 0.3);
   --graph-text-ghost: rgba(148, 163, 184, 0.2);

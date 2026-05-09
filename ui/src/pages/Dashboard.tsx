@@ -1505,15 +1505,6 @@ export function Dashboard() {
 
     return (
       <section className="panel-floating relative flex h-full min-h-[260px] flex-col overflow-hidden p-5 lg:p-6">
-        {/* Atmospheric glow */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-30"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in oklab, var(--zephyr-blue) 10%, transparent) 0%, transparent 70%)",
-          }}
-        />
-
         <div className="relative mb-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/60">
             实时监控

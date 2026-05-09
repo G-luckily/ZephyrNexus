@@ -53,13 +53,6 @@ export function RuntimePanel({
 
     return (
       <div className={cn("panel-floating relative flex flex-col overflow-hidden p-4", className)}>
-        {/* Atmospheric glow */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-40"
-          style={{
-            background: `radial-gradient(ellipse at 50% 0%, ${stateConfig.glowColor} 0%, transparent 70%)`,
-          }}
-        />
 
         {/* Header */}
         <div className="relative mb-3 flex items-center justify-between">
@@ -215,14 +208,6 @@ export function RuntimePanel({
         className
       )}
     >
-      {/* Atmospheric glow */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-32 opacity-50"
-        style={{
-          background: `radial-gradient(circle at 50% 0%, ${stateConfig.glowColor} 0%, transparent 70%)`,
-        }}
-      />
-
       {/* Header */}
       <div className="relative mb-4 flex items-center justify-between px-5 pt-5">
         <div className="flex items-center gap-3">
