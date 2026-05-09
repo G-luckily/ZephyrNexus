@@ -99,7 +99,6 @@ import {
   MoreHorizontal,
   AlertTriangle,
   CheckCircle,
-  XCircle,
   Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
