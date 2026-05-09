@@ -35,6 +35,8 @@ Phase 3: Agent 页面精修      ← 已完成
 Phase 3.5: Agent Overview 精修 ← 已完成
 Phase 3.6: AgentConfigForm settings-rows 布局 ← 已完成
 Phase 3.7: Motion System — reveal-on-scroll + micro-interactions ← 已完成
+Phase 3.8: Visual Direction — Deep Space Orbs Background ← 已完成
+Phase 3.9: AgentDetail Configuration Inspector — 12-column layout ← 已完成
 Phase 4: List 页面精修
 Phase 5: Modal / Empty State / Toast 精修
 Phase 6: Dark Mode 专项验收
@@ -253,6 +255,54 @@ Phase 7: 全站收口
 
 ---
 
+### Phase 3.8: Visual Direction — Deep Space Orbs Background
+
+**设计方向**: "Deep Space Minimal" — 深空留白 + 3 个慢速漂浮的氛围光球，无厚重毛玻璃覆盖层
+
+**参考来源**: Dribbble 2025 SaaS Dashboard trends — AuroraEngine / Nova template / Clean SaaS Dashboard
+
+#### 设计决策
+- [x] 去掉所有页面内 panel 的顶部 atmospheric glow radial-gradient（Dashboard MissionSnapshot / RuntimePanel compact / RuntimePanel full）
+- [x] 页面背景改为 3 个绝对定位的 CSS radial-gradient orbs（blur 60-80px）：
+  - Orb 1 (top-left, silver-blue): `rgba(122, 139, 168, 0.18)`
+  - Orb 2 (bottom-right, violet): `rgba(141, 121, 242, 0.14)`
+  - Orb 3 (center-right, zephyr-blue): `rgba(56, 121, 234, 0.10)`
+- [x] Orb 各自独立 float 动画（18s/22s/26s ease-in-out infinite）
+- [x] Light mode orb 透明度递减（0.12 / 0.09 / 0.07）
+- [x] Dark mode orb 透明度递增（0.18 / 0.14 / 0.10）
+- [x] CSS variable 集中管理（`--orb-1-x/y/size/color/opacity`）
+- [x] `prefers-reduced-motion`: orbs 动画禁用（`animation: none`）
+- [x] 底层 radial base gradient 消除纯黑/纯白背景的平坦感
+
+### 验证
+- [x] `npx vite build` 通过
+
+---
+
+### Phase 3.9: AgentDetail Configuration Inspector — 12-column layout
+
+**目标**: 将 Agent 配置页从 `max-w-3xl` 单列改为 12-column 两栏布局（左侧 8 col 配置区 + 右侧 4 col sticky Inspector）
+
+#### Layout restructure
+- [x] AgentConfigurePage 移除 `max-w-3xl`，改为 `grid grid-cols-1 lg:grid-cols-12 gap-6`
+- [x] 左侧 8 columns (`lg:col-span-8`): AgentConfigForm (settings-rows) + Permissions card
+- [x] 右侧 4 columns (`lg:col-span-4 lg:sticky lg:top-4`): ConfigurationInspector
+- [x] API Keys 和配置历史保持全宽，在两栏布局下方
+
+#### Configuration Inspector (右侧 sticky 面板)
+- [x] 1. Configuration Summary — 名称 / Adapter / Model / Working Dir
+- [x] 2. Readiness — 4 项检查（Identity / Adapter model / Prompt template / Heartbeat），带图标状态
+- [x] 3. Risks & Notices — 根据 adapter type 和配置状态动态显示警告/提示
+- [x] 4. Quick Actions — Test environment / Trigger heartbeat / Pause agent / Assign task
+
+#### 新增图标
+- [x] Activity, Heart, FolderOpen, Terminal, Settings, AlertTriangle, CheckCircle, XCircle, Zap
+
+### 验证
+- [x] `npx vite build` 通过
+
+---
+
 ## 剩余 UI Debt
 - 部分页面仍有 opacity 文字（`text-foreground/60` 等），应逐步转为 text-secondary / text-muted / text-subtle
 - `text-muted-foreground` 在部分组件中是唯一的弱文本 token，后续应区分三级弱文本
@@ -265,8 +315,7 @@ Phase 7: 全站收口
 - 后续可在 Modal/EmptyState 精修阶段进一步提升 toast 整体视觉
 
 ### App Shell (Layout.tsx)
-- 背景渐变使用硬编码 rgba
-- 建议在 Dashboard 精修阶段统一为 `--app-bg-radial` token
+- ✅ 已修复：硬编码 rgba atmospheric div → CSS orb system（3 orbs via CSS vars + float keyframes）
 
 ### Sidebar 渐变
 - ✅ 已修复：`rgba(122, 139, 168, 0.03)` → `color-mix(in oklab, var(--periwinkle) 8%, transparent)`

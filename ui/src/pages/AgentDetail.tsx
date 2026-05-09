@@ -88,10 +88,19 @@ import {
   Eye,
   EyeOff,
   Copy,
+  Activity,
+  Heart,
+  FolderOpen,
+  Terminal,
+  Settings,
   ChevronRight,
   ChevronDown,
   ArrowLeft,
   MoreHorizontal,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { AgentIcon, AgentIconPicker } from "../components/AgentIconPicker";
@@ -1291,22 +1300,56 @@ function AgentConfigurePage({
   });
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <ConfigurationTab
-        agent={agent}
-        onDirtyChange={onDirtyChange}
-        onSaveActionChange={onSaveActionChange}
-        onCancelActionChange={onCancelActionChange}
-        onSavingChange={onSavingChange}
-        updatePermissions={updatePermissions}
-        companyId={companyId}
-      />
+    <>
+      {/* Two-column layout: config left (8 col) + inspector right (4 col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left: Config area — 8 columns */}
+        <div className="lg:col-span-8 space-y-5">
+          <AgentConfigForm
+            mode="edit"
+            agent={agent}
+            onSave={(patch) => updateAgent.mutate(patch)}
+            isSaving={updateAgent.isPending}
+            adapterModels={adapterModels}
+            onDirtyChange={onDirtyChange}
+            onSaveActionChange={onSaveActionChange}
+            onCancelActionChange={onCancelActionChange}
+            hideInlineSave
+            sectionLayout="settings-rows"
+          />
+
+          {/* Permissions card */}
+          <div className="border border-border rounded-lg px-4 py-4">
+            <h3 className="text-xs font-medium text-text-secondary mb-3">Permissions</h3>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Can create new agents</span>
+              <Button
+                variant={agent.permissions?.canCreateAgents ? "default" : "outline"}
+                size="sm"
+                className="h-7 px-2.5 text-xs"
+                onClick={() =>
+                  updatePermissions.mutate(!agent.permissions?.canCreateAgents)
+                }
+              >
+                {agent.permissions?.canCreateAgents ? "Enabled" : "Disabled"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: sticky Configuration Inspector — 4 columns */}
+        <div className="lg:col-span-4 lg:sticky lg:top-4 space-y-4">
+          <ConfigurationInspector agent={agent} />
+        </div>
+      </div>
+
+      {/* API Keys — full width below two-column layout */}
       <div>
-        <h3 className="text-sm font-medium mb-3">API Keys</h3>
+        <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">API Keys</h3>
         <KeysTab agentId={agentId} companyId={companyId} />
       </div>
 
-      {/* Configuration Revisions — collapsible at the bottom */}
+      {/* Configuration Revisions — full width */}
       <div>
         <button
           className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
@@ -1366,6 +1409,205 @@ function AgentConfigurePage({
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+/* ---- Configuration Inspector (right column) ---- */
+
+function ConfigurationInspector({ agent }: { agent: Agent }) {
+  const runtimeConfig = (agent.runtimeConfig ?? {}) as Record<string, unknown>;
+  const heartbeat = (runtimeConfig.heartbeat ?? {}) as Record<string, unknown>;
+  const adapterConfig = (agent.adapterConfig ?? {}) as Record<string, unknown>;
+
+  const isComplete = Boolean(agent.name && adapterConfig.model);
+  const hasHeartbeat = heartbeat.enabled !== false;
+  const hasPromptTemplate = isLocalAgent(agent.adapterType) && adapterConfig.promptTemplate;
+
+  function isLocalAgent(adapterType: string) {
+    return ["claude_local", "codex_local", "opencode_local", "cursor"].includes(adapterType);
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* 1. Configuration Summary */}
+      <div className="rounded-lg border border-border bg-surface-inset px-4 py-3.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Configuration Summary
+        </p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Name</span>
+            <span className="text-xs font-medium truncate max-w-[140px]">{agent.name || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Adapter</span>
+            <span className="text-xs font-medium capitalize">{agent.adapterType?.replace(/_local$/, "").replace(/_/g, " ") ?? "—"}</span>
+          </div>
+          {adapterConfig.model && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Model</span>
+              <span className="text-xs font-medium font-mono truncate max-w-[140px] text-text-secondary">
+                {String(adapterConfig.model).split("/").pop()}
+              </span>
+            </div>
+          )}
+          {adapterConfig.cwd && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Working Dir</span>
+              <span className="text-xs font-mono truncate max-w-[140px] text-text-subtle">{String(adapterConfig.cwd)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Readiness / Completeness */}
+      <div className="rounded-lg border border-border bg-surface-inset px-4 py-3.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Readiness
+        </p>
+        <div className="space-y-1.5">
+          <ReadinessItem
+            label="Identity"
+            status={agent.name ? "ok" : "warn"}
+            detail={agent.name ? agent.name : "Name required"}
+          />
+          <ReadinessItem
+            label="Adapter model"
+            status={adapterConfig.model ? "ok" : "warn"}
+            detail={adapterConfig.model ? "Configured" : "No model selected"}
+          />
+          {isLocalAgent(agent.adapterType) && (
+            <ReadinessItem
+              label="Prompt template"
+              status={adapterConfig.promptTemplate ? "ok" : "warn"}
+              detail={adapterConfig.promptTemplate ? "Set" : "Not defined"}
+            />
+          )}
+          <ReadinessItem
+            label="Heartbeat"
+            status={hasHeartbeat ? "ok" : "off"}
+            detail={hasHeartbeat ? `Every ${heartbeat.intervalSec ?? 300}s` : "Disabled"}
+          />
+        </div>
+        <div className="mt-3 pt-2.5 border-t border-border/50">
+          {isComplete ? (
+            <p className="text-[10px] text-success flex items-center gap-1.5">
+              <CheckCircle className="h-3 w-3" />
+              Configuration complete
+            </p>
+          ) : (
+            <p className="text-[10px] text-warning flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3" />
+              Missing required fields
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Risks / Notices */}
+      <div className="rounded-lg border border-border bg-surface-inset px-4 py-3.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Risks &amp; Notices
+        </p>
+        <div className="space-y-1.5">
+          {agent.adapterType === "codex_local" && adapterConfig.model?.toString().includes("o4") && (
+            <RiskItem
+              level="warn"
+              text="o4 models lack autonomous code execution — consider o3 for agentic workloads"
+            />
+          )}
+          {!heartbeat.enabled && (
+            <RiskItem
+              level="info"
+              text="Heartbeat is disabled — this agent runs on-demand only"
+            />
+          )}
+          {adapterConfig.extraArgs && (
+            <RiskItem
+              level="info"
+              text={`Extra args: ${Array.isArray(adapterConfig.extraArgs) ? adapterConfig.extraArgs.join(", ") : adapterConfig.extraArgs}`}
+            />
+          )}
+          {(!adapterConfig.model || !agent.name) && (
+            <RiskItem
+              level="warn"
+              text="Cannot save until name and model are set"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* 4. Quick Actions */}
+      <div className="rounded-lg border border-border bg-surface-inset px-4 py-3.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Quick Actions
+        </p>
+        <div className="space-y-1.5">
+          <button
+            className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-overlay hover:text-foreground transition-all border border-transparent hover:border-border"
+          >
+            <Activity className="h-3 w-3" />
+            Test environment
+          </button>
+          <button
+            className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-overlay hover:text-foreground transition-all border border-transparent hover:border-border"
+          >
+            <Zap className="h-3 w-3" />
+            Trigger heartbeat
+          </button>
+          <button
+            className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-overlay hover:text-foreground transition-all border border-transparent hover:border-border"
+          >
+            <Pause className="h-3 w-3" />
+            Pause agent
+          </button>
+          <button
+            className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-overlay hover:text-foreground transition-all border border-transparent hover:border-border"
+          >
+            <Play className="h-3 w-3" />
+            Assign task
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReadinessItem({
+  label,
+  status,
+  detail,
+}: {
+  label: string;
+  status: "ok" | "warn" | "off";
+  detail: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5">
+        {status === "ok" && <CheckCircle className="h-3 w-3 text-success" />}
+        {status === "warn" && <AlertTriangle className="h-3 w-3 text-warning" />}
+        {status === "off" && <XCircle className="h-3 w-3 text-muted-foreground/50" />}
+        <span className="text-[10px] text-muted-foreground/70">{detail}</span>
+      </div>
+    </div>
+  );
+}
+
+function RiskItem({ level, text }: { level: "warn" | "info"; text: string }) {
+  return (
+    <div className={cn(
+      "flex items-start gap-1.5 rounded px-2 py-1.5 text-[10px]",
+      level === "warn" ? "bg-warning/10 text-warning" : "bg-info/10 text-info"
+    )}>
+      {level === "warn" ? (
+        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+      ) : (
+        <CheckCircle className="h-3 w-3 mt-0.5 shrink-0" />
+      )}
+      <span className="leading-relaxed">{text}</span>
     </div>
   );
 }
