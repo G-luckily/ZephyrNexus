@@ -516,6 +516,96 @@
   }
 }
 
+/* ── Reveal-on-scroll entrance system ── */
+.reveal-item {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+
+.reveal-item.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-item-scale {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+
+.reveal-item-scale.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Staggered children — apply .reveal-child to each child, nth-child delay via inline style */
+.reveal-child {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+
+.reveal-child.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-item,
+  .reveal-item-scale,
+  .reveal-child {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── Enhanced button press compression ── */
+.btn-press {
+  transition:
+    transform var(--duration-instant) var(--ease-out),
+    box-shadow var(--duration-instant) var(--ease-out);
+}
+
+.btn-press:active {
+  transform: scale(0.965);
+}
+
+/* ── Tab sliding underline ── */
+.tab-list {
+  position: relative;
+}
+
+.tab-underline {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+  transition:
+    left var(--duration-normal) var(--ease-out),
+    width var(--duration-normal) var(--ease-out);
+}
+
+/* ── Sidebar nav item active slide ── */
+.nav-item-active-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary);
+  transition: height var(--duration-normal) var(--ease-out);
+}
+
 /* Custom Scrollbar Utilities */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;

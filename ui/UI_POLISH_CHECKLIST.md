@@ -34,6 +34,7 @@ Phase 2: Dashboard 精修      ← 已完成
 Phase 3: Agent 页面精修      ← 已完成
 Phase 3.5: Agent Overview 精修 ← 已完成
 Phase 3.6: AgentConfigForm settings-rows 布局 ← 已完成
+Phase 3.7: Motion System — reveal-on-scroll + micro-interactions ← 已完成
 Phase 4: List 页面精修
 Phase 5: Modal / Empty State / Toast 精修
 Phase 6: Dark Mode 专项验收
@@ -218,6 +219,37 @@ Phase 7: 全站收口
 
 #### 验证
 - [x] `npx vite build` 通过（4 次验证）
+
+---
+
+### Phase 3.7: Motion System — reveal-on-scroll + micro-interactions
+
+**目标**: 弥补与 2025 benchmark 的差距，建立 entrance orchestration 和 hover micro-interaction 基础
+
+#### CSS 基础 — 5 项新增 classes
+- [x] `.reveal-item` — opacity 0→1 + translateY(10px→0), 320ms ease-out
+- [x] `.reveal-item.is-visible` — 触发后状态
+- [x] `.reveal-item-scale` — scale(0.96→1) 变体
+- [x] `.reveal-child` — 子元素 stagger 用，配合 inline transitionDelay
+- [x] `.btn-press:active` — scale(0.965) button 压缩反馈
+- [x] `.tab-underline` — 滑动下划线 indicator，支持 left/width CSS transition
+- [x] `.nav-item-active-indicator` — 侧边栏导航 active 滑动条
+- [x] 全局 `prefers-reduced-motion` 覆盖：所有 reveal 类直接显示无动画
+
+#### React Hook — `useReveal` + `useRevealList`
+- [x] 新建 `src/hooks/useReveal.ts`
+- [x] `useReveal()` — 单元素 IntersectionObserver，自动 toggle `is-visible`
+- [x] `useRevealList(count, staggerMs)` — 批量 stagger，每隔 60ms 触发一个
+- [x] motion-safe 降级：检测 `prefers-reduced-motion`，直接 mark visible
+
+#### Dashboard panelRiseIn reduced-motion
+- [x] 添加 `@media (prefers-reduced-motion: reduce)` 覆盖，禁用 panelRiseIn 动画
+
+#### Component 微交互增强
+- [x] `EntityRow` — `transition-colors` → `transition-all` + `hover-lift`，行级 hover 抬起
+
+### 验证
+- [x] `npx vite build` 通过
 
 ---
 

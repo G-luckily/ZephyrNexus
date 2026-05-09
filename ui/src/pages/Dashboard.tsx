@@ -575,6 +575,30 @@ export function Dashboard() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
 
+  // Reveal refs for scroll-triggered entrance
+  const [revealKeys, setRevealKeys] = useState<Set<string>>(new Set());
+  const revealTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  function useRevealRef(key: string) {
+    return (el: HTMLElement | null) => {
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            const delay = revealKeys.has(key) ? 0 : revealKeys.size * 50;
+            const timer = setTimeout(() => {
+              setRevealKeys((prev) => new Set([...prev, key]));
+              observer.disconnect();
+            }, delay);
+            revealTimers.current.set(key, timer);
+          }
+        },
+        { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+      );
+      observer.observe(el);
+    };
+  }
+
   const [logWindow, setLogWindow] = useState<LogWindow>("1h");
   const [blockedModalOpen, setBlockedModalOpen] = useState(false);
   const [selectedFlowNode, setSelectedFlowNode] =
@@ -1900,34 +1924,37 @@ export function Dashboard() {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          [style*="panelRiseIn"] {
+            animation: none !important;
+          }
+        }
       `}</style>
 
       {/* ═══ PAGE HEADER — compact title + identity + actions ═══ */}
-      <PageHeader />
+      <div ref={useRevealRef("page-header")} className={cn("reveal-item", revealKeys.has("page-header") && "is-visible")}>
+        <PageHeader />
+      </div>
 
       {/* ═══ STATS BAR — enhanced with health/completeness ═══ */}
-      <section style={{ animation: "panelRiseIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both" }}>
+      <div ref={useRevealRef("mission-snapshot")} className={cn("reveal-item", revealKeys.has("mission-snapshot") && "is-visible")} style={{ transitionDelay: revealKeys.has("page-header") ? "0ms" : "50ms" }}>
         <MissionSnapshot />
-      </section>
+      </div>
 
       {/* ═══ CORE WORKSPACE — balanced 2-column cards ═══ */}
-      <section
-        className="grid grid-cols-12 gap-5"
-        style={{
-          animation: "panelRiseIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
-          animationDelay: "0.05s",
-        }}
-      >
-        <div className="col-span-7" style={{ minHeight: "320px" }}>
-          <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
-        </div>
-        <div className="col-span-5" style={{ minHeight: "320px" }}>
-          <SystemMetricsPanel />
-        </div>
-      </section>
+      <div ref={useRevealRef("core-workspace")} className={cn("reveal-item", revealKeys.has("core-workspace") && "is-visible")} style={{ transitionDelay: "80ms" }}>
+        <section className="grid grid-cols-12 gap-5">
+          <div className="col-span-7" style={{ minHeight: "320px" }}>
+            <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
+          </div>
+          <div className="col-span-5" style={{ minHeight: "320px" }}>
+            <SystemMetricsPanel />
+          </div>
+        </section>
+      </div>
 
       {/* ═══ TIER 2 — Command Surface (consolidated detail modules) ═══ */}
-      <section style={{ animation: "panelRiseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both", animationDelay: "0.1s" }}>
+      <div ref={useRevealRef("command-surface")} className={cn("reveal-item", revealKeys.has("command-surface") && "is-visible")} style={{ transitionDelay: "130ms" }}>
         <CommandSurface
           tabs={[
             {
@@ -1955,8 +1982,7 @@ export function Dashboard() {
             },
           ]}
         />
-      </section>
-
+      </div>
 
       {/* Overlays & Modals */}
       <Dialog open={blockedModalOpen} onOpenChange={setBlockedModalOpen}>
