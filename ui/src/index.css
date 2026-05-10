@@ -126,94 +126,86 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Zephyr Nexus Day Mode — Cloud White / Pearl Shell */
-  --background: #f3f6ff;
-  --foreground: #162033;
+  /* Zephyr Nexus Day Mode — Neutral Control Plane Gray */
+  /* Background: #F4F6F8 — warm neutral, no blue cast */
+  --background: #F4F6F8;
+  --foreground: #1a1d23;
 
-  /* Shared shell tokens (left shell + right content use the same family) */
-  --shell-page-bg: #f2f5ff;
-  --shell-pane-bg: #edf2ff;
-  --shell-surface-bg: rgba(255, 255, 255, 0.68);
-  --shell-surface-elevated: rgba(255, 255, 255, 0.85);
-  --shell-border: rgba(149, 172, 216, 0.4);
-  --shell-border-strong: rgba(128, 155, 210, 0.58);
-  --shell-hover: rgba(66, 112, 214, 0.08);
-  --shell-selected: rgba(66, 112, 214, 0.16);
-  --shell-selected-foreground: #1f3f77;
-  --shell-chip: rgba(168, 182, 238, 0.22);
-  --shell-chip-foreground: #516288;
+  /* Shell — warm gray family, NOT blue-tinted */
+  --shell-page-bg: #F1F3F6;
+  --shell-pane-bg: #EBEDF0;
+  --shell-surface-bg: rgba(255, 255, 255, 0.72);
+  --shell-surface-elevated: rgba(255, 255, 255, 0.88);
+  --shell-border: rgba(30, 41, 59, 0.08);
+  --shell-border-strong: rgba(30, 41, 59, 0.14);
+  --shell-hover: rgba(30, 41, 59, 0.06);
+  --shell-selected: rgba(30, 41, 59, 0.10);
+  --shell-selected-foreground: #1a1d23;
+  --shell-chip: rgba(30, 41, 59, 0.08);
+  --shell-chip-foreground: #64748b;
 
-  /* Surfaces */
-  --card: #fbfdff;
-  --card-foreground: #162033;
-  --popover: #ffffff;
-  --popover-foreground: #162033;
+  /* Surfaces — warm neutral hierarchy */
+  --surface-void: #F4F6F8;
+  --surface-page: #F1F3F6;
+  --surface-section: #E8EBEF;
+  --surface-card: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-floating: rgba(255, 255, 255, 0.90);
+  --surface-hover: rgba(30, 41, 59, 0.04);
+  --surface-overlay: rgba(30, 41, 59, 0.06);
+  --surface-inset: #E8EBEF;
 
-  /* Surface Hierarchy */
-  --surface-void: #f3f6ff;
-  --surface-page: #f2f5ff;
-  --surface-section: #edf2ff;
-  --surface-card: #fbfdff;
-  --surface-elevated: #ffffff;
-  --surface-floating: rgba(255, 255, 255, 0.85);
-  --surface-hover: rgba(59, 94, 215, 0.04);
-
-  /* Primary & Accent */
-  --primary: #162033;
+  /* Primary — deep charcoal, not navy */
+  --primary: #1a1d23;
   --primary-foreground: #ffffff;
-  --accent: #3d7ef0;
+  /* Accent — one blue only, used sparingly */
+  --accent: #2563EB;
   --accent-foreground: #ffffff;
-  --accent-soft: rgba(61, 126, 240, 0.1);
+  --accent-soft: rgba(37, 99, 235, 0.08);
 
-  /* Celestial Gradients */
-  --celestial-1: #3b82f6;
-  --celestial-2: #8b5cf6;
-  --celestial-3: #2dd4bf;
+  /* Zephyr Blue — ONE accent color for orchestration */
+  --zephyr-blue: #2563EB;
+  --zephyr-blue-soft: rgba(37, 99, 235, 0.10);
+  --zephyr-blue-glow: rgba(37, 99, 235, 0.20);
 
-  /* ── Zephyr Brand Tokens ── */
-  /* Zephyr Blue — orchestration emphasis, active nodes, key icons */
-  --zephyr-blue: #3879ea;
-  --zephyr-blue-soft: rgba(56, 121, 234, 0.14);
-  --zephyr-blue-glow: rgba(56, 121, 234, 0.3);
+  /* Violet — ONLY for sync state, never casual */
+  --violet-soft: #6d7db5;
+  --violet-mist: rgba(109, 123, 181, 0.10);
+  --violet-glow: rgba(109, 123, 181, 0.16);
 
-  /* Soft Violet — constellation aura, atmospheric depth, secondary emphasis */
-  --violet-soft: #8d79f2;
-  --violet-mist: rgba(141, 121, 242, 0.12);
-  --violet-glow: rgba(141, 121, 242, 0.24);
+  /* Periwinkle — restrained border/line color */
+  --periwinkle: #94a3b8;
+  --periwinkle-dim: rgba(148, 163, 184, 0.12);
+  --periwinkle-border: rgba(148, 163, 184, 0.25);
 
-  /* Silver Periwinkle — connection lines, borders, field highlights */
-  --periwinkle: #a8b6ee;
-  --periwinkle-dim: rgba(168, 182, 238, 0.16);
-  --periwinkle-border: rgba(168, 182, 238, 0.34);
+  /* Secondary & Muted — warm neutral */
+  --secondary: #E8EBEF;
+  --secondary-foreground: #1a1d23;
+  --muted: #F1F3F6;
+  --muted-foreground: #64748b;
 
-  /* Secondary & Muted */
-  --secondary: #edf2ff;
-  --secondary-foreground: #162033;
-  --muted: #ecf1fb;
-  --muted-foreground: #4f5e78;
-
-  /* Status Colors */
-  --destructive: #d8617d;
+  /* Status — muted, not candy-bright */
+  --destructive: #c0392b;
   --destructive-foreground: #ffffff;
-  --success: #2fa07d;
-  --warning: #c98a4a;
-  --error: #d8617d;
+  --success: #16a34a;
+  --warning: #b45309;
+  --error: #c0392b;
 
-  /* Borders & Inputs */
-  --border: #d4dff0;
-  --input: #d4dff0;
-  --ring: rgba(56, 121, 234, 0.22);
+  /* Borders — subtle, warm-neutral */
+  --border: rgba(30, 41, 59, 0.10);
+  --input: rgba(30, 41, 59, 0.12);
+  --ring: rgba(37, 99, 235, 0.18);
 
-  /* Shadows - Refined & Subtle */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.03), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  /* Shadows — very light, warm tinted */
+  --shadow-sm: 0 1px 2px 0 rgba(26, 29, 35, 0.04);
+  --shadow-md: 0 2px 6px -1px rgba(26, 29, 35, 0.05), 0 1px 3px -1px rgba(26, 29, 35, 0.03);
+  --shadow-lg: 0 8px 16px -4px rgba(26, 29, 35, 0.06), 0 2px 6px -2px rgba(26, 29, 35, 0.04);
+  --shadow-xl: 0 16px 32px -8px rgba(26, 29, 35, 0.07), 0 4px 12px -4px rgba(26, 29, 35, 0.05);
 
-  /* ── Atmospheric Orbs (light mode — subtle pearl/blue) ── */
-  --orb-1-opacity: 0.12;
-  --orb-2-opacity: 0.09;
-  --orb-3-opacity: 0.07;
+  /* ── Atmospheric Orbs — disabled in neutral mode ── */
+  --orb-1-opacity: 0;
+  --orb-2-opacity: 0;
+  --orb-3-opacity: 0;
 
   /* Sidebar */
   --sidebar: var(--shell-pane-bg);
@@ -238,83 +230,86 @@
   /* Zephyr Nexus Dark Mode — "Atmospheric Depth" */
   /* 灵感: variant.com 排版 + shadergradient 氛围 + unicornplatform 克制 + Linear 信息架构 */
 
-  /* ── Background Layers (bottom to top) ── */
-  --background: #0a0b0f;
-  --foreground: #e8e9ed;
+  /* ── Zephyr Nexus Dark Mode — Atmospheric Depth Control Plane ── */
+  /* Background: deep neutral charcoal, NOT purple-black */
+  --background: #0d0f13;
+  --foreground: #e2e4e9;
 
-  /* ── Shell Tokens — 统一灰阶，非蓝紫色 ── */
-  --shell-page-bg: #0d0e12;
-  --shell-pane-bg: #0f1015;
-  --shell-surface-bg: #16181e;
-  --shell-surface-elevated: #1c1f26;
-  --shell-hover: rgba(255, 255, 255, 0.04);
-  --shell-selected: rgba(255, 255, 255, 0.08);
-  --shell-selected-foreground: #e8e9ed;
-  --shell-chip: rgba(255, 255, 255, 0.08);
-  --shell-chip-foreground: #9094a8;
-
-  /* Border tokens */
+  /* Shell — deep charcoal, NOT blue-tinted */
+  --shell-page-bg: #0f1116;
+  --shell-pane-bg: #12141a;
+  --shell-surface-bg: #191b21;
+  --shell-surface-elevated: #1e2027;
   --shell-border: rgba(255, 255, 255, 0.06);
   --shell-border-strong: rgba(255, 255, 255, 0.10);
+  --shell-hover: rgba(255, 255, 255, 0.04);
+  --shell-selected: rgba(255, 255, 255, 0.08);
+  --shell-selected-foreground: #e2e4e9;
+  --shell-chip: rgba(255, 255, 255, 0.07);
+  --shell-chip-foreground: #94a3b8;
 
-  /* ── Surface Hierarchy — 清晰分层 ── */
-  --surface-void: #0a0b0f;
-  --surface-page: #0d0e12;
-  --surface-section: #111318;
-  --surface-card: #16181e;
-  --surface-elevated: #1c1f28;
-  --surface-floating: #20232d;
-  --surface-hover: #282b36;
+  /* Surface Hierarchy */
+  --surface-void: #0d0f13;
+  --surface-page: #0f1116;
+  --surface-section: #14161b;
+  --surface-card: #191b21;
+  --surface-elevated: #1e2027;
+  --surface-floating: #23262e;
+  --surface-hover: #282b35;
+  --surface-overlay: rgba(255, 255, 255, 0.06);
+  --surface-inset: #12141a;
 
-  /* Legacy surface aliases */
-  --card: #16181e;
-  --card-foreground: #e8e9ed;
-  --popover: #16181e;
-  --popover-foreground: #e8e9ed;
+  /* Legacy aliases */
+  --card: #191b21;
+  --card-foreground: #e2e4e9;
+  --popover: #191b21;
+  --popover-foreground: #e2e4e9;
 
-  /* ── Primary & Accent — 冷调灰蓝，克制 ── */
-  --primary: #e8e9ed;
-  --primary-foreground: #090a0d;
-  --accent: #7a8ba8;
-  --accent-foreground: #090a0d;
-  --accent-soft: rgba(122, 139, 168, 0.12);
-  --accent-hover: rgba(122, 139, 168, 0.18);
+  /* Primary — light charcoal, NOT navy */
+  --primary: #e2e4e9;
+  --primary-foreground: #0d0f13;
+  /* Accent — one blue only */
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+  --accent-soft: rgba(59, 130, 246, 0.12);
 
-  /* ── 唯一强调色: 冷调灰蓝 ── */
-  --zephyr-blue: #7a8ba8;
-  --zephyr-blue-soft: rgba(122, 139, 168, 0.14);
-  --zephyr-blue-glow: rgba(122, 139, 168, 0.24);
-  --violet-soft: #8888a0;
-  --violet-mist: rgba(136, 136, 160, 0.1);
-  --violet-glow: rgba(136, 136, 160, 0.18);
+  /* Zephyr Blue — ONE accent */
+  --zephyr-blue: #3b82f6;
+  --zephyr-blue-soft: rgba(59, 130, 246, 0.12);
+  --zephyr-blue-glow: rgba(59, 130, 246, 0.22);
 
-  /* Periwinkle — 灰紫 */
-  --periwinkle: #9094a8;
-  --periwinkle-dim: rgba(144, 148, 168, 0.12);
-  --periwinkle-border: rgba(144, 148, 168, 0.2);
+  /* Violet — ONLY for sync state, muted */
+  --violet-soft: #6d7db5;
+  --violet-mist: rgba(109, 123, 181, 0.10);
+  --violet-glow: rgba(109, 123, 181, 0.16);
+
+  /* Periwinkle — restrained */
+  --periwinkle: #94a3b8;
+  --periwinkle-dim: rgba(148, 163, 184, 0.10);
+  --periwinkle-border: rgba(148, 163, 184, 0.18);
 
   /* Secondary & Muted */
-  --secondary: #181a20;
+  --secondary: #14161b;
   --secondary-foreground: #c4c5d0;
-  --muted: #181a20;
-  --muted-foreground: #9ba1b0;
+  --muted: #14161b;
+  --muted-foreground: #94a3b8;
 
-  /* ── Status Colors — 哑光，非发光 ── */
+  /* Status — muted, not neon */
   --destructive: #e05c6e;
   --destructive-foreground: #fafafa;
-  --success: #4a9e7d;
-  --warning: #c49a5a;
+  --success: #2d9e6a;
+  --warning: #c4963a;
   --error: #e05c6e;
 
-  /* ── Border System ── */
+  /* Borders */
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.12);
-  --border-accent: rgba(122, 139, 168, 0.25);
+  --border-accent: rgba(59, 130, 246, 0.20);
   --input: rgba(255, 255, 255, 0.06);
-  --ring: rgba(122, 139, 168, 0.25);
+  --ring: rgba(59, 130, 246, 0.20);
 
-  /* ── Shadows — 柔和，非厚重 ── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  /* Shadows — deep, not heavy */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
@@ -328,25 +323,13 @@
   --graph-node-active-inner: rgba(167, 139, 250, 0.75);
   --graph-ghost-node: rgba(148, 163, 184, 0.08);
 
-  /* ── Atmospheric Orbs — Deep Space direction ── */
-  /* Positions: orb-1 (top-left), orb-2 (bottom-right), orb-3 (center-right) */
-  --orb-1-x: 8%;
-  --orb-1-y: -5%;
-  --orb-1-size: 55vw;
-  --orb-1-color: #7a8ba8;
-  --orb-1-opacity: 0.18;
-
-  --orb-2-x: 75%;
-  --orb-2-y: 70%;
-  --orb-2-size: 50vw;
-  --orb-2-color: #8d79f2;
-  --orb-2-opacity: 0.14;
-
-  --orb-3-x: 55%;
-  --orb-3-y: 25%;
-  --orb-3-size: 40vw;
-  --orb-3-color: #2d6be4;
-  --orb-3-opacity: 0.10;
+  /* ── Atmospheric Orbs — disabled in dark mode (no blue cast) ── */
+  --orb-1-opacity: 0;
+  --orb-2-opacity: 0;
+  --orb-3-opacity: 0;
+  --orb-1-color: #3b82f6;
+  --orb-2-color: #6d7db5;
+  --orb-3-color: #2563eb;
   --graph-ghost-stroke: rgba(148, 163, 184, 0.06);
   --graph-text: rgba(148, 163, 184, 0.3);
   --graph-text-ghost: rgba(148, 163, 184, 0.2);

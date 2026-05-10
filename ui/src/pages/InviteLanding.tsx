@@ -244,7 +244,7 @@ export function InviteLandingPage() {
             onboardingInstallPath) && (
             <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">
-                Paperclip skill bootstrap
+                Zephyr Nexus skill bootstrap
               </p>
               {onboardingSkillUrl && (
                 <p className="font-mono break-all">GET {onboardingSkillUrl}</p>
@@ -305,8 +305,8 @@ export function InviteLandingPage() {
       <div className="rounded-lg border border-border bg-card p-6">
         <h1 className="text-xl font-semibold">
           {invite.inviteType === "bootstrap_ceo"
-            ? "Bootstrap your Paperclip instance"
-            : "Join this Paperclip company"}
+            ? "Bootstrap your Zephyr Nexus instance"
+            : "Join this Zephyr Nexus company"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Invite expires {dateTime(invite.expiresAt)}.

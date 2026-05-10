@@ -6,18 +6,20 @@
 
 **Branch**: `ui-polish-token-baseline`
 
+**Preview Deployment**: https://d8085a7e.zephyr-nexus-ui.pages.dev
+
 ---
 
 ## 当前已知页面
 
 | Page | 文件 | 状态 |
 |------|------|------|
-| 总览页 | `pages/Dashboard.tsx` | Phase 2 精修完成 — 所有硬编码色替换为 token，MissionSnapshot/Telemetry/PipelineRail 精修 |
+| 总览页 | `pages/Dashboard.tsx` | Phase 2 精修完成 |
 | 消息中心 | `pages/Inbox.tsx` | 原始状态，待精修 |
 | 任务页 | `pages/Issues.tsx` | 原始状态，待精修 |
-| 智能体列表 | `pages/Agents.tsx` | Phase 3 精修完成 — v3色名→token, live badge, cost badge |
-| 智能体详情 | `pages/AgentDetail.tsx` | Phase 3 精修完成 — runStatusIcons, LatestRunCard, 遥测面板, 失败卡片, Transcript色 |
-| 智能体配置 | `pages/NewAgent.tsx` | Phase 3 精修完成 — AgentConfigForm statusClass |
+| 智能体列表 | `pages/Agents.tsx` | Phase 3 精修完成 |
+| 智能体详情 | `pages/AgentDetail.tsx` | **Phase 3.9 + 3.10 精修完成** |
+| 智能体配置 | `pages/NewAgent.tsx` | Phase 3 精修完成 |
 | 工作流模板弹窗 | `components/IssuesTemplateMenu.tsx` | 原始状态 |
 | 公司管理 | `pages/Companies.tsx` | 原始状态 |
 | 设置 | `pages/CompanySettings.tsx` | 原始状态 |
@@ -37,6 +39,7 @@ Phase 3.6: AgentConfigForm settings-rows 布局 ← 已完成
 Phase 3.7: Motion System — reveal-on-scroll + micro-interactions ← 已完成
 Phase 3.8: Visual Direction — Deep Space Orbs Background ← 已完成
 Phase 3.9: AgentDetail Configuration Inspector — 12-column layout ← 已完成
+Phase 3.10: AgentDetail Visual Polish — LatestRunCard/Costs/Charts/Issues ← 已完成
 Phase 4: List 页面精修
 Phase 5: Modal / Empty State / Toast 精修
 Phase 6: Dark Mode 专项验收
@@ -300,6 +303,139 @@ Phase 7: 全站收口
 
 ### 验证
 - [x] `npx vite build` 通过
+
+---
+
+### Phase 3.10: AgentDetail Visual Polish
+
+**目标**: 将 AgentDetail Overview 从标准控制台页面升级为有品牌个性、层次分明的专业界面
+
+#### LatestRunCard 视觉升级
+- [x] Live ping 颜色从 `bg-cyan-400` → `bg-zephyr-blue`，与品牌色统一
+- [x] 图标从独立 `h-3.5 w-3.5` 改为带 `bg-zephyr-blue/10` 或 `bg-muted` 背景的 `h-8 w-8 rounded-lg`
+- [x] Card 背景从透明改为 `bg-surface-elevated`，边框加粗（`border-border-strong`），阴影加深
+- [x] Live 状态使用 `border-zephyr-blue/20` + `shadow-[0_0_20px_rgba(37,99,235,0.10)]` 品牌色光晕
+- [x] hover 时阴影递增 `shadow-[0_0_28px_rgba(37,99,235,0.16)]`，边框加深至 `border-zephyr-blue/35`
+- [x] 时间戳加 `tabular-nums` 等宽数字
+
+#### Charts — Bento 布局
+- [x] 从 4 列均分 grid → 12 列不规则 bento 布局
+- [x] 执行统计（主图表）占 `lg:col-span-8`
+- [x] 成功率（窄高亮）占 `lg:col-span-4`
+- [x] 任务优先级和任务状态各占 `lg:col-span-6`
+- [x] 形成视觉层级：主图表突出，次要图表均匀分布
+
+#### CostsSection 数字面板升级
+- [x] 整体使用 `bg-surface-inset` 背景，与周围卡片区分
+- [x] 标签改为 `text-[10px] uppercase tracking-wider` 小标签
+- [x] 数字加大到 `text-xl`，总成本用 `text-zephyr-blue` 品牌色强调
+- [x] 表格加 `tabular-nums`、hover 行状态、圆角 `rounded-xl`
+- [x] 表头加 `uppercase tracking-wider text-[10px]`
+- [x] 成本列数字有值时 `text-foreground`，无值时 `text-muted-foreground/50`
+
+#### Issues List 卡片化
+- [x] `rounded-lg` → `rounded-xl`，加 `bg-surface-elevated`
+- [x] more row 加 `bg-muted/20` 背景区分
+- [x] 链接加 `no-underline` 确保视觉纯净
+
+#### Design Token 补充
+- [x] `index.css` 新增 `--surface-overlay` 和 `--surface-inset` tokens（light + dark 各一套）
+- [x] light: `rgba(30, 41, 59, 0.06)` / `#E8EBEF`
+- [x] dark: `rgba(255, 255, 255, 0.06)` / `#12141a`
+
+### 验证
+- [x] `npx vite build` 通过
+- [x] Cloudflare Pages 部署成功: https://d8085a7e.zephyr-nexus-ui.pages.dev
+
+---
+
+## 部署工作流
+
+### Cloudflare Pages 手动部署
+
+```bash
+# 1. 安装依赖
+pnpm install
+
+# 2. 构建
+pnpm run build
+
+# 3. 部署（需设置环境变量）
+unset http_proxy https_proxy
+CLOUDFLARE_API_TOKEN=你的token \
+CLOUDFLARE_ACCOUNT_ID=273d4fa9ad8e1e2ed44a4eba55ca5609 \
+npx wrangler pages deploy dist --project-name=zephyr-nexus-ui
+```
+
+### 环境变量配置（持久化）
+
+```bash
+# 写入 ~/.bashrc 或 ~/.zshrc
+export CLOUDFLARE_API_TOKEN="cfat_xxx"
+export CLOUDFLARE_ACCOUNT_ID="273d4fa9ad8e1e2ed44a4eba55ca5609"
+```
+
+### GitHub Actions CI/CD（目标状态）
+
+```yaml
+# .github/workflows/deploy-ui.yml
+name: Deploy UI to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ui/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ui/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: 'ui/pnpm-lock.yaml'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ui
+      - name: Build
+        run: pnpm run build
+        working-directory: ui
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=zephyr-nexus-ui --commit-dirty=true
+          workingDirectory: ui
+```
+
+**需要配置的 GitHub Secrets:**
+- `CLOUDFLARE_API_TOKEN` — Cloudflare API Token
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare Account ID: `273d4fa9ad8e1e2ed44a4eba55ca5609`
+
+### 目标自动化流程
+
+```
+PR merge to main
+    ↓
+GitHub Actions 触发
+    ↓
+pnpm install + build
+    ↓
+Cloudflare Pages 自动部署
+    ↓
+Preview URL 自动生成
+```
 
 ---
 

@@ -11,6 +11,7 @@ import {
   agentsApi,
   type AgentKey,
   type ClaudeLoginResult,
+  type AdapterModel,
 } from "../api/agents";
 import { 
   type AgentBudgetSummary, 
@@ -88,15 +89,15 @@ import {
   Eye,
   EyeOff,
   Copy,
+  ChevronRight,
+  ChevronDown,
+  ArrowLeft,
+  MoreHorizontal,
   Activity,
   Heart,
   FolderOpen,
   Terminal,
   Settings,
-  ChevronRight,
-  ChevronDown,
-  ArrowLeft,
-  MoreHorizontal,
   AlertTriangle,
   CheckCircle,
   Zap,
@@ -964,8 +965,8 @@ function LatestRunCard({
         <h3 className="flex items-center gap-2 text-sm font-medium">
           {isLive && (
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zephyr-blue opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-zephyr-blue" />
             </span>
           )}
           {isLive ? "实时执行" : "最近执行"}
@@ -981,27 +982,32 @@ function LatestRunCard({
       <Link
         to={`/agents/${agentId}/runs/${run.id}`}
         className={cn(
-          "block border rounded-lg p-4 space-y-2 w-full no-underline transition-colors hover:bg-muted/50 cursor-pointer",
+          "block rounded-xl p-4 w-full no-underline transition-all duration-200",
           isLive
-            ? "border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]"
-            : "border-border"
+            ? "bg-surface-elevated border border-zephyr-blue/20 shadow-[0_0_20px_rgba(37,99,235,0.10)] hover:shadow-[0_0_28px_rgba(37,99,235,0.16)] hover:border-zephyr-blue/35"
+            : "bg-surface-elevated border border-border hover:border-border-strong hover:shadow-md"
         )}
       >
-        <div className="flex items-center gap-2">
-          <StatusIcon
-            className={cn(
-              "h-3.5 w-3.5",
-              statusInfo.color,
-              run.status === "running" && "animate-spin"
-            )}
-          />
+        <div className="flex items-center gap-2.5">
+          <div className={cn(
+            "flex items-center justify-center h-8 w-8 rounded-lg shrink-0",
+            isLive ? "bg-zephyr-blue/10" : "bg-muted"
+          )}>
+            <StatusIcon
+              className={cn(
+                "h-4 w-4",
+                statusInfo.color,
+                run.status === "running" && "animate-spin"
+              )}
+            />
+          </div>
           <StatusBadge status={run.status} />
           <span className="font-mono text-xs text-muted-foreground">
             {run.id.slice(0, 8)}
           </span>
           <span
             className={cn(
-              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
               run.invocationSource === "timer"
                 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
                 : run.invocationSource === "assignment"
@@ -1013,14 +1019,14 @@ function LatestRunCard({
           >
             {sourceLabels[run.invocationSource] ?? run.invocationSource}
           </span>
-          <span className="ml-auto text-xs text-muted-foreground">
+          <span className="ml-auto text-xs text-muted-foreground tabular-nums">
             {relativeTime(run.createdAt)}
           </span>
         </div>
 
         {summary && (
-          <div className="overflow-hidden max-h-16">
-            <MarkdownBody className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+          <div className="mt-3 overflow-hidden max-h-14">
+            <MarkdownBody className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-sm">
               {summary}
             </MarkdownBody>
           </div>
@@ -1073,20 +1079,31 @@ function AgentOverview({
         className="mt-6"
       />
 
-      {/* Charts */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <ChartCard title="执行统计" subtitle="近 14 天">
-          <RunActivityChart runs={runs} />
-        </ChartCard>
-        <ChartCard title="任务优先级" subtitle="近 14 天">
-          <PriorityChart issues={assignedIssues} />
-        </ChartCard>
-        <ChartCard title="任务状态" subtitle="近 14 天">
-          <IssueStatusChart issues={assignedIssues} />
-        </ChartCard>
-        <ChartCard title="成功率" subtitle="近 14 天">
-          <SuccessRateChart runs={runs} />
-        </ChartCard>
+      {/* Charts — bento layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Primary: Run Activity — wide */}
+        <div className="lg:col-span-8">
+          <ChartCard title="执行统计" subtitle="近 14 天">
+            <RunActivityChart runs={runs} />
+          </ChartCard>
+        </div>
+        {/* Callout: Success Rate — narrow, featured */}
+        <div className="lg:col-span-4">
+          <ChartCard title="成功率" subtitle="近 14 天">
+            <SuccessRateChart runs={runs} />
+          </ChartCard>
+        </div>
+        {/* Secondary row: even split */}
+        <div className="lg:col-span-6">
+          <ChartCard title="任务优先级" subtitle="近 14 天">
+            <PriorityChart issues={assignedIssues} />
+          </ChartCard>
+        </div>
+        <div className="lg:col-span-6">
+          <ChartCard title="任务状态" subtitle="近 14 天">
+            <IssueStatusChart issues={assignedIssues} />
+          </ChartCard>
+        </div>
       </div>
 
       {/* Recent Issues */}
@@ -1095,7 +1112,7 @@ function AgentOverview({
           <h3 className="text-sm font-medium">最近任务</h3>
           <Link
             to={`/issues?assignee=${agentId}`}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors no-underline"
           >
             全部 →
           </Link>
@@ -1103,7 +1120,7 @@ function AgentOverview({
         {assignedIssues.length === 0 ? (
           <p className="text-sm text-muted-foreground">暂无分配任务。</p>
         ) : (
-          <div className="border border-border rounded-lg">
+          <div className="rounded-xl bg-surface-elevated border border-border overflow-hidden">
             {assignedIssues.slice(0, 10).map((issue) => (
               <EntityRow
                 key={issue.id}
@@ -1114,7 +1131,7 @@ function AgentOverview({
               />
             ))}
             {assignedIssues.length > 10 && (
-              <div className="px-3 py-2 text-xs text-muted-foreground text-center border-t border-border">
+              <div className="px-4 py-2.5 text-xs text-muted-foreground text-center border-t border-border/50 bg-muted/20">
                 +{assignedIssues.length - 10} more issues
               </div>
             )}
@@ -1155,37 +1172,37 @@ function CostsSection({
   return (
     <div className="space-y-4">
       {runtimeState && (
-        <div className="border border-border rounded-lg p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="rounded-xl bg-surface-inset border border-border p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
-              <span className="text-xs text-muted-foreground block">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 block mb-1">
                 输入令牌
               </span>
-              <span className="text-lg font-semibold">
+              <span className="text-xl font-semibold tabular-nums">
                 {formatTokens(runtimeState.totalInputTokens)}
               </span>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 block mb-1">
                 输出令牌
               </span>
-              <span className="text-lg font-semibold">
+              <span className="text-xl font-semibold tabular-nums">
                 {formatTokens(runtimeState.totalOutputTokens)}
               </span>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 block mb-1">
                 缓存令牌
               </span>
-              <span className="text-lg font-semibold">
+              <span className="text-xl font-semibold tabular-nums text-muted-foreground/80">
                 {formatTokens(runtimeState.totalCachedInputTokens)}
               </span>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 block mb-1">
                 总成本
               </span>
-              <span className="text-lg font-semibold">
+              <span className="text-xl font-semibold tabular-nums text-zephyr-blue">
                 {formatCents(runtimeState.totalCostCents)}
               </span>
             </div>
@@ -1193,23 +1210,23 @@ function CostsSection({
         </div>
       )}
       {runsWithCost.length > 0 && (
-        <div className="border border-border rounded-lg overflow-hidden">
+        <div className="rounded-xl bg-surface-elevated border border-border overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-border bg-accent/20">
-                <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+              <tr className="border-b border-border bg-muted/40">
+                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground/80 uppercase tracking-wider text-[10px]">
                   日期
                 </th>
-                <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground/80 uppercase tracking-wider text-[10px]">
                   执行
                 </th>
-                <th className="text-right px-3 py-2 font-medium text-muted-foreground">
+                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground/80 uppercase tracking-wider text-[10px]">
                   输入
                 </th>
-                <th className="text-right px-3 py-2 font-medium text-muted-foreground">
+                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground/80 uppercase tracking-wider text-[10px]">
                   输出
                 </th>
-                <th className="text-right px-3 py-2 font-medium text-muted-foreground">
+                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground/80 uppercase tracking-wider text-[10px]">
                   成本
                 </th>
               </tr>
@@ -1217,27 +1234,29 @@ function CostsSection({
             <tbody>
               {runsWithCost.slice(0, 10).map((run) => {
                 const u = run.usageJson as Record<string, unknown>;
+                const cost = u.cost_usd ?? u.total_cost_usd;
                 return (
                   <tr
                     key={run.id}
-                    className="border-b border-border last:border-b-0"
+                    className="border-b border-border/50 last:border-b-0 hover:bg-muted/30 transition-colors"
                   >
-                    <td className="px-3 py-2">{formatDate(run.createdAt)}</td>
-                    <td className="px-3 py-2 font-mono">
+                    <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
+                      {formatDate(run.createdAt)}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-muted-foreground/70">
                       {run.id.slice(0, 8)}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground/80">
                       {formatTokens(Number(u.input_tokens ?? 0))}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground/80">
                       {formatTokens(Number(u.output_tokens ?? 0))}
                     </td>
-                    <td className="px-3 py-2 text-right">
-                      {u.cost_usd || u.total_cost_usd
-                        ? `$${Number(
-                            u.cost_usd ?? u.total_cost_usd ?? 0
-                          ).toFixed(4)}`
-                        : "-"}
+                    <td className={cn(
+                      "px-4 py-2.5 text-right tabular-nums font-medium",
+                      cost ? "text-foreground" : "text-muted-foreground/50"
+                    )}>
+                      {cost ? `$${Number(cost).toFixed(4)}` : "—"}
                     </td>
                   </tr>
                 );
@@ -1282,6 +1301,33 @@ function AgentConfigurePage({
     queryFn: () => agentsApi.listConfigRevisions(agent.id, companyId),
   });
 
+  const { data: adapterModelsData } = useQuery({
+    queryKey: companyId
+      ? queryKeys.agents.adapterModels(companyId, agent.adapterType)
+      : ["agents", "none", "adapter-models", agent.adapterType],
+    queryFn: () => agentsApi.adapterModels(companyId!, agent.adapterType),
+    enabled: Boolean(companyId),
+  });
+
+  const updateAgent = useMutation({
+    mutationFn: (data: Record<string, unknown>) =>
+      agentsApi.update(agent.id, data, companyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.agents.detail(agent.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.agents.detail(agent.urlKey),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.agents.configRevisions(agent.id),
+      });
+    },
+  });
+
+  // Transform API model data to AdapterModel format
+  const adapterModels: AdapterModel[] | undefined = adapterModelsData;
+
   const rollbackConfig = useMutation({
     mutationFn: (revisionId: string) =>
       agentsApi.rollbackConfigRevision(agent.id, revisionId, companyId),
@@ -1319,7 +1365,7 @@ function AgentConfigurePage({
 
           {/* Permissions card */}
           <div className="border border-border rounded-lg px-4 py-4">
-            <h3 className="text-xs font-medium text-text-secondary mb-3">Permissions</h3>
+            <h3 className="text-xs font-medium text-muted-foreground mb-3">Permissions</h3>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Can create new agents</span>
               <Button
@@ -1344,7 +1390,7 @@ function AgentConfigurePage({
 
       {/* API Keys — full width below two-column layout */}
       <div>
-        <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">API Keys</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">API Keys</h3>
         <KeysTab agentId={agentId} companyId={companyId} />
       </div>
 
@@ -1421,8 +1467,6 @@ function ConfigurationInspector({ agent }: { agent: Agent }) {
 
   const isComplete = Boolean(agent.name && adapterConfig.model);
   const hasHeartbeat = heartbeat.enabled !== false;
-  const hasPromptTemplate = isLocalAgent(agent.adapterType) && adapterConfig.promptTemplate;
-
   function isLocalAgent(adapterType: string) {
     return ["claude_local", "codex_local", "opencode_local", "cursor"].includes(adapterType);
   }
@@ -1443,18 +1487,18 @@ function ConfigurationInspector({ agent }: { agent: Agent }) {
             <span className="text-xs text-muted-foreground">Adapter</span>
             <span className="text-xs font-medium capitalize">{agent.adapterType?.replace(/_local$/, "").replace(/_/g, " ") ?? "—"}</span>
           </div>
-          {adapterConfig.model && (
+          {Boolean(adapterConfig.model) && (
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Model</span>
-              <span className="text-xs font-medium font-mono truncate max-w-[140px] text-text-secondary">
+              <span className="text-xs font-medium font-mono truncate max-w-[140px] text-muted-foreground/80">
                 {String(adapterConfig.model).split("/").pop()}
               </span>
             </div>
           )}
-          {adapterConfig.cwd && (
+          {Boolean(adapterConfig.cwd) && (
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Working Dir</span>
-              <span className="text-xs font-mono truncate max-w-[140px] text-text-subtle">{String(adapterConfig.cwd)}</span>
+              <span className="text-xs font-mono truncate max-w-[140px] text-muted-foreground/60">{String(adapterConfig.cwd)}</span>
             </div>
           )}
         </div>
@@ -1522,7 +1566,7 @@ function ConfigurationInspector({ agent }: { agent: Agent }) {
               text="Heartbeat is disabled — this agent runs on-demand only"
             />
           )}
-          {adapterConfig.extraArgs && (
+          {Boolean(adapterConfig.extraArgs) && (
             <RiskItem
               level="info"
               text={`Extra args: ${Array.isArray(adapterConfig.extraArgs) ? adapterConfig.extraArgs.join(", ") : adapterConfig.extraArgs}`}
