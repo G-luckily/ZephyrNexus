@@ -1,7 +1,9 @@
-FROM node:lts-trixie-slim AS base
+FROM node:22-slim AS base
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl git python3 make g++ \
-  && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends ca-certificates curl git python3 make g++ gcc \
+  && rm -rf /var/lib/apt/lists/* \
+  && ln -sf /usr/bin/python3 /usr/local/bin/python
+ENV PATH="/usr/local/bin:${PATH}"
 RUN corepack enable
 
 FROM base AS deps
