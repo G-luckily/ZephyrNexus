@@ -575,6 +575,30 @@ export function Dashboard() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
 
+  // Reveal refs for scroll-triggered entrance
+  const [revealKeys, setRevealKeys] = useState<Set<string>>(new Set());
+  const revealTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  function useRevealRef(key: string) {
+    return (el: HTMLElement | null) => {
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            const delay = revealKeys.has(key) ? 0 : revealKeys.size * 50;
+            const timer = setTimeout(() => {
+              setRevealKeys((prev) => new Set([...prev, key]));
+              observer.disconnect();
+            }, delay);
+            revealTimers.current.set(key, timer);
+          }
+        },
+        { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+      );
+      observer.observe(el);
+    };
+  }
+
   const [logWindow, setLogWindow] = useState<LogWindow>("1h");
   const [blockedModalOpen, setBlockedModalOpen] = useState(false);
   const [selectedFlowNode, setSelectedFlowNode] =
@@ -595,7 +619,7 @@ export function Dashboard() {
   const logsContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "总览" }]);
+    setBreadcrumbs([{ label: "控制台" }]);
   }, [setBreadcrumbs]);
 
   const { data, isLoading, error } = useQuery({
@@ -1378,65 +1402,97 @@ export function Dashboard() {
       {
         label: "活跃任务",
         value: activeIssues.length,
-        emptyMsg: "系统处于待命状态",
+        emptyMsg: "—",
+        accent: activeIssues.length > 0 ? "text-foreground" : "text-muted-foreground/40",
+        semantic: false,
       },
       {
         label: "待处理",
         value: blockedIssues,
-        emptyMsg: "无待处理事项",
+        emptyMsg: "0",
+        accent: blockedIssues > 0 ? "text-amber-500" : "text-muted-foreground/40",
+        semantic: blockedIssues > 0,
       },
       {
         label: "异常",
         value: runtimeTotals.failed,
-        emptyMsg: "无异常",
-      },
-      {
-        label: "平均响应",
-        value: avgRunMinutes > 0 ? `${avgRunMinutes}min` : "—",
-        emptyMsg: "暂无执行数据",
-      },
-      {
-        label: "同步状态",
-        value: lastSyncTime,
-        emptyMsg: "同步中",
+        emptyMsg: "0",
+        accent: runtimeTotals.failed > 0 ? "text-rose-500" : "text-muted-foreground/40",
+        semantic: runtimeTotals.failed > 0,
       },
       {
         label: "运行中",
         value: runningCount,
-        emptyMsg: "空闲",
+        emptyMsg: "0",
+        accent: runningCount > 0 ? "text-zephyr-blue" : "text-muted-foreground/40",
+        semantic: runningCount > 0,
+      },
+      {
+        label: "平均响应",
+        value: avgRunMinutes > 0 ? `${avgRunMinutes}m` : "—",
+        emptyMsg: "—",
+        accent: "text-muted-foreground/50",
+        mono: true,
+        semantic: false,
+      },
+      {
+        label: "同步状态",
+        value: lastSyncTime,
+        emptyMsg: "—",
+        accent: "text-muted-foreground/50",
+        semantic: false,
       },
       {
         label: "系统健康",
         value: `${healthPercent}%`,
         emptyMsg: "—",
+        accent: hasErrors ? "text-amber-500" : "text-emerald-500/70",
+        mono: true,
+        semantic: hasErrors,
       },
       {
         label: "编队完整",
         value: `${completenessPct}%`,
         emptyMsg: "—",
+        accent: "text-muted-foreground/50",
+        mono: true,
+        semantic: false,
       },
     ];
+
     return (
-      <div className="flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl border border-border/40 bg-border/20">
-        {missionMetrics.map((m) => (
-          <div
-            key={m.label}
-            className="flex flex-1 flex-col justify-center gap-0.5 bg-shell-surface-bg px-3.5 py-2.5 min-w-[90px]"
-          >
-            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
-              {m.label}
-            </span>
-            {typeof m.value === "number" && m.value === 0 ? (
-              <span className="text-[11px] font-medium text-muted-foreground/60">
-                {m.emptyMsg}
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-surface-card/70 backdrop-blur-sm">
+        {/* Top accent line — single blue, very subtle */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
+
+        {/* Metric strip — equal-width, compact */}
+        <div className="flex items-stretch">
+          {missionMetrics.map((m, i) => (
+            <div
+              key={m.label}
+              className={cn(
+                "group flex flex-1 flex-col justify-center gap-0.5 px-3.5 py-3",
+                i < missionMetrics.length - 1 && "border-r border-border/25"
+              )}
+            >
+              {/* Label — tiny uppercase, muted */}
+              <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted-foreground/50">
+                {m.label}
               </span>
-            ) : (
-              <span className="text-sm font-semibold text-foreground tabular-nums">
+
+              {/* Value — prominent anchor, mono for numbers */}
+              <span
+                className={cn(
+                  "text-[18px] font-semibold leading-none tracking-tight tabular-nums",
+                  m.mono ? "font-mono" : "",
+                  m.accent
+                )}
+              >
                 {m.value}
               </span>
-            )}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -1447,83 +1503,93 @@ export function Dashboard() {
         label: "活跃任务",
         value: activeIssues.length,
         sub: "执行负载",
-        icon: <Activity className="h-4 w-4" />,
-        accent: activeIssues.length > 0
-          ? "border-zephyr-blue/25 bg-zephyr-blue-soft/40"
-          : "border-border/40 bg-transparent",
+        icon: <Activity className="h-3.5 w-3.5" />,
+        accentClass: activeIssues.length > 0 ? "border-zephyr-blue/25 bg-zephyr-blue-soft/20" : "border-border/30 bg-transparent",
+        textAccent: "text-zephyr-blue",
+        textMuted: "text-muted-foreground/60",
       },
       {
         label: "人工升级",
         value: blockedIssues,
         sub: "人工介入",
-        icon: <AlertTriangle className="h-4 w-4" />,
-        accent: blockedIssues > 0
-          ? "border-amber-400/20 bg-amber-400/8"
-          : "border-border/40 bg-transparent",
+        icon: <AlertTriangle className="h-3.5 w-3.5" />,
+        accentClass: blockedIssues > 0 ? "border-amber-400/25 bg-amber-400/8" : "border-border/30 bg-transparent",
+        textAccent: "text-amber-500",
+        textMuted: "text-muted-foreground/60",
       },
       {
         label: "系统成功率",
         value: successRate > 0 ? `${successRate}%` : "—",
         sub: "运行质量",
-        icon: <ShieldCheck className="h-4 w-4" />,
-        accent: successRate > 0
-          ? "border-emerald-400/20 bg-emerald-400/8"
-          : "border-border/40 bg-transparent",
+        icon: <ShieldCheck className="h-3.5 w-3.5" />,
+        accentClass: successRate > 0 ? "border-emerald-400/20 bg-emerald-400/7" : "border-border/30 bg-transparent",
+        textAccent: "text-emerald-500/80",
+        textMuted: "text-muted-foreground/60",
       },
       {
-        label: "通信机器人",
-        value: "活跃",
-        sub: "同步中",
-        icon: <Bot className="h-4 w-4" />,
-        accent: "border-violet-400/20 bg-violet-400/8",
+        label: "编队状态",
+        value: "同步",
+        sub: "通信正常",
+        icon: <Bot className="h-3.5 w-3.5" />,
+        accentClass: "border-violet-400/20 bg-violet-400/7",
+        textAccent: "text-violet-400/80",
+        textMuted: "text-muted-foreground/60",
       },
     ];
 
     return (
-      <section className="panel-floating relative flex h-full min-h-[260px] flex-col overflow-hidden p-5 lg:p-6">
-        {/* Atmospheric glow */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-30"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in oklab, var(--zephyr-blue) 10%, transparent) 0%, transparent 70%)",
-          }}
-        />
-
-        <div className="relative mb-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/60">
-            实时监控
-          </p>
-          <h3 className="mt-2 text-[20px] type-heading text-foreground">
-            执行监控
-          </h3>
+      <section className="panel-floating relative flex h-full flex-col overflow-hidden p-5 lg:p-5">
+        {/* header */}
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/45">
+              实时监控
+            </p>
+            <h3 className="mt-1.5 text-[15px] font-semibold tracking-tight text-foreground">
+              执行监控
+            </h3>
+          </div>
+          {/* live status indicator */}
+          <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2.5 py-1">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </span>
+            <span className="text-[8px] font-semibold uppercase tracking-widest text-emerald-400/80">
+              同步中
+            </span>
+          </div>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 gap-2.5">
+        {/* 2x2 metric grid */}
+        <div className="grid flex-1 grid-cols-2 gap-2">
           {metrics.map((metric) => (
             <div
               key={metric.label}
               className={cn(
-                "card relative flex flex-col justify-between rounded-xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-white/[0.08]",
-                metric.accent
+                "card relative flex flex-col justify-between rounded-xl border p-3.5",
+                metric.accentClass
               )}
             >
-              <div className="relative">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/60">
-                    {metric.sub}
-                  </span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03]">
-                    <span className="text-muted-foreground/50">{metric.icon}</span>
-                  </div>
+              {/* top row: sub label + icon */}
+              <div className="mb-2 flex items-center justify-between">
+                <span className={cn("text-[9px] font-medium uppercase tracking-[0.12em]", metric.textMuted)}>
+                  {metric.sub}
+                </span>
+                <div className={cn("flex h-6 w-6 items-center justify-center rounded-lg border border-white/5 bg-white/3", metric.textAccent)}>
+                  {metric.icon}
                 </div>
-                <p className="text-xl font-semibold text-foreground tabular-nums">
-                  {metric.value}
-                </p>
-                <p className="mt-0.5 text-[10px] font-medium text-muted-foreground/60">
-                  {metric.label}
-                </p>
               </div>
+
+              {/* value — large anchor */}
+              <p className={cn("text-[22px] font-semibold leading-none tracking-tight tabular-nums", metric.textAccent)}>
+                {metric.value}
+              </p>
+
+              {/* label — small, muted */}
+              <p className={cn("mt-1 text-[10px] font-medium", metric.textMuted)}>
+                {metric.label}
+              </p>
             </div>
           ))}
         </div>
@@ -1829,29 +1895,39 @@ export function Dashboard() {
   );
 
   const PageHeader = () => (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-4">
       <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">总览</h1>
-          {runningCount > 0 && (
-            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5">
+        <div className="flex items-center gap-3">
+          <h1 className="text-[28px] font-semibold tracking-[-0.02em] text-foreground leading-none">
+            灵枢控制台
+          </h1>
+          <div className="h-5 w-px bg-border/40" aria-hidden="true" />
+          {runningCount > 0 ? (
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/8 px-2.5 py-1">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
               </span>
-              <span className="text-[10px] font-medium text-emerald-400">Route Live</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-500/90">
+                Route Live
+              </span>
             </div>
+          ) : (
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/40">
+              Idle
+            </span>
           )}
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground/60 tracking-wide">
-          风之灵枢 · AI 编排系统 · Control Plane
+        <p className="mt-1.5 text-[12px] text-muted-foreground/50 leading-relaxed">
+          实时观测任务路由&nbsp;·&nbsp;智能体负载&nbsp;·&nbsp;系统运行质量
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <div className="h-6 w-px bg-border/30" aria-hidden="true" />
         <button
           type="button"
           onClick={() => openNewIssue()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-zephyr-blue bg-zephyr-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-md"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-1.5 text-[12px] font-medium text-white transition-all duration-150 active:scale-[0.97]"
         >
           <Plus className="h-3.5 w-3.5" />
           新建任务
@@ -1859,7 +1935,7 @@ export function Dashboard() {
         <button
           type="button"
           onClick={() => navigate("/org")}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/40 px-3.5 py-1.5 text-xs font-semibold text-foreground/80 transition-all duration-200 hover:border-zephyr-blue/30 hover:bg-zephyr-blue-soft"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background/40 px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground backdrop-blur-sm transition-all duration-150 active:scale-[0.97] hover:border-border hover:text-foreground"
         >
           进入组织
         </button>
@@ -1900,34 +1976,39 @@ export function Dashboard() {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          [style*="panelRiseIn"] {
+            animation: none !important;
+          }
+        }
       `}</style>
 
       {/* ═══ PAGE HEADER — compact title + identity + actions ═══ */}
-      <PageHeader />
+      <div ref={useRevealRef("page-header")} className={cn("reveal-item", revealKeys.has("page-header") && "is-visible")}>
+        <PageHeader />
+      </div>
 
       {/* ═══ STATS BAR — enhanced with health/completeness ═══ */}
-      <section style={{ animation: "panelRiseIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both" }}>
+      <div ref={useRevealRef("mission-snapshot")} className={cn("reveal-item", revealKeys.has("mission-snapshot") && "is-visible")} style={{ transitionDelay: revealKeys.has("page-header") ? "0ms" : "50ms" }}>
         <MissionSnapshot />
-      </section>
+      </div>
 
       {/* ═══ CORE WORKSPACE — balanced 2-column cards ═══ */}
-      <section
-        className="grid grid-cols-12 gap-5"
-        style={{
-          animation: "panelRiseIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
-          animationDelay: "0.05s",
-        }}
-      >
-        <div className="col-span-7" style={{ minHeight: "320px" }}>
-          <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
-        </div>
-        <div className="col-span-5" style={{ minHeight: "320px" }}>
-          <SystemMetricsPanel />
-        </div>
-      </section>
+      <div ref={useRevealRef("core-workspace")} className={cn("reveal-item", revealKeys.has("core-workspace") && "is-visible")} style={{ transitionDelay: "80ms" }}>
+        <section className="grid grid-cols-12 gap-5">
+          {/* Primary: Route Monitor — dominant visual */}
+          <div className="col-span-8" style={{ minHeight: "340px" }}>
+            <RuntimePanel variant="compact" showMetrics={true} showEvents={false} showFlow={true} />
+          </div>
+          {/* Secondary: Execution Monitor — compact, structured */}
+          <div className="col-span-4" style={{ minHeight: "340px" }}>
+            <SystemMetricsPanel />
+          </div>
+        </section>
+      </div>
 
       {/* ═══ TIER 2 — Command Surface (consolidated detail modules) ═══ */}
-      <section style={{ animation: "panelRiseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both", animationDelay: "0.1s" }}>
+      <div ref={useRevealRef("command-surface")} className={cn("reveal-item", revealKeys.has("command-surface") && "is-visible")} style={{ transitionDelay: "130ms" }}>
         <CommandSurface
           tabs={[
             {
@@ -1955,8 +2036,7 @@ export function Dashboard() {
             },
           ]}
         />
-      </section>
-
+      </div>
 
       {/* Overlays & Modals */}
       <Dialog open={blockedModalOpen} onOpenChange={setBlockedModalOpen}>

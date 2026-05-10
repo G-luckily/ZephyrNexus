@@ -52,24 +52,17 @@ export function RuntimePanel({
     const responseTime = globalState === "idle" ? 0 : Math.floor(Math.random() * 400) + 300;
 
     return (
-      <div className={cn("panel-floating relative flex flex-col overflow-hidden p-4", className)}>
-        {/* Atmospheric glow */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-40"
-          style={{
-            background: `radial-gradient(ellipse at 50% 0%, ${stateConfig.glowColor} 0%, transparent 70%)`,
-          }}
-        />
+      <div className={cn("panel-floating relative flex flex-col overflow-hidden p-4 lg:p-4", className)}>
 
         {/* Header */}
         <div className="relative mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <RuntimeStatusBadge state={globalState} size="md" />
             <div>
-              <p className={cn("text-xs font-semibold", stateConfig.color)}>
+              <p className={cn("text-[11px] font-semibold leading-none", stateConfig.color)}>
                 {stateConfig.label}
               </p>
-              <p className="text-[10px] text-muted-foreground/70">
+              <p className="mt-0.5 text-[9px] text-muted-foreground/60">
                 {stateConfig.description}
               </p>
             </div>
@@ -77,22 +70,22 @@ export function RuntimePanel({
           <button
             onClick={isSimulating ? stopSimulation : startSimulation}
             className={cn(
-              "rounded-lg px-2 py-1 text-[10px] font-medium transition-all",
+              "rounded-md border px-2 py-0.5 text-[9px] font-medium transition-all duration-150 active:scale-[0.97]",
               isSimulating
-                ? "bg-surface-overlay text-muted-foreground hover:bg-surface-floating"
-                : "bg-zephyr-blue/10 text-zephyr-blue hover:bg-zephyr-blue/20"
+                ? "border-border/50 bg-background/60 text-muted-foreground hover:border-border hover:text-foreground"
+                : "border-accent/30 bg-accent/8 text-accent hover:bg-accent/12"
             )}
           >
             {isSimulating ? "暂停" : "启动"}
           </button>
         </div>
 
-        {/* Route Trace - 6-step pipeline with directional flow */}
+        {/* Route Trace — 6-step path, compact nodes */}
         <div className="mb-3">
-          <p className="mb-2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          <p className="mb-2 text-[8px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/40">
             路由轨迹
           </p>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center">
             {routeSteps.map((step, i) => {
               const isLast = i === routeSteps.length - 1;
               const isActive = step.state === "active";
@@ -100,53 +93,62 @@ export function RuntimePanel({
               const isWaiting = step.state === "waiting";
               const isPending = step.state === "pending";
 
+              // Connector color — muted, not bright
+              const connColor = isDone
+                ? "bg-success/40"
+                : isActive
+                ? "bg-accent/40"
+                : "bg-border/30";
+
               return (
                 <div key={i} className="flex items-center">
+                  {/* Node cluster */}
                   <div className="flex flex-col items-center">
-                    {/* Step indicator with directional flow */}
-                    <div className="relative">
-                      {/* Directional leading edge for active */}
-                      {isActive && (
-                        <div className="absolute -left-1 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-zephyr-blue opacity-60" />
+                    {/* Outer glow dot for active */}
+                    {isActive && (
+                      <div className="mb-1 h-2 w-2 rounded-full bg-accent/20 animate-pulse" />
+                    )}
+
+                    {/* Node circle — 26px compact */}
+                    <div
+                      className={cn(
+                        "relative flex h-[26px] w-[26px] items-center justify-center rounded-full border-[1.5px] transition-all duration-200",
+                        isActive && "border-accent bg-accent/8 ring-1 ring-accent/15",
+                        isDone && "border-success/40 bg-success/8",
+                        isWaiting && "border-warning/40 bg-warning/8",
+                        isPending && "border-border/40 bg-background"
                       )}
-                      <div
-                        className={cn(
-                          "flex h-7 w-7 items-center justify-center rounded-lg border text-[9px] font-bold transition-all",
-                          isActive && "border-zephyr-blue/50 bg-zephyr-blue/15 text-zephyr-blue shadow-[0_0_10px_1px_rgba(59,130,246,0.35)] route-step-active",
-                          isDone && "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
-                          isWaiting && "border-amber-400/40 bg-amber-400/10 text-amber-400",
-                          isPending && "border-white/15 bg-white/5 text-muted-foreground/50"
-                        )}
-                      >
-                        {isDone ? (
-                          <Check className="h-3 w-3" />
-                        ) : isWaiting ? (
-                          <Loader className="h-3 w-3 animate-spin" />
-                        ) : isActive ? (
-                          <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-                        ) : (
-                          <span>{i + 1}</span>
-                        )}
-                      </div>
+                    >
+                      {isDone ? (
+                        <Check className="h-3 w-3 text-success" strokeWidth={2.5} />
+                      ) : isWaiting ? (
+                        <Loader className="h-3 w-3 animate-spin text-warning" strokeWidth={2} />
+                      ) : isActive ? (
+                        <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                      ) : (
+                        <span className="text-[8px] font-bold text-muted-foreground/40">{i + 1}</span>
+                      )}
                     </div>
+
                     {/* Step label */}
                     <span
                       className={cn(
-                        "mt-1 whitespace-nowrap text-[8px] font-medium",
-                        isActive && "text-zephyr-blue",
-                        isDone && "text-emerald-400/70",
+                        "mt-1 whitespace-nowrap text-[7px] font-medium leading-none",
+                        isActive && "text-accent",
+                        isDone && "text-muted-foreground/60",
                         isWaiting && "text-amber-400",
                         isPending && "text-muted-foreground/40"
                       )}
                     >
                       {step.label}
                     </span>
-                    {/* Agent name beneath label */}
+
+                    {/* Agent name */}
                     <span
                       className={cn(
-                        "text-[6px]",
+                        "mt-0.5 text-[6px] leading-none",
                         isActive && "text-zephyr-blue/50",
-                        isDone && "text-emerald-400/40",
+                        isDone && "text-muted-foreground/35",
                         isWaiting && "text-amber-400/50",
                         isPending && "text-muted-foreground/25"
                       )}
@@ -154,25 +156,10 @@ export function RuntimePanel({
                       {step.agent}
                     </span>
                   </div>
-                  {/* Connector arrow with directional flow */}
+
+                  {/* Connector line — state-colored, only between nodes */}
                   {!isLast && (
-                    <div className={cn("relative mx-0.5 flex h-4 w-3 items-center", isDone ? "text-emerald-400/40" : isActive ? "text-zephyr-blue/40" : "text-white/10")}>
-                      {/* Flowing dot in connector when done */}
-                      {isDone && (
-                        <div
-                          className="absolute inset-0 flex items-center justify-center"
-                          style={{ pointerEvents: "none" }}
-                        >
-                          <div
-                            className="h-0.5 w-1.5 rounded-full bg-emerald-400 opacity-70"
-                            style={{ animation: "flowDot 1.5s ease-out infinite" }}
-                          />
-                        </div>
-                      )}
-                      <svg viewBox="0 0 12 8" className="h-2 w-3">
-                        <path d="M0 4h10M7 1l3 3-3 3" stroke="currentColor" strokeWidth="1" fill="none" />
-                      </svg>
-                    </div>
+                    <div className={cn("mx-1 h-px w-5 shrink-0 rounded-full transition-colors duration-300", connColor)} />
                   )}
                 </div>
               );
@@ -182,24 +169,33 @@ export function RuntimePanel({
 
         {/* Metrics Strip */}
         {showMetrics && (
-          <div className="mt-auto grid grid-cols-3 gap-2 border-t border-white/[0.06] pt-3">
-            <div className="text-center">
-              <p className="text-sm font-semibold text-foreground tabular-nums" style={{ fontFeatureSettings: '"tnum" 1' }}>
+          <div className="mt-auto grid grid-cols-3 gap-3 border-t border-border/30 pt-4">
+            <div className="flex flex-col items-center gap-0.5">
+              <p className="text-[18px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
                 {routeNodeCount}
               </p>
-              <p className="text-[9px] text-muted-foreground/60">路由节点</p>
+              <p className="text-[8px] font-medium uppercase tracking-widest text-muted-foreground/50">
+                路由节点
+              </p>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-foreground tabular-nums" style={{ fontFeatureSettings: '"tnum" 1' }}>
+            <div className="flex flex-col items-center gap-0.5 border-x border-border/20 px-1">
+              <p className="text-[18px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
                 {executionEvents}
               </p>
-              <p className="text-[9px] text-muted-foreground/60">执行事件</p>
+              <p className="text-[8px] font-medium uppercase tracking-widest text-muted-foreground/50">
+                执行事件
+              </p>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-foreground tabular-nums" style={{ fontFeatureSettings: '"tnum" 1' }}>
+            <div className="flex flex-col items-center gap-0.5">
+              <p className={cn(
+                "text-[18px] font-semibold leading-none tracking-tight tabular-nums",
+                responseTime > 0 ? "text-foreground" : "text-muted-foreground/40"
+              )}>
                 {responseTime > 0 ? `${responseTime}ms` : "—"}
               </p>
-              <p className="text-[9px] text-muted-foreground/60">响应耗时</p>
+              <p className="text-[8px] font-medium uppercase tracking-widest text-muted-foreground/50">
+                响应耗时
+              </p>
             </div>
           </div>
         )}
@@ -215,14 +211,6 @@ export function RuntimePanel({
         className
       )}
     >
-      {/* Atmospheric glow */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-32 opacity-50"
-        style={{
-          background: `radial-gradient(circle at 50% 0%, ${stateConfig.glowColor} 0%, transparent 70%)`,
-        }}
-      />
-
       {/* Header */}
       <div className="relative mb-4 flex items-center justify-between px-5 pt-5">
         <div className="flex items-center gap-3">

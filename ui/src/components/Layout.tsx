@@ -218,21 +218,81 @@ export function Layout() {
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-shell-page text-foreground pt-[env(safe-area-inset-top)]">
-      {/* Atmospheric depth — subtle cold blue light from top */}
+      {/* ── Deep Space Atmospheric Orbs ── */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <style>{`
+          @keyframes orb-float-1 {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            50%       { transform: translate(18px, -12px) scale(1.03); }
+          }
+          @keyframes orb-float-2 {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            50%       { transform: translate(-14px, 10px) scale(0.98); }
+          }
+          @keyframes orb-float-3 {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            50%       { transform: translate(10px, 14px) scale(1.02); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .orb-float { animation: none !important; }
+          }
+        `}</style>
+
+        {/* Orb 1 — top-left cold silver-blue */}
+        <div
+          className="orb-float absolute rounded-full"
+          style={{
+            left: "var(--orb-1-x)",
+            top: "var(--orb-1-y)",
+            width: "var(--orb-1-size)",
+            aspectRatio: "1 / 1",
+            background: "radial-gradient(circle, var(--orb-1-color) 0%, transparent 70%)",
+            opacity: "var(--orb-1-opacity)",
+            filter: "blur(60px)",
+            animation: "orb-float-1 18s ease-in-out infinite",
+            willChange: "transform",
+          }}
+        />
+
+        {/* Orb 2 — bottom-right violet */}
+        <div
+          className="orb-float absolute rounded-full"
+          style={{
+            left: "var(--orb-2-x)",
+            top: "var(--orb-2-y)",
+            width: "var(--orb-2-size)",
+            aspectRatio: "1 / 1",
+            background: "radial-gradient(circle, var(--orb-2-color) 0%, transparent 70%)",
+            opacity: "var(--orb-2-opacity)",
+            filter: "blur(70px)",
+            animation: "orb-float-2 22s ease-in-out infinite",
+            willChange: "transform",
+          }}
+        />
+
+        {/* Orb 3 — center-right zephyr-blue */}
+        <div
+          className="orb-float absolute rounded-full"
+          style={{
+            left: "var(--orb-3-x)",
+            top: "var(--orb-3-y)",
+            width: "var(--orb-3-size)",
+            aspectRatio: "1 / 1",
+            background: "radial-gradient(circle, var(--orb-3-color) 0%, transparent 70%)",
+            opacity: "var(--orb-3-opacity)",
+            filter: "blur(80px)",
+            animation: "orb-float-3 26s ease-in-out infinite",
+            willChange: "transform",
+          }}
+        />
+      </div>
+
+      {/* Subtle radial base — removes flat void */}
       <div
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 z-0"
         style={{
           background:
-            "radial-gradient(circle at 50% -10%, rgba(122, 139, 168, 0.035) 0%, transparent 50%), radial-gradient(circle at 80% 100%, rgba(100, 90, 80, 0.02) 0%, transparent 40%)",
-        }}
-      />
-      {/* Left sidebar subtle light edge */}
-      <div
-        className="pointer-events-none absolute inset-y-0 left-0 hidden md:block"
-        style={{
-          width: "20rem",
-          background:
-            "linear-gradient(90deg, rgba(122, 139, 168, 0.015) 0%, transparent 50%)",
+            "radial-gradient(ellipse 120% 80% at 50% -10%, rgba(56, 121, 234, 0.06) 0%, transparent 60%)",
         }}
       />
       <a

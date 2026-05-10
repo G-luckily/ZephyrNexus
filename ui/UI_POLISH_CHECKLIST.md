@@ -6,18 +6,20 @@
 
 **Branch**: `ui-polish-token-baseline`
 
+**Preview Deployment**: https://d8085a7e.zephyr-nexus-ui.pages.dev
+
 ---
 
 ## 当前已知页面
 
 | Page | 文件 | 状态 |
 |------|------|------|
-| 总览页 | `pages/Dashboard.tsx` | Phase 2 精修完成 — 所有硬编码色替换为 token，MissionSnapshot/Telemetry/PipelineRail 精修 |
+| 总览页 | `pages/Dashboard.tsx` | Phase 2 精修完成 |
 | 消息中心 | `pages/Inbox.tsx` | 原始状态，待精修 |
 | 任务页 | `pages/Issues.tsx` | 原始状态，待精修 |
-| 智能体列表 | `pages/Agents.tsx` | Phase 3 精修完成 — v3色名→token, live badge, cost badge |
-| 智能体详情 | `pages/AgentDetail.tsx` | Phase 3 精修完成 — runStatusIcons, LatestRunCard, 遥测面板, 失败卡片, Transcript色 |
-| 智能体配置 | `pages/NewAgent.tsx` | Phase 3 精修完成 — AgentConfigForm statusClass |
+| 智能体列表 | `pages/Agents.tsx` | Phase 3 精修完成 |
+| 智能体详情 | `pages/AgentDetail.tsx` | **Phase 3.9 + 3.10 精修完成** |
+| 智能体配置 | `pages/NewAgent.tsx` | Phase 3 精修完成 |
 | 工作流模板弹窗 | `components/IssuesTemplateMenu.tsx` | 原始状态 |
 | 公司管理 | `pages/Companies.tsx` | 原始状态 |
 | 设置 | `pages/CompanySettings.tsx` | 原始状态 |
@@ -34,6 +36,10 @@ Phase 2: Dashboard 精修      ← 已完成
 Phase 3: Agent 页面精修      ← 已完成
 Phase 3.5: Agent Overview 精修 ← 已完成
 Phase 3.6: AgentConfigForm settings-rows 布局 ← 已完成
+Phase 3.7: Motion System — reveal-on-scroll + micro-interactions ← 已完成
+Phase 3.8: Visual Direction — Deep Space Orbs Background ← 已完成
+Phase 3.9: AgentDetail Configuration Inspector — 12-column layout ← 已完成
+Phase 3.10: AgentDetail Visual Polish — LatestRunCard/Costs/Charts/Issues ← 已完成
 Phase 4: List 页面精修
 Phase 5: Modal / Empty State / Toast 精修
 Phase 6: Dark Mode 专项验收
@@ -221,6 +227,218 @@ Phase 7: 全站收口
 
 ---
 
+### Phase 3.7: Motion System — reveal-on-scroll + micro-interactions
+
+**目标**: 弥补与 2025 benchmark 的差距，建立 entrance orchestration 和 hover micro-interaction 基础
+
+#### CSS 基础 — 5 项新增 classes
+- [x] `.reveal-item` — opacity 0→1 + translateY(10px→0), 320ms ease-out
+- [x] `.reveal-item.is-visible` — 触发后状态
+- [x] `.reveal-item-scale` — scale(0.96→1) 变体
+- [x] `.reveal-child` — 子元素 stagger 用，配合 inline transitionDelay
+- [x] `.btn-press:active` — scale(0.965) button 压缩反馈
+- [x] `.tab-underline` — 滑动下划线 indicator，支持 left/width CSS transition
+- [x] `.nav-item-active-indicator` — 侧边栏导航 active 滑动条
+- [x] 全局 `prefers-reduced-motion` 覆盖：所有 reveal 类直接显示无动画
+
+#### React Hook — `useReveal` + `useRevealList`
+- [x] 新建 `src/hooks/useReveal.ts`
+- [x] `useReveal()` — 单元素 IntersectionObserver，自动 toggle `is-visible`
+- [x] `useRevealList(count, staggerMs)` — 批量 stagger，每隔 60ms 触发一个
+- [x] motion-safe 降级：检测 `prefers-reduced-motion`，直接 mark visible
+
+#### Dashboard panelRiseIn reduced-motion
+- [x] 添加 `@media (prefers-reduced-motion: reduce)` 覆盖，禁用 panelRiseIn 动画
+
+#### Component 微交互增强
+- [x] `EntityRow` — `transition-colors` → `transition-all` + `hover-lift`，行级 hover 抬起
+
+### 验证
+- [x] `npx vite build` 通过
+
+---
+
+### Phase 3.8: Visual Direction — Deep Space Orbs Background
+
+**设计方向**: "Deep Space Minimal" — 深空留白 + 3 个慢速漂浮的氛围光球，无厚重毛玻璃覆盖层
+
+**参考来源**: Dribbble 2025 SaaS Dashboard trends — AuroraEngine / Nova template / Clean SaaS Dashboard
+
+#### 设计决策
+- [x] 去掉所有页面内 panel 的顶部 atmospheric glow radial-gradient（Dashboard MissionSnapshot / RuntimePanel compact / RuntimePanel full）
+- [x] 页面背景改为 3 个绝对定位的 CSS radial-gradient orbs（blur 60-80px）：
+  - Orb 1 (top-left, silver-blue): `rgba(122, 139, 168, 0.18)`
+  - Orb 2 (bottom-right, violet): `rgba(141, 121, 242, 0.14)`
+  - Orb 3 (center-right, zephyr-blue): `rgba(56, 121, 234, 0.10)`
+- [x] Orb 各自独立 float 动画（18s/22s/26s ease-in-out infinite）
+- [x] Light mode orb 透明度递减（0.12 / 0.09 / 0.07）
+- [x] Dark mode orb 透明度递增（0.18 / 0.14 / 0.10）
+- [x] CSS variable 集中管理（`--orb-1-x/y/size/color/opacity`）
+- [x] `prefers-reduced-motion`: orbs 动画禁用（`animation: none`）
+- [x] 底层 radial base gradient 消除纯黑/纯白背景的平坦感
+
+### 验证
+- [x] `npx vite build` 通过
+
+---
+
+### Phase 3.9: AgentDetail Configuration Inspector — 12-column layout
+
+**目标**: 将 Agent 配置页从 `max-w-3xl` 单列改为 12-column 两栏布局（左侧 8 col 配置区 + 右侧 4 col sticky Inspector）
+
+#### Layout restructure
+- [x] AgentConfigurePage 移除 `max-w-3xl`，改为 `grid grid-cols-1 lg:grid-cols-12 gap-6`
+- [x] 左侧 8 columns (`lg:col-span-8`): AgentConfigForm (settings-rows) + Permissions card
+- [x] 右侧 4 columns (`lg:col-span-4 lg:sticky lg:top-4`): ConfigurationInspector
+- [x] API Keys 和配置历史保持全宽，在两栏布局下方
+
+#### Configuration Inspector (右侧 sticky 面板)
+- [x] 1. Configuration Summary — 名称 / Adapter / Model / Working Dir
+- [x] 2. Readiness — 4 项检查（Identity / Adapter model / Prompt template / Heartbeat），带图标状态
+- [x] 3. Risks & Notices — 根据 adapter type 和配置状态动态显示警告/提示
+- [x] 4. Quick Actions — Test environment / Trigger heartbeat / Pause agent / Assign task
+
+#### 新增图标
+- [x] Activity, Heart, FolderOpen, Terminal, Settings, AlertTriangle, CheckCircle, XCircle, Zap
+
+### 验证
+- [x] `npx vite build` 通过
+
+---
+
+### Phase 3.10: AgentDetail Visual Polish
+
+**目标**: 将 AgentDetail Overview 从标准控制台页面升级为有品牌个性、层次分明的专业界面
+
+#### LatestRunCard 视觉升级
+- [x] Live ping 颜色从 `bg-cyan-400` → `bg-zephyr-blue`，与品牌色统一
+- [x] 图标从独立 `h-3.5 w-3.5` 改为带 `bg-zephyr-blue/10` 或 `bg-muted` 背景的 `h-8 w-8 rounded-lg`
+- [x] Card 背景从透明改为 `bg-surface-elevated`，边框加粗（`border-border-strong`），阴影加深
+- [x] Live 状态使用 `border-zephyr-blue/20` + `shadow-[0_0_20px_rgba(37,99,235,0.10)]` 品牌色光晕
+- [x] hover 时阴影递增 `shadow-[0_0_28px_rgba(37,99,235,0.16)]`，边框加深至 `border-zephyr-blue/35`
+- [x] 时间戳加 `tabular-nums` 等宽数字
+
+#### Charts — Bento 布局
+- [x] 从 4 列均分 grid → 12 列不规则 bento 布局
+- [x] 执行统计（主图表）占 `lg:col-span-8`
+- [x] 成功率（窄高亮）占 `lg:col-span-4`
+- [x] 任务优先级和任务状态各占 `lg:col-span-6`
+- [x] 形成视觉层级：主图表突出，次要图表均匀分布
+
+#### CostsSection 数字面板升级
+- [x] 整体使用 `bg-surface-inset` 背景，与周围卡片区分
+- [x] 标签改为 `text-[10px] uppercase tracking-wider` 小标签
+- [x] 数字加大到 `text-xl`，总成本用 `text-zephyr-blue` 品牌色强调
+- [x] 表格加 `tabular-nums`、hover 行状态、圆角 `rounded-xl`
+- [x] 表头加 `uppercase tracking-wider text-[10px]`
+- [x] 成本列数字有值时 `text-foreground`，无值时 `text-muted-foreground/50`
+
+#### Issues List 卡片化
+- [x] `rounded-lg` → `rounded-xl`，加 `bg-surface-elevated`
+- [x] more row 加 `bg-muted/20` 背景区分
+- [x] 链接加 `no-underline` 确保视觉纯净
+
+#### Design Token 补充
+- [x] `index.css` 新增 `--surface-overlay` 和 `--surface-inset` tokens（light + dark 各一套）
+- [x] light: `rgba(30, 41, 59, 0.06)` / `#E8EBEF`
+- [x] dark: `rgba(255, 255, 255, 0.06)` / `#12141a`
+
+### 验证
+- [x] `npx vite build` 通过
+- [x] Cloudflare Pages 部署成功: https://d8085a7e.zephyr-nexus-ui.pages.dev
+
+---
+
+## 部署工作流
+
+### Cloudflare Pages 手动部署
+
+```bash
+# 1. 安装依赖
+pnpm install
+
+# 2. 构建
+pnpm run build
+
+# 3. 部署（需设置环境变量）
+unset http_proxy https_proxy
+CLOUDFLARE_API_TOKEN=你的token \
+CLOUDFLARE_ACCOUNT_ID=273d4fa9ad8e1e2ed44a4eba55ca5609 \
+npx wrangler pages deploy dist --project-name=zephyr-nexus-ui
+```
+
+### 环境变量配置（持久化）
+
+```bash
+# 写入 ~/.bashrc 或 ~/.zshrc
+export CLOUDFLARE_API_TOKEN="cfat_xxx"
+export CLOUDFLARE_ACCOUNT_ID="273d4fa9ad8e1e2ed44a4eba55ca5609"
+```
+
+### GitHub Actions CI/CD（目标状态）
+
+```yaml
+# .github/workflows/deploy-ui.yml
+name: Deploy UI to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ui/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ui/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: 'ui/pnpm-lock.yaml'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ui
+      - name: Build
+        run: pnpm run build
+        working-directory: ui
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=zephyr-nexus-ui --commit-dirty=true
+          workingDirectory: ui
+```
+
+**需要配置的 GitHub Secrets:**
+- `CLOUDFLARE_API_TOKEN` — Cloudflare API Token
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare Account ID: `273d4fa9ad8e1e2ed44a4eba55ca5609`
+
+### 目标自动化流程
+
+```
+PR merge to main
+    ↓
+GitHub Actions 触发
+    ↓
+pnpm install + build
+    ↓
+Cloudflare Pages 自动部署
+    ↓
+Preview URL 自动生成
+```
+
+---
+
 ## 剩余 UI Debt
 - 部分页面仍有 opacity 文字（`text-foreground/60` 等），应逐步转为 text-secondary / text-muted / text-subtle
 - `text-muted-foreground` 在部分组件中是唯一的弱文本 token，后续应区分三级弱文本
@@ -233,8 +451,7 @@ Phase 7: 全站收口
 - 后续可在 Modal/EmptyState 精修阶段进一步提升 toast 整体视觉
 
 ### App Shell (Layout.tsx)
-- 背景渐变使用硬编码 rgba
-- 建议在 Dashboard 精修阶段统一为 `--app-bg-radial` token
+- ✅ 已修复：硬编码 rgba atmospheric div → CSS orb system（3 orbs via CSS vars + float keyframes）
 
 ### Sidebar 渐变
 - ✅ 已修复：`rgba(122, 139, 168, 0.03)` → `color-mix(in oklab, var(--periwinkle) 8%, transparent)`
