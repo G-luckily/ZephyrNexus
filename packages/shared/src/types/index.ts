@@ -99,6 +99,7 @@ export type {
 } from "./company-portability.js";
 export type {
   QuickstartRequest,
+  QuickstartPreviewResponse,
   QuickstartTask,
   QuickstartResponse,
 } from "./onboarding.js";

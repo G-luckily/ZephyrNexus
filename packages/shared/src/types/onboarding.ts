@@ -9,6 +9,10 @@ export interface QuickstartTask {
   description: string;
 }
 
+export interface QuickstartPreviewResponse {
+  suggestedTasks: QuickstartTask[];
+}
+
 export interface QuickstartResponse {
   companyId: string;
   companyName: string;
