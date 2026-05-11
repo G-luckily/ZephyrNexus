@@ -97,3 +97,8 @@ export type {
   CompanyPortabilityImportResult,
   CompanyPortabilityExportRequest,
 } from "./company-portability.js";
+export type {
+  QuickstartRequest,
+  QuickstartTask,
+  QuickstartResponse,
+} from "./onboarding.js";

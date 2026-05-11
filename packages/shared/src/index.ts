@@ -153,6 +153,11 @@ export type {
   CompanySecret,
   SecretProviderDescriptor,
 } from "./types/index.js";
+export type {
+  QuickstartRequest,
+  QuickstartTask,
+  QuickstartResponse,
+} from "./types/onboarding.js";
 
 export {
   createCompanySchema,

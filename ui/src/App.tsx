@@ -3,7 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Layout } from "./components/Layout";
-import { OnboardingWizard } from "./components/OnboardingWizard";
+import { OnboardingCard } from "./components/OnboardingCard";
 import { authApi } from "./api/auth";
 import { healthApi } from "./api/health";
 import { Dashboard } from "./pages/Dashboard";
@@ -325,7 +325,7 @@ export function App() {
           <Route path="*" element={<NotFoundPage scope="global" />} />
         </Route>
       </Routes>
-      <OnboardingWizard />
+      <OnboardingCard />
     </div>
   );
 }
