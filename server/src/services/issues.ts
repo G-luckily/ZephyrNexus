@@ -98,7 +98,7 @@ interface OutputContract {
   minFileDeliverables?: number;
 }
 
-interface HealthSummary {
+export interface HealthSummary {
   isBlocked: boolean;
   blockingDependencyCount: number;
   contractSatisfied: boolean | null;
