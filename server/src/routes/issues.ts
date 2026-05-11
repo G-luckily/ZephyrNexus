@@ -32,21 +32,13 @@ import { assertCompanyAccess, assertCompanyRole, getActorInfo } from "./authz.js
 import { shouldWakeAssigneeOnCheckout } from "./issues-checkout-wakeup.js";
 import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
 import { hookManager } from "../services/hooks/index.js";
-
-interface HealthSummary {
-  unreadNotificationCount?: number;
-  contractSatisfied?: boolean;
-  missingSummary?: boolean;
-  missingFileCount?: number;
-  isBlocked?: boolean;
-  [key: string]: unknown;
-}
+import type { HealthSummary } from "../services/issues.js";
 
 interface ActionQueueEntry {
   issue: {
     id: string;
     status: string;
-    dependsOn?: string[];
+    dependsOn?: string[] | null;
     healthSummary?: HealthSummary;
     [key: string]: unknown;
   };
@@ -409,10 +401,11 @@ export function issueRoutes(db: Db, storage: StorageService) {
     const contextUserId = req.actor.type === "board" ? req.actor.userId : undefined;
     
     // Fetch all active issues for the queue analysis
-    const allIssues = await svc.list(companyId, {
+    const rawIssues = await svc.list(companyId, {
       status: "todo,in_progress,in_review,blocked",
-      contextUserId, 
+      contextUserId,
     });
+    const allIssues: Array<typeof rawIssues[number] & { healthSummary?: HealthSummary }> = rawIssues;
 
     const attention: ActionQueueEntry[] = [];
     const ready: ActionQueueEntry[] = [];
