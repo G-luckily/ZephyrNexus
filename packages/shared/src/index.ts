@@ -155,6 +155,7 @@ export type {
 } from "./types/index.js";
 export type {
   QuickstartRequest,
+  QuickstartPreviewResponse,
   QuickstartTask,
   QuickstartResponse,
 } from "./types/onboarding.js";

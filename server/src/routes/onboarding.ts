@@ -37,6 +37,19 @@ export function onboardingRoutes(db: Db) {
   const goals = goalService(db);
   const issues = issueService(db);
 
+  router.post("/preview", (req, res) => {
+    const { companyName } = req.body as {
+      companyName: string;
+    };
+
+    if (!companyName || typeof companyName !== "string" || companyName.trim().length === 0) {
+      res.status(400).json({ error: "companyName is required" });
+      return;
+    }
+
+    res.json({ suggestedTasks: SUGGESTED_TASKS });
+  });
+
   router.post("/quickstart", async (req, res) => {
     const { companyName, taskTitle, taskDescription } = req.body as {
       companyName: string;

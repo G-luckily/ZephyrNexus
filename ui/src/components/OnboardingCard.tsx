@@ -33,26 +33,6 @@ export function OnboardingCard() {
   const [launchResult, setLaunchResult] = React.useState<LaunchResult | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Conditional check AFTER all hooks - this is the key fix
-  if (!onboardingOpen) {
-    return null;
-  }
-
-  // Show success transition when launch is complete
-  if (launchResult) {
-    return (
-      <SuccessTransition
-        companyName={launchResult.companyName}
-        agentName={launchResult.agentName}
-        taskTitle={taskTitle}
-        onGoToDashboard={() => {
-          closeOnboarding();
-          navigate("/");
-        }}
-      />
-    );
-  }
-
   const handlePreview = React.useCallback(async () => {
     if (!companyName.trim()) {
       setError("Company name is required");
@@ -63,7 +43,7 @@ export function OnboardingCard() {
     setIsPreviewLoading(true);
 
     try {
-      const response = await onboardingApi.quickstart({
+      const response = await onboardingApi.preview({
         companyName: companyName.trim(),
       });
 
@@ -110,6 +90,24 @@ export function OnboardingCard() {
       setIsLoading(false);
     }
   }, [companyName, taskTitle, queryClient]);
+
+  if (!onboardingOpen) {
+    return null;
+  }
+
+  if (launchResult) {
+    return (
+      <SuccessTransition
+        companyName={launchResult.companyName}
+        agentName={launchResult.agentName}
+        taskTitle={taskTitle}
+        onGoToDashboard={() => {
+          closeOnboarding();
+          navigate("/");
+        }}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
