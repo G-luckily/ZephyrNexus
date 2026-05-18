@@ -5,6 +5,7 @@ import { printCursorStreamEvent } from "@zephyr-nexus/adapter-cursor-local/cli";
 import { printOpenCodeStreamEvent } from "@zephyr-nexus/adapter-opencode-local/cli";
 import { printPiStreamEvent } from "@zephyr-nexus/adapter-pi-local/cli";
 import { printOpenClawGatewayStreamEvent } from "@zephyr-nexus/adapter-openclaw-gateway/cli";
+import { printDeepSeekStreamEvent } from "@zephyr-nexus/adapter-deepseek-local/cli";
 import { processCLIAdapter } from "./process/index.js";
 import { httpCLIAdapter } from "./http/index.js";
 
@@ -38,11 +39,17 @@ const openclawGatewayCLIAdapter: CLIAdapterModule = {
   formatStdoutEvent: printOpenClawGatewayStreamEvent,
 };
 
+const deepSeekLocalCLIAdapter: CLIAdapterModule = {
+  type: "deepseek_local",
+  formatStdoutEvent: printDeepSeekStreamEvent,
+};
+
 const adaptersByType = new Map<string, CLIAdapterModule>(
   [
     claudeLocalCLIAdapter,
     codexLocalCLIAdapter,
     openCodeLocalCLIAdapter,
+    deepSeekLocalCLIAdapter,
     piLocalCLIAdapter,
     cursorLocalCLIAdapter,
     openclawGatewayCLIAdapter,

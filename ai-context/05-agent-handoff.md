@@ -1,13 +1,22 @@
 # Agent Handoff
 
-## Summary
-The workspace is being structured into a more orderly hierarchy. `paperclip` has been selected as the pilot project for the new "Project Memory" layer.
+## Summary (2026-05-18)
+Added a `deepseek_local` adapter so agents can run on DeepSeek (and other
+OpenAI-compatible third-party providers) from the configurator. The adapter
+delegates to the OpenCode or Codex engine; the DeepSeek API key is supplied via
+the `DEEPSEEK_API_KEY` environment variable / company secret reference.
 
 ## Context Sync
-- The main entry point is now `AGENTS.md` which points to this `ai-context/` directory.
-- All high-level decisions and current status are documented in separate files here to reduce token load.
-- If you (the next agent) are continuing the reorganization, verify the root directoy move (`~/projects/paperclip` -> `~/workspace/paperclip`) is complete or perform it.
+- New package: `packages/adapters/deepseek-local/` (server / ui / cli entrypoints).
+- New UI adapter: `ui/src/adapters/deepseek-local/`.
+- Registered in `packages/shared/src/constants.ts`, `server/src/adapters/registry.ts`,
+  `ui/src/adapters/registry.ts`, `cli/src/adapters/registry.ts`, and `vitest.config.ts`.
+- Typecheck + build pass; 4 new adapter tests pass.
 
 ## Last Action
-- Created `00-project-brief.md`, `01-current-state.md`, `02-decisions.md`, `03-known-issues.md`, and `04-next-actions.md`.
-- Ready to update `AGENTS.md`.
+- Updated `ai-context/` files 01-05 to reflect the DeepSeek adapter work.
+- Pending: end-to-end run verification with a real API key (see `04-next-actions.md`).
+
+## Handoff (legacy — workspace reorg)
+- The main entry point is `AGENTS.md`, which points to this `ai-context/` directory.
+- Verify the `~/projects/paperclip` -> `~/workspace/paperclip` move if continuing the reorganization.
