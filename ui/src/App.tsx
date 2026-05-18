@@ -28,6 +28,7 @@ import { AuthPage } from "./pages/Auth";
 import { BoardClaimPage } from "./pages/BoardClaim";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
+import Showcase from "./pages/showcase/Showcase";
 
 function DocsPage() {
   return (
@@ -278,6 +279,7 @@ export function App() {
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/5 via-background to-background">
       <Routes>
         <Route path="auth" element={<AuthPage />} />
+        <Route path="showcase" element={<Showcase />} />
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
 
