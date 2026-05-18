@@ -1,0 +1,5 @@
+[phases.setup]
+aptPackages = ['python3', 'make', 'g++', 'gcc']
+
+[nodejs]
+version = '22'

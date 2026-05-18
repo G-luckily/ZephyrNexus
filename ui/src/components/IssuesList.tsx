@@ -1,52 +1,24 @@
 import { tStatus } from "../lib/i18n";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { issuesApi } from "../api/issues";
 import { queryKeys } from "../lib/queryKeys";
 import { groupBy } from "../lib/groupBy";
-import { formatDate, cn } from "../lib/utils";
-import { timeAgo } from "../lib/timeAgo";
-import { StatusIcon } from "./StatusIcon";
-import { PriorityIcon } from "./PriorityIcon";
+import { cleanVisibleAgentName } from "../lib/org-structure";
+import { CircleDot, Plus, ChevronRight } from "lucide-react";
+import { KanbanBoard } from "./KanbanBoard";
 import { EmptyState } from "./EmptyState";
-import { Identity } from "./Identity";
 import { PageSkeleton } from "./PageSkeleton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
-import {
-  CircleDot,
-  Plus,
-  Filter,
-  ArrowUpDown,
-  Layers,
-  Check,
-  X,
-  ChevronRight,
-  List,
-  Columns3,
-  User,
-  Search,
-  Zap,
-} from "lucide-react";
-import { KanbanBoard } from "./KanbanBoard";
-import { ActionQueueSheet } from "./ActionQueueSheet";
-import { IssuesTemplateMenu } from "./IssuesTemplateMenu";
+import { IssuesToolbar, IssueRow } from "./issues";
 import type { Issue } from "@zephyr-nexus/shared";
-import { cleanVisibleAgentName } from "../lib/org-structure";
 
 /* ── Helpers ── */
 
@@ -87,16 +59,6 @@ const defaultViewState: IssueViewState = {
   collapsedGroups: [],
 };
 
-const quickFilterPresets = [
-  { label: "全部", statuses: [] as string[] },
-  {
-    label: "进行中",
-    statuses: ["todo", "in_progress", "in_review", "blocked"],
-  },
-  { label: "待处理", statuses: ["backlog"] },
-  { label: "已完成", statuses: ["done", "cancelled"] },
-];
-
 function getViewState(key: string): IssueViewState {
   try {
     const raw = localStorage.getItem(key);
@@ -109,17 +71,6 @@ function getViewState(key: string): IssueViewState {
 
 function saveViewState(key: string, state: IssueViewState) {
   localStorage.setItem(key, JSON.stringify(state));
-}
-
-function arraysEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const sa = [...a].sort();
-  const sb = [...b].sort();
-  return sa.every((v, i) => v === sb[i]);
-}
-
-function toggleInArray(arr: string[], value: string): string[] {
-  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 }
 
 function applyFilters(issues: Issue[], state: IssueViewState): Issue[] {
@@ -371,426 +322,23 @@ export function IssuesList({
     return defaults;
   };
 
-  const assignIssue = (issueId: string, assigneeAgentId: string | null) => {
-    onUpdateIssue(issueId, { assigneeAgentId, assigneeUserId: null });
-    setAssigneePickerIssueId(null);
-    setAssigneeSearch("");
-  };
-
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="premium-panel rounded-[22px] px-3 py-3">
-        <div className="flex items-center justify-between gap-2 sm:gap-3">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => openNewIssue(newIssueDefaults())}
-            >
-              <Plus className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">新建任务</span>
-            </Button>
-            <IssuesTemplateMenu projectId={projectId} />
-            <div className="relative w-48 sm:w-64 md:w-80">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={issueSearch}
-                onChange={(e) => {
-                  setIssueSearch(e.target.value);
-                  onSearchChange?.(e.target.value);
-                }}
-                placeholder="搜索任务..."
-                className="pl-7 text-xs sm:text-sm"
-                aria-label="搜索任务"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-            {/* Action Queue */}
-            <ActionQueueSheet>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mr-1 rounded-full border border-amber-500/20 bg-amber-500/5 px-3 text-xs text-amber-600 dark:text-amber-500 transition-all duration-150 hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-400 font-medium whitespace-nowrap hidden sm:flex"
-              >
-                <Zap className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1.5 text-amber-500" />
-                <span>Action Queue</span>
-              </Button>
-            </ActionQueueSheet>
-
-            {/* View mode toggle */}
-            <div className="mr-1 flex items-center rounded-full border border-border bg-background p-0.5">
-              <button
-                className={cn(
-                  "rounded-full p-1.5 transition-all duration-150",
-                  viewState.viewMode === "list"
-                    ? "bg-muted text-foreground ring-1 ring-border shadow-sm"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-                onClick={() => updateView({ viewMode: "list" })}
-                title="List view"
-              >
-                <List className="h-3.5 w-3.5" />
-              </button>
-              <button
-                className={cn(
-                  "rounded-full p-1.5 transition-all duration-150",
-                  viewState.viewMode === "board"
-                    ? "bg-muted text-foreground ring-1 ring-border shadow-sm"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-                onClick={() => updateView({ viewMode: "board" })}
-                title="Board view"
-              >
-                <Columns3 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {/* Filter */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "rounded-full border border-border bg-background px-3 text-xs text-muted-foreground transition-all duration-150 hover:border-foreground/20 hover:bg-muted hover:text-foreground",
-                    activeFilterCount > 0 &&
-                      "border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400"
-                  )}
-                >
-                  <Filter className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                  <span className="hidden sm:inline">
-                    {activeFilterCount > 0
-                      ? `Filters: ${activeFilterCount}`
-                      : "Filter"}
-                  </span>
-                  {activeFilterCount > 0 && (
-                    <span className="sm:hidden ml-0.5 text-[10px] font-medium">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                  {activeFilterCount > 0 && (
-                    <X
-                      className="ml-1 hidden h-3 w-3 sm:block"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateView({
-                          statuses: [],
-                          priorities: [],
-                          assignees: [],
-                          labels: [],
-                        });
-                      }}
-                    />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-[min(480px,calc(100vw-2rem))] p-0"
-              >
-                <div className="p-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Filters</span>
-                    {activeFilterCount > 0 && (
-                      <button
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() =>
-                          updateView({
-                            statuses: [],
-                            priorities: [],
-                            assignees: [],
-                            labels: [],
-                          })
-                        }
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Quick filters */}
-                  <div className="space-y-1.5">
-                    <span className="text-xs text-muted-foreground">
-                      Quick filters
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {quickFilterPresets.map((preset) => {
-                        const isActive = arraysEqual(
-                          viewState.statuses,
-                          preset.statuses
-                        );
-                        return (
-                          <button
-                            key={preset.label}
-                            className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                              isActive
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
-                            }`}
-                            onClick={() =>
-                              updateView({
-                                statuses: isActive ? [] : [...preset.statuses],
-                              })
-                            }
-                          >
-                            {preset.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="border-t border-border" />
-
-                  {/* Multi-column filter sections */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                    {/* Status */}
-                    <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">
-                        Status
-                      </span>
-                      <div className="space-y-0.5">
-                        {statusOrder.map((s) => (
-                          <label
-                            key={s}
-                            className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
-                          >
-                            <Checkbox
-                              checked={viewState.statuses.includes(s)}
-                              onCheckedChange={() =>
-                                updateView({
-                                  statuses: toggleInArray(
-                                    viewState.statuses,
-                                    s
-                                  ),
-                                })
-                              }
-                            />
-                            <StatusIcon status={s} />
-                            <span className="text-sm">{tStatus(s)}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Priority + Assignee stacked in right column */}
-                    <div className="space-y-3">
-                      {/* Priority */}
-                      <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground">
-                          Priority
-                        </span>
-                        <div className="space-y-0.5">
-                          {priorityOrder.map((p) => (
-                            <label
-                              key={p}
-                              className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
-                            >
-                              <Checkbox
-                                checked={viewState.priorities.includes(p)}
-                                onCheckedChange={() =>
-                                  updateView({
-                                    priorities: toggleInArray(
-                                      viewState.priorities,
-                                      p
-                                    ),
-                                  })
-                                }
-                              />
-                              <PriorityIcon priority={p} />
-                              <span className="text-sm">{tStatus(p)}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Assignee */}
-                      {agents && agents.length > 0 && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-muted-foreground">
-                            Assignee
-                          </span>
-                          <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                            {agents.map((agent) => (
-                              <label
-                                key={agent.id}
-                                className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
-                              >
-                                <Checkbox
-                                  checked={viewState.assignees.includes(
-                                    agent.id
-                                  )}
-                                  onCheckedChange={() =>
-                                    updateView({
-                                      assignees: toggleInArray(
-                                        viewState.assignees,
-                                        agent.id
-                                      ),
-                                    })
-                                  }
-                                />
-                                <span className="text-sm">
-                                  {cleanVisibleAgentName(agent.name)}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {labels && labels.length > 0 && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-muted-foreground">
-                            Labels
-                          </span>
-                          <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                            {labels.map((label) => (
-                              <label
-                                key={label.id}
-                                className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
-                              >
-                                <Checkbox
-                                  checked={viewState.labels.includes(label.id)}
-                                  onCheckedChange={() =>
-                                    updateView({
-                                      labels: toggleInArray(
-                                        viewState.labels,
-                                        label.id
-                                      ),
-                                    })
-                                  }
-                                />
-                                <span
-                                  className="h-2.5 w-2.5 rounded-full"
-                                  style={{ backgroundColor: label.color }}
-                                />
-                                <span className="text-sm">{label.name}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Sort (list view only) */}
-            {viewState.viewMode === "list" && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-full border border-border bg-background px-3 text-xs text-muted-foreground transition-all duration-150 hover:border-foreground/20 hover:bg-muted hover:text-foreground"
-                  >
-                    <ArrowUpDown className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Sort</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-48 p-0">
-                  <div className="p-2 space-y-0.5">
-                    {(
-                      [
-                        ["status", "Status"],
-                        ["priority", "Priority"],
-                        ["title", "Title"],
-                        ["created", "Created"],
-                        ["updated", "Updated"],
-                      ] as const
-                    ).map(([field, label]) => (
-                      <button
-                        key={field}
-                        className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${
-                          viewState.sortField === field
-                            ? "bg-accent/50 text-foreground"
-                            : "hover:bg-accent/50 text-muted-foreground"
-                        }`}
-                        onClick={() => {
-                          if (viewState.sortField === field) {
-                            updateView({
-                              sortDir:
-                                viewState.sortDir === "asc" ? "desc" : "asc",
-                            });
-                          } else {
-                            updateView({ sortField: field, sortDir: "asc" });
-                          }
-                        }}
-                      >
-                        <span>{label}</span>
-                        {viewState.sortField === field && (
-                          <span className="text-xs text-muted-foreground">
-                            {viewState.sortDir === "asc" ? "\u2191" : "\u2193"}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-
-            {/* Group (list view only) */}
-            {viewState.viewMode === "list" && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-full border border-border bg-background px-3 text-xs text-muted-foreground transition-all duration-150 hover:border-foreground/20 hover:bg-muted hover:text-foreground"
-                  >
-                    <Layers className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Group</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-44 p-0">
-                  <div className="p-2 space-y-0.5">
-                    {(
-                      [
-                        ["status", "Status"],
-                        ["priority", "Priority"],
-                        ["assignee", "Assignee"],
-                        ["none", "None"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <button
-                        key={value}
-                        className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${
-                          viewState.groupBy === value
-                            ? "bg-accent/50 text-foreground"
-                            : "hover:bg-accent/50 text-muted-foreground"
-                        }`}
-                        onClick={() => updateView({ groupBy: value })}
-                      >
-                        <span>{label}</span>
-                        {viewState.groupBy === value && (
-                          <Check className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="launch-chip launch-chip-cyan">
-            任务 {filtered.length}
-          </span>
-          <span className="launch-chip launch-chip-emerald">
-            Live {liveCount}
-          </span>
-          <span className="launch-chip launch-chip-rose">
-            阻塞 {blockedCount}
-          </span>
-          <span className="launch-chip">过滤器 {activeFilterCount}</span>
-        </div>
-      </div>
+      <IssuesToolbar
+        viewState={viewState}
+        updateView={updateView}
+        issueSearch={issueSearch}
+        setIssueSearch={setIssueSearch}
+        onSearchChange={onSearchChange}
+        agents={agents}
+        labels={labels}
+        projectId={projectId}
+        filteredLength={filtered.length}
+        liveCount={liveCount}
+        blockedCount={blockedCount}
+        activeFilterCount={activeFilterCount}
+        newIssueDefaults={newIssueDefaults}
+      />
 
       {isLoading && <PageSkeleton variant="issues-list" />}
       {error && <p className="text-sm text-destructive">{error.message}</p>}
@@ -844,197 +392,18 @@ export function IssuesList({
             )}
             <CollapsibleContent>
               {group.items.map((issue) => (
-                <Link
+                <IssueRow
                   key={issue.id}
-                  to={`/issues/${issue.identifier ?? issue.id}`}
-                  className="flex items-start gap-2 py-2.5 pl-2 pr-3 text-sm border-b border-border last:border-b-0 cursor-pointer hover:bg-accent/50 transition-colors no-underline text-inherit sm:items-center sm:py-2 sm:pl-1"
-                >
-                  {/* Status icon - left column on mobile, inline on desktop */}
-                  <span
-                    className="shrink-0 pt-px sm:hidden"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  >
-                    <StatusIcon
-                      status={issue.status}
-                      onChange={(s) => onUpdateIssue(issue.id, { status: s })}
-                    />
-                  </span>
-
-                  {/* Right column on mobile: title + metadata stacked */}
-                  <span className="flex min-w-0 flex-1 flex-col gap-1 sm:contents">
-                    {/* Title line */}
-                    <span className="line-clamp-2 text-sm sm:order-2 sm:flex-1 sm:min-w-0 sm:line-clamp-none sm:truncate">
-                      {issue.title}
-                    </span>
-
-                    {/* Metadata line */}
-                    <span className="flex items-center gap-2 sm:order-1 sm:shrink-0">
-                      {/* Spacer matching caret width so status icon aligns with group title (hidden on mobile) */}
-                      <span className="w-3.5 shrink-0 hidden sm:block" />
-                      <span className="hidden sm:inline-flex">
-                        <PriorityIcon priority={issue.priority} />
-                      </span>
-                      <span
-                        className="hidden shrink-0 sm:inline-flex"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                      >
-                        <StatusIcon
-                          status={issue.status}
-                          onChange={(s) =>
-                            onUpdateIssue(issue.id, { status: s })
-                          }
-                        />
-                      </span>
-                      <span className="text-xs text-muted-foreground font-mono shrink-0">
-                        {issue.identifier ?? issue.id.slice(0, 8)}
-                      </span>
-                      {liveIssueIds?.has(issue.id) && (
-                        <span className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-blue-500/10">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                          </span>
-                          <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hidden sm:inline">
-                            Live
-                          </span>
-                        </span>
-                      )}
-                      <span className="text-xs text-muted-foreground sm:hidden">
-                        &middot;
-                      </span>
-                      <span className="text-xs text-muted-foreground sm:hidden">
-                        {timeAgo(issue.updatedAt)}
-                      </span>
-                    </span>
-                  </span>
-
-                  {/* Desktop-only trailing content */}
-                  <span className="hidden sm:flex sm:order-3 items-center gap-2 sm:gap-3 shrink-0 ml-auto">
-                    {(issue.labels ?? []).length > 0 && (
-                      <span className="hidden md:flex items-center gap-1 max-w-[240px] overflow-hidden">
-                        {(issue.labels ?? []).slice(0, 3).map((label) => (
-                          <span
-                            key={label.id}
-                            className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
-                            style={{
-                              borderColor: label.color,
-                              color: label.color,
-                              backgroundColor: `${label.color}1f`,
-                            }}
-                          >
-                            {label.name}
-                          </span>
-                        ))}
-                        {(issue.labels ?? []).length > 3 && (
-                          <span className="text-[10px] text-muted-foreground">
-                            +{(issue.labels ?? []).length - 3}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                    <Popover
-                      open={assigneePickerIssueId === issue.id}
-                      onOpenChange={(open) => {
-                        setAssigneePickerIssueId(open ? issue.id : null);
-                        if (!open) setAssigneeSearch("");
-                      }}
-                    >
-                      <PopoverTrigger asChild>
-                        <button
-                          className="flex w-[180px] shrink-0 items-center rounded-md px-2 py-1 hover:bg-accent/50 transition-colors"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                        >
-                          {issue.assigneeAgentId &&
-                          agentName(issue.assigneeAgentId) ? (
-                            <Identity
-                              name={agentName(issue.assigneeAgentId)!}
-                              size="sm"
-                            />
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
-                                <User className="h-3 w-3" />
-                              </span>
-                              负责人
-                            </span>
-                          )}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-56 p-1"
-                        align="end"
-                        onClick={(e) => e.stopPropagation()}
-                        onPointerDownOutside={() => setAssigneeSearch("")}
-                      >
-                        <input
-                          className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
-                          placeholder="搜索智能体..."
-                          value={assigneeSearch}
-                          onChange={(e) => setAssigneeSearch(e.target.value)}
-                          autoFocus
-                        />
-                        <div className="max-h-48 overflow-y-auto overscroll-contain">
-                          <button
-                            className={cn(
-                              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                              !issue.assigneeAgentId && "bg-accent"
-                            )}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              assignIssue(issue.id, null);
-                            }}
-                          >
-                            未分配
-                          </button>
-                          {(agents ?? [])
-                            .filter((agent) => {
-                              if (!assigneeSearch.trim()) return true;
-                              const visibleName = cleanVisibleAgentName(
-                                agent.name
-                              );
-                              return visibleName
-                                .toLowerCase()
-                                .includes(assigneeSearch.toLowerCase());
-                            })
-                            .map((agent) => (
-                              <button
-                                key={agent.id}
-                                className={cn(
-                                  "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-left",
-                                  issue.assigneeAgentId === agent.id &&
-                                    "bg-accent"
-                                )}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  assignIssue(issue.id, agent.id);
-                                }}
-                              >
-                                <Identity
-                                  name={cleanVisibleAgentName(agent.name)}
-                                  size="sm"
-                                  className="min-w-0"
-                                />
-                              </button>
-                            ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(issue.createdAt)}
-                    </span>
-                  </span>
-                </Link>
+                  issue={issue}
+                  agents={agents}
+                  liveIssueIds={liveIssueIds}
+                  assigneePickerIssueId={assigneePickerIssueId}
+                  setAssigneePickerIssueId={setAssigneePickerIssueId}
+                  assigneeSearch={assigneeSearch}
+                  setAssigneeSearch={setAssigneeSearch}
+                  onUpdateIssue={onUpdateIssue}
+                  agentName={agentName}
+                />
               ))}
             </CollapsibleContent>
           </Collapsible>

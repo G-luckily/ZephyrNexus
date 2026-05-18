@@ -14,8 +14,9 @@ export function parseCodexJsonl(stdout: string) {
     const line = rawLine.trim();
     if (!line) continue;
 
-    const event = parseJson(line);
-    if (!event) continue;
+    const eventResult = parseJson(line);
+    if (!eventResult.ok) continue;
+    const event = eventResult.data;
 
     const type = asString(event.type, "");
     if (type === "thread.started") {

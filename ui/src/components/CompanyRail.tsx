@@ -275,19 +275,21 @@ export function CompanyRail() {
   );
 
   return (
-    <div className="relative flex h-full w-[72px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar">
+    <div className="relative flex h-full w-[56px] shrink-0 flex-col items-center bg-sidebar">
+      {/* Subtle top light */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at 50% -6%, color-mix(in oklab, var(--zephyr-blue-soft) 72%, transparent) 0%, transparent 42%), linear-gradient(180deg, color-mix(in oklab, var(--shell-pane-bg) 90%, transparent) 0%, transparent 65%)",
+            "radial-gradient(circle at 50% -5%, rgba(122, 139, 168, 0.04) 0%, transparent 40%)",
         }}
       />
-      <div className="relative z-[1] flex h-14 w-full shrink-0 flex-col items-center justify-center gap-1">
-        <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-sidebar-border bg-sidebar-accent shadow-sm text-zephyr-blue">
-          <Wind className="h-4.5 w-4.5" />
+      {/* Logo */}
+      <div className="relative z-[1] flex h-12 w-full shrink-0 flex-col items-center justify-center gap-1">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-floating shadow-sm text-accent">
+          <Wind className="h-4 w-4" />
         </div>
-        <span className="text-[8px] font-semibold uppercase tracking-[0.18em] text-muted-foreground p-1">
+        <span className="text-[7px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           Nexus
         </span>
       </div>
@@ -322,7 +324,7 @@ export function CompanyRail() {
       </div>
 
       {/* Separator before add button */}
-      <div className="relative z-[1] mx-auto h-px w-8 shrink-0 bg-sidebar-border" />
+      <div className="relative z-[1] mx-auto h-px w-8 shrink-0 bg-white/[0.04]" />
 
       {/* Add company button */}
       <div className="relative z-[1] flex shrink-0 items-center justify-center py-2">
@@ -330,10 +332,10 @@ export function CompanyRail() {
           <TooltipTrigger asChild>
             <button
               onClick={() => openOnboarding()}
-              className="flex h-11 w-11 items-center justify-center rounded-[22px] border-2 border-dashed border-sidebar-border text-muted-foreground transition-all duration-150 hover:rounded-[14px] hover:border-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-white/[0.08] text-muted-foreground transition-all duration-150 hover:rounded-lg hover:border-white/[0.12] hover:bg-surface-overlay hover:text-sidebar-foreground"
               aria-label="Add company"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="h-4 w-4" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>

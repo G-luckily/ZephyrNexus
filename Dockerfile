@@ -1,7 +1,9 @@
-FROM node:lts-trixie-slim AS base
+FROM node:22-slim AS base
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl git \
-  && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends ca-certificates curl git python3 make g++ gcc \
+  && rm -rf /var/lib/apt/lists/* \
+  && ln -sf /usr/bin/python3 /usr/local/bin/python
+ENV PATH="/usr/local/bin:${PATH}"
 RUN corepack enable
 
 FROM base AS deps
@@ -13,6 +15,8 @@ COPY ui/package.json ui/
 COPY packages/shared/package.json packages/shared/
 COPY packages/db/package.json packages/db/
 COPY packages/adapter-utils/package.json packages/adapter-utils/
+COPY packages/context-manager/package.json packages/context-manager/
+COPY packages/context-extractor/package.json packages/context-extractor/
 COPY packages/adapters/claude-local/package.json packages/adapters/claude-local/
 COPY packages/adapters/codex-local/package.json packages/adapters/codex-local/
 COPY packages/adapters/cursor-local/package.json packages/adapters/cursor-local/
@@ -26,6 +30,8 @@ FROM base AS build
 WORKDIR /app
 COPY --from=deps /app /app
 COPY . .
+RUN pnpm --filter @zephyr-nexus/context-manager build
+RUN pnpm --filter @zephyr-nexus/context-extractor build
 RUN pnpm --filter @zephyr-nexus/ui build
 RUN pnpm --filter @zephyr-nexus/server build
 RUN test -f server/dist/index.js || (echo "ERROR: server build output missing" && exit 1)
@@ -39,16 +45,15 @@ RUN npm install --global --omit=dev @anthropic-ai/claude-code@latest @openai/cod
 
 ENV NODE_ENV=production \
   HOME=/zephyr-nexus \
+  ZEPHYR_HOME=/zephyr-nexus \
   HOST=0.0.0.0 \
   PORT=3100 \
   SERVE_UI=true \
-  PAPERCLIP_HOME=/zephyr-nexus \
-  PAPERCLIP_INSTANCE_ID=default \
-  PAPERCLIP_CONFIG=/zephyr-nexus/instances/default/config.json \
-  PAPERCLIP_DEPLOYMENT_MODE=authenticated \
-  PAPERCLIP_DEPLOYMENT_EXPOSURE=private
+  ZEPHYR_INSTANCE_ID=default \
+  ZEPHYR_DEPLOYMENT_MODE=authenticated \
+  ZEPHYR_DEPLOYMENT_EXPOSURE=public \
+  ZEPHYR_AUTH_BASE_URL_MODE=explicit
 
-VOLUME ["/zephyr-nexus"]
 EXPOSE 3100
 
 USER node

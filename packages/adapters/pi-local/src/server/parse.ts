@@ -49,8 +49,9 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
     const line = rawLine.trim();
     if (!line) continue;
 
-    const event = parseJson(line);
-    if (!event) continue;
+    const eventResult = parseJson(line);
+    if (!eventResult.ok) continue;
+    const event = eventResult.data;
 
     const eventType = asString(event.type, "");
 

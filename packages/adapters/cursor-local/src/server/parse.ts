@@ -64,8 +64,9 @@ export function parseCursorJsonl(stdout: string) {
     const line = normalizeCursorStreamLine(rawLine).line;
     if (!line) continue;
 
-    const event = parseJson(line);
-    if (!event) continue;
+    const eventResult = parseJson(line);
+    if (!eventResult.ok) continue;
+    const event = eventResult.data;
 
     const foundSession = readSessionId(event);
     if (foundSession) sessionId = foundSession;

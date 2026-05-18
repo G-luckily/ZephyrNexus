@@ -29,7 +29,7 @@ export function SidebarNavItem({
   liveCount,
   onClick,
 }: SidebarNavItemProps) {
-  const { isMobile, setSidebarOpen } = useSidebar();
+  const { isMobile, setSidebarOpen, sidebarCollapsed } = useSidebar();
 
   return (
     <NavLink
@@ -43,49 +43,61 @@ export function SidebarNavItem({
       {({ isActive }) => (
         <div
           className={cn(
-            "group relative flex items-center gap-2 rounded-[16px] border px-2.5 py-2.5 text-[13px] leading-5 font-medium transition-all duration-150",
+            "group relative flex items-center transition-all duration-150",
+            sidebarCollapsed
+              ? "justify-center rounded-lg p-2 mx-1"
+              : "gap-2 rounded-[16px] border px-2.5 py-2.5 text-[13px] leading-5 font-medium",
             isActive
-              ? "border-sidebar-ring bg-shell-selected text-sidebar-foreground shadow-sm"
-              : "border-transparent text-muted-foreground hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
+              ? sidebarCollapsed
+                ? "bg-zephyr-blue/10 text-zephyr-blue"
+                : "border-sidebar-ring bg-sidebar-accent text-sidebar-foreground shadow-sm"
+              : sidebarCollapsed
+                ? "text-muted-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                : "border-transparent text-muted-foreground/70 hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
             className
           )}
         >
-          <span
-            className={cn(
-              "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary transition-all duration-150",
-              isActive
-                ? "opacity-100 scale-y-100"
-                : "opacity-0 scale-y-75 group-hover:opacity-65 group-hover:scale-y-100"
-            )}
-          />
+          {!sidebarCollapsed && (
+            <span
+              className={cn(
+                "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-zephyr-blue/50 transition-all duration-150",
+                isActive
+                  ? "opacity-100 scale-y-100"
+                  : "opacity-0 scale-y-75 group-hover:opacity-35 group-hover:scale-y-100"
+              )}
+            />
+          )}
 
           <span
             className={cn(
               "relative shrink-0 rounded-md p-1 transition-all duration-150",
               isActive
                 ? "bg-zephyr-blue-soft text-zephyr-blue"
-                : "bg-sidebar-accent/50 text-muted-foreground group-hover:bg-sidebar-accent group-hover:text-sidebar-accent-foreground"
+                : "text-muted-foreground/60 group-hover:bg-sidebar-accent group-hover:text-sidebar-accent-foreground"
             )}
+            title={sidebarCollapsed ? label : undefined}
           >
             <Icon className="h-3.5 w-3.5" />
             {alert && (
-              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_0_2px_hsl(var(--background))]" />
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_0_2px_hsl(var(--background))]" />
             )}
           </span>
 
-          <span className="flex flex-1 items-center gap-2 truncate">
-            <span
-              className={cn(
-                "inline-block h-1.5 w-1.5 rounded-full transition-colors duration-200",
-                isActive
-                  ? "bg-zephyr-blue shadow-[0_0_8px_var(--zephyr-blue-glow)]"
-                  : "bg-muted-foreground/40 group-hover:bg-muted-foreground/80"
-              )}
-            />
-            <span className="truncate">{label}</span>
-          </span>
+          {!sidebarCollapsed && (
+            <span className="flex flex-1 items-center gap-2 truncate">
+              <span
+                className={cn(
+                  "inline-block h-1.5 w-1.5 rounded-full transition-colors duration-200",
+                  isActive
+                    ? "bg-zephyr-blue"
+                    : "bg-muted-foreground/50 group-hover:bg-muted-foreground/60"
+                )}
+              />
+              <span className="truncate">{label}</span>
+            </span>
+          )}
 
-          {liveCount != null && liveCount > 0 && (
+          {!sidebarCollapsed && liveCount != null && liveCount > 0 && (
             <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-zephyr-blue">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zephyr-blue opacity-75" />
@@ -95,7 +107,7 @@ export function SidebarNavItem({
             </span>
           )}
 
-          {badge != null && badge > 0 && (
+          {!sidebarCollapsed && badge != null && badge > 0 && (
             <span
               className={cn(
                 "ml-auto inline-flex h-5 items-center rounded-md px-1.5 text-[10px] font-semibold leading-none ring-1 ring-inset",
@@ -108,14 +120,16 @@ export function SidebarNavItem({
             </span>
           )}
 
-          <ChevronRight
-            className={cn(
-              "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-all duration-200",
-              isActive
-                ? "opacity-70 text-sidebar-foreground"
-                : "opacity-0 -translate-x-1 group-hover:translate-x-0 group-hover:opacity-60"
-            )}
-          />
+          {!sidebarCollapsed && (
+            <ChevronRight
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-all duration-200",
+                isActive
+                  ? "opacity-70 text-sidebar-foreground"
+                  : "opacity-0 -translate-x-1 group-hover:translate-x-0 group-hover:opacity-60"
+              )}
+            />
+          )}
         </div>
       )}
     </NavLink>

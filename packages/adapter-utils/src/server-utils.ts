@@ -56,11 +56,18 @@ export function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-export function parseJson(value: string): Record<string, unknown> | null {
+export type ParseResult =
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; error: string };
+
+export function parseJson(value: string): ParseResult {
   try {
-    return JSON.parse(value) as Record<string, unknown>;
-  } catch {
-    return null;
+    return { ok: true, data: JSON.parse(value) as Record<string, unknown> };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Unknown parse error"
+    };
   }
 }
 

@@ -7,7 +7,7 @@ import {
   type UIEvent,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Moon, Sun } from "lucide-react";
+import { BookOpen, Moon, Sun, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CompanyRail } from "./CompanyRail";
 import { Sidebar } from "./Sidebar";
@@ -35,7 +35,7 @@ import { NotFoundPage } from "../pages/NotFound";
 import { Button } from "@/components/ui/button";
 
 export function Layout() {
-  const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile } = useSidebar();
+  const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile, sidebarCollapsed, toggleSidebarCollapse } = useSidebar();
   const { openNewIssue, openOnboarding } = useDialog();
   const { togglePanelVisible } = usePanel();
   const {
@@ -218,27 +218,81 @@ export function Layout() {
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-shell-page text-foreground pt-[env(safe-area-inset-top)]">
+      {/* ── Deep Space Atmospheric Orbs ── */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <style>{`
+          @keyframes orb-float-1 {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            50%       { transform: translate(18px, -12px) scale(1.03); }
+          }
+          @keyframes orb-float-2 {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            50%       { transform: translate(-14px, 10px) scale(0.98); }
+          }
+          @keyframes orb-float-3 {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            50%       { transform: translate(10px, 14px) scale(1.02); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .orb-float { animation: none !important; }
+          }
+        `}</style>
+
+        {/* Orb 1 — top-left cold silver-blue */}
+        <div
+          className="orb-float absolute rounded-full"
+          style={{
+            left: "var(--orb-1-x)",
+            top: "var(--orb-1-y)",
+            width: "var(--orb-1-size)",
+            aspectRatio: "1 / 1",
+            background: "radial-gradient(circle, var(--orb-1-color) 0%, transparent 70%)",
+            opacity: "var(--orb-1-opacity)",
+            filter: "blur(60px)",
+            animation: "orb-float-1 18s ease-in-out infinite",
+            willChange: "transform",
+          }}
+        />
+
+        {/* Orb 2 — bottom-right violet */}
+        <div
+          className="orb-float absolute rounded-full"
+          style={{
+            left: "var(--orb-2-x)",
+            top: "var(--orb-2-y)",
+            width: "var(--orb-2-size)",
+            aspectRatio: "1 / 1",
+            background: "radial-gradient(circle, var(--orb-2-color) 0%, transparent 70%)",
+            opacity: "var(--orb-2-opacity)",
+            filter: "blur(70px)",
+            animation: "orb-float-2 22s ease-in-out infinite",
+            willChange: "transform",
+          }}
+        />
+
+        {/* Orb 3 — center-right zephyr-blue */}
+        <div
+          className="orb-float absolute rounded-full"
+          style={{
+            left: "var(--orb-3-x)",
+            top: "var(--orb-3-y)",
+            width: "var(--orb-3-size)",
+            aspectRatio: "1 / 1",
+            background: "radial-gradient(circle, var(--orb-3-color) 0%, transparent 70%)",
+            opacity: "var(--orb-3-opacity)",
+            filter: "blur(80px)",
+            animation: "orb-float-3 26s ease-in-out infinite",
+            willChange: "transform",
+          }}
+        />
+      </div>
+
+      {/* Subtle radial base — removes flat void */}
       <div
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 z-0"
         style={{
           background:
-            "radial-gradient(circle at 12% -4%, color-mix(in oklab, var(--zephyr-blue-soft) 70%, transparent) 0%, transparent 45%), radial-gradient(circle at 82% 0%, color-mix(in oklab, var(--violet-mist) 80%, transparent) 0%, transparent 36%), linear-gradient(180deg, color-mix(in oklab, var(--shell-page-bg) 80%, var(--background)) 0%, var(--background) 65%, color-mix(in oklab, var(--shell-page-bg) 72%, var(--background)) 100%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-y-0 left-0 hidden md:block"
-        style={{
-          width: "32rem",
-          background:
-            "linear-gradient(90deg, color-mix(in oklab, var(--periwinkle-dim) 72%, transparent) 0%, color-mix(in oklab, var(--zephyr-blue-soft) 42%, transparent) 46%, transparent 100%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at center, var(--foreground) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
+            "radial-gradient(ellipse 120% 80% at 50% -10%, rgba(56, 121, 234, 0.06) 0%, transparent 60%)",
         }}
       />
       <a
@@ -273,7 +327,7 @@ export function Layout() {
             <CompanyRail />
             <Sidebar />
           </div>
-          <div className="border-t border-r border-sidebar-border bg-sidebar px-3 py-2">
+          <div className="border-t border-white/[0.04] bg-sidebar px-3 py-2">
             <div className="flex items-center gap-1">
               <SidebarNavItem
                 to="/docs"
@@ -285,7 +339,7 @@ export function Layout() {
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="shrink-0 text-muted-foreground hover:bg-surface-overlay hover:text-sidebar-foreground"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
@@ -308,25 +362,51 @@ export function Layout() {
             <div
               className={cn(
                 "overflow-hidden transition-[width] duration-100 ease-out",
-                sidebarOpen ? "w-72" : "w-0"
+                sidebarOpen
+                  ? sidebarCollapsed
+                    ? "w-[var(--sidebar-collapsed-width)]"
+                    : "w-72"
+                  : "w-0"
               )}
             >
               <Sidebar />
             </div>
           </div>
-          <div className="border-t border-r border-sidebar-border bg-sidebar px-3 py-2">
-            <div className="flex items-center gap-1">
-              <SidebarNavItem
-                to="/docs"
-                label="文档"
-                icon={BookOpen}
-                className="flex-1 min-w-0"
-              />
+          <div className="border-t border-white/[0.04] bg-sidebar px-3 py-2">
+            <div
+              className={cn(
+                "flex items-center gap-1",
+                sidebarCollapsed && "justify-center"
+              )}
+            >
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="shrink-0 text-muted-foreground hover:bg-surface-overlay hover:text-sidebar-foreground"
+                onClick={toggleSidebarCollapse}
+                aria-label={sidebarCollapsed ? "展开侧边栏" : "折叠侧边栏"}
+                title={sidebarCollapsed ? "展开侧边栏" : "折叠侧边栏"}
+              >
+                {sidebarCollapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </Button>
+              {!sidebarCollapsed && (
+                <SidebarNavItem
+                  to="/docs"
+                  label="文档"
+                  icon={BookOpen}
+                  className="flex-1 min-w-0"
+                />
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 text-muted-foreground hover:bg-surface-overlay hover:text-sidebar-foreground"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
@@ -359,9 +439,12 @@ export function Layout() {
             id="main-content"
             tabIndex={-1}
             className={cn(
-              "relative z-[1] flex-1 overflow-auto px-4 py-5 md:px-6 md:py-6 xl:px-8 xl:py-7",
+              "relative z-[1] flex-1 overflow-auto",
               isMobile && "pb-[calc(5rem+env(safe-area-inset-bottom))]"
             )}
+            style={{
+              padding: "var(--page-padding-y) var(--page-padding-x)",
+            }}
             onScroll={handleMainScroll}
           >
             {hasUnknownCompanyPrefix ? (
