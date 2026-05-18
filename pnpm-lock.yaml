@@ -50,6 +50,9 @@ importers:
       '@zephyr-nexus/adapter-cursor-local':
         specifier: workspace:*
         version: link:../packages/adapters/cursor-local
+      '@zephyr-nexus/adapter-deepseek-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/deepseek-local
       '@zephyr-nexus/adapter-openclaw-gateway':
         specifier: workspace:*
         version: link:../packages/adapters/openclaw-gateway
@@ -146,6 +149,25 @@ importers:
       picocolors:
         specifier: ^1.1.1
         version: 1.1.1
+    devDependencies:
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.12.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/adapters/deepseek-local:
+    dependencies:
+      '@zephyr-nexus/adapter-codex-local':
+        specifier: workspace:*
+        version: link:../codex-local
+      '@zephyr-nexus/adapter-opencode-local':
+        specifier: workspace:*
+        version: link:../opencode-local
+      '@zephyr-nexus/adapter-utils':
+        specifier: workspace:*
+        version: link:../../adapter-utils
     devDependencies:
       '@types/node':
         specifier: ^24.6.0
@@ -295,6 +317,9 @@ importers:
       '@zephyr-nexus/adapter-cursor-local':
         specifier: workspace:*
         version: link:../packages/adapters/cursor-local
+      '@zephyr-nexus/adapter-deepseek-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/deepseek-local
       '@zephyr-nexus/adapter-openclaw-gateway':
         specifier: workspace:*
         version: link:../packages/adapters/openclaw-gateway
@@ -431,6 +456,9 @@ importers:
       '@zephyr-nexus/adapter-cursor-local':
         specifier: workspace:*
         version: link:../packages/adapters/cursor-local
+      '@zephyr-nexus/adapter-deepseek-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/deepseek-local
       '@zephyr-nexus/adapter-openclaw-gateway':
         specifier: workspace:*
         version: link:../packages/adapters/openclaw-gateway

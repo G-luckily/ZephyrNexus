@@ -30,6 +30,7 @@ export const AGENT_ADAPTER_TYPES = [
   "claude_local",
   "codex_local",
   "opencode_local",
+  "deepseek_local",
   "pi_local",
   "cursor",
   "openclaw_gateway",

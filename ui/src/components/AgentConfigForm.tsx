@@ -1082,6 +1082,7 @@ const ENABLED_ADAPTER_TYPES = new Set([
   "claude_local",
   "codex_local",
   "opencode_local",
+  "deepseek_local",
   "cursor",
 ]);
 
