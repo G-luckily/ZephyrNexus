@@ -1,0 +1,342 @@
+/* =====================================================================
+   Zephyr Nexus — Design Tokens
+   Visual language: ink green, sand, slate, muted copper, controlled mint.
+   ===================================================================== */
+
+:root {
+  /* --- Surface scale (deep ink green) --- */
+  --ink-1000: #07100E;   /* page void */
+  --ink-950:  #0B1815;   /* page bg */
+  --ink-900:  #0F1F1B;   /* primary surface */
+  --ink-850:  #142621;   /* card */
+  --ink-800:  #1A2E28;   /* elevated card */
+  --ink-700:  #213831;   /* hover */
+  --ink-600:  #2C463E;   /* divider strong */
+  --ink-500:  #3A5A50;
+
+  /* --- Sand / foreground --- */
+  --sand-50:  #F2EDDF;   /* hi-contrast text */
+  --sand-100: #E7E1D1;   /* body */
+  --sand-200: #CFC8B6;   /* secondary */
+  --sand-300: #A9A493;
+  --sand-400: #807C6E;
+  --sand-500: #5E5B52;
+
+  /* --- Slate (muted neutral) --- */
+  --slate-300: #8A968F;
+  --slate-400: #6B7672;
+  --slate-500: #4E5856;
+  --slate-600: #353C3A;
+
+  /* --- Accent: muted copper --- */
+  --copper-100: #F0C8A4;
+  --copper-200: #E0A982;
+  --copper-300: #C97847;
+  --copper-400: #A35E33;
+  --copper-500: #7D451F;
+
+  /* --- Accent: controlled mint / runtime signal --- */
+  --mint-100: #C8F4DD;
+  --mint-200: #8FE9C2;
+  --mint-300: #5DD2A3;
+  --mint-400: #3CA67E;
+  --mint-500: #1F6E54;
+
+  /* --- Semantic --- */
+  --ok:    var(--mint-300);
+  --warn:  #D4B05F;
+  --crit:  #E0795E;
+  --info:  #8AB9D6;
+
+  /* --- Borders / lines --- */
+  --line-soft:   rgba(242, 237, 223, 0.06);
+  --line:        rgba(242, 237, 223, 0.10);
+  --line-strong: rgba(242, 237, 223, 0.16);
+
+  /* --- Type --- */
+  --font-sans: "Schibsted Grotesk", "Noto Sans SC", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-cjk:  "Noto Sans SC", "Schibsted Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Schibsted Grotesk", "Noto Sans SC", system-ui, sans-serif;
+
+  /* --- Radii --- */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-2xl: 28px;
+
+  /* --- Spacing scale (4pt) --- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+  --s-24: 96px;
+
+  /* --- Shadow / depth (subtle, no glass) --- */
+  --shadow-sm: 0 1px 0 0 rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.25);
+  --shadow-md: 0 2px 0 0 rgba(0,0,0,0.45), 0 8px 24px -8px rgba(0,0,0,0.5);
+  --shadow-lg: 0 4px 1px 0 rgba(0,0,0,0.55), 0 30px 60px -20px rgba(0,0,0,0.55);
+
+  /* --- Motion --- */
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 380ms;
+}
+
+/* =====================================================================
+   Reset & base
+   ===================================================================== */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink-950);
+  color: var(--sand-100);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(201,120,71,0.06), transparent 60%),
+    radial-gradient(1000px 700px at 10% 30%, rgba(93,210,163,0.04), transparent 60%),
+    var(--ink-950);
+  min-height: 100vh;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+::selection { background: rgba(201,120,71,0.35); color: var(--sand-50); }
+
+/* =====================================================================
+   Typography utilities
+   ===================================================================== */
+
+.font-mono { font-family: var(--font-mono); font-feature-settings: "ss01"; }
+.font-cjk  { font-family: var(--font-cjk); }
+.font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sand-300);
+  font-weight: 500;
+}
+
+.eyebrow-dot::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--copper-300);
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+  transform: translateY(-1px);
+}
+
+h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; font-weight: 500; letter-spacing: -0.02em; color: var(--sand-50); }
+p { margin: 0; }
+
+/* =====================================================================
+   Layout primitives
+   ===================================================================== */
+
+.shell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 var(--s-8);
+}
+
+.section {
+  padding: var(--s-24) 0;
+  position: relative;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-8);
+  margin-bottom: var(--s-12);
+}
+
+.section-header .title-block {
+  max-width: 680px;
+}
+
+.section-title {
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.05;
+  margin-top: var(--s-3);
+}
+
+.section-sub {
+  color: var(--sand-300);
+  font-size: 15px;
+  max-width: 60ch;
+  margin-top: var(--s-4);
+  text-wrap: pretty;
+}
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+  border: 0;
+  margin: 0;
+}
+
+/* =====================================================================
+   Card primitives
+   ===================================================================== */
+
+.card {
+  background: var(--ink-850);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  position: relative;
+}
+
+.card.elev { background: var(--ink-800); box-shadow: var(--shadow-md); }
+.card.bare { padding: 0; overflow: hidden; }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sand-200);
+  background: rgba(255,255,255,0.02);
+}
+.tag .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sand-300);
+}
+.tag.ok .dot { background: var(--mint-300); box-shadow: 0 0 8px rgba(93,210,163,0.7); }
+.tag.warn .dot { background: var(--warn); box-shadow: 0 0 8px rgba(212,176,95,0.6); }
+.tag.crit .dot { background: var(--crit); box-shadow: 0 0 8px rgba(224,121,94,0.6); }
+.tag.copper { color: var(--copper-200); border-color: rgba(224,169,130,0.25); background: rgba(201,120,71,0.06); }
+.tag.copper .dot { background: var(--copper-300); }
+
+/* =====================================================================
+   Buttons
+   ===================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--ink-800);
+  color: var(--sand-100);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.btn:hover { background: var(--ink-700); border-color: var(--line-strong); }
+.btn:active { transform: translateY(1px); }
+
+.btn.primary {
+  background: var(--sand-50);
+  color: var(--ink-950);
+  border-color: var(--sand-100);
+}
+.btn.primary:hover { background: #FFFFFF; }
+
+.btn.copper {
+  background: linear-gradient(180deg, #C97847, #A35E33);
+  color: #1A0F08;
+  border-color: rgba(0,0,0,0.3);
+  font-weight: 600;
+}
+.btn.copper:hover { filter: brightness(1.05); }
+
+.btn.ghost { background: transparent; }
+.btn.ghost:hover { background: rgba(255,255,255,0.03); }
+
+.btn .ic { width: 14px; height: 14px; opacity: 0.85; }
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--sand-300);
+}
+
+/* =====================================================================
+   Grid / number / detail bits
+   ===================================================================== */
+
+.num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--sand-50);
+}
+
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sand-300);
+}
+
+.hairline { border-top: 1px solid var(--line); }
+
+/* =====================================================================
+   Scoped utilities
+   ===================================================================== */
+
+.flex { display: flex; }
+.col  { flex-direction: column; }
+.center { align-items: center; justify-content: center; }
+.between { justify-content: space-between; }
+.gap-2 { gap: var(--s-2); }
+.gap-3 { gap: var(--s-3); }
+.gap-4 { gap: var(--s-4); }
+.gap-6 { gap: var(--s-6); }
+.gap-8 { gap: var(--s-8); }
+.mt-2 { margin-top: var(--s-2); }
+.mt-4 { margin-top: var(--s-4); }
+.mt-6 { margin-top: var(--s-6); }
+.mt-8 { margin-top: var(--s-8); }
