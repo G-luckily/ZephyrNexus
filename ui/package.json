@@ -17,6 +17,7 @@
     "@zephyr-nexus/adapter-claude-local": "workspace:*",
     "@zephyr-nexus/adapter-codex-local": "workspace:*",
     "@zephyr-nexus/adapter-cursor-local": "workspace:*",
+    "@zephyr-nexus/adapter-deepseek-local": "workspace:*",
     "@zephyr-nexus/adapter-openclaw-gateway": "workspace:*",
     "@zephyr-nexus/adapter-opencode-local": "workspace:*",
     "@zephyr-nexus/adapter-pi-local": "workspace:*",

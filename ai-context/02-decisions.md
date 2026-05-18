@@ -1,5 +1,19 @@
 # Decisions Log
 
+## 2026-05-18: Third-party providers via a dedicated delegating adapter
+- **Decision**: Add a standalone `deepseek_local` adapter rather than only
+  extending the env editor with a provider catalog. The adapter does not
+  re-implement CLI execution — it delegates to the existing OpenCode or Codex
+  engine, selectable through an `engine` config field.
+- **Rationale**:
+    - DeepSeek's API is OpenAI-compatible; OpenCode supports it natively and
+      Codex supports it via a custom model provider — no new CLI integration needed.
+    - A delegating adapter keeps a clean first-class entry in the configurator
+      while reusing battle-tested engine code.
+    - The API key flows through the existing `EnvBinding` / company-secret
+      mechanism (`DEEPSEEK_API_KEY`), so no new secret storage is introduced.
+- **Status**: Accepted, implemented.
+
 ## 2026-03-16: Workspace Structure Standard
 - **Decision**: Adopt a forced separation between `workspace/` (active), `sandbox/` (experiment/tools), and `archive/` (legacy).
 - **Rationale**: Reduces clutter and prevents multiple tools from indexing hundreds of irrelevant files/folders in the home directory.

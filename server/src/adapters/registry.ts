@@ -45,6 +45,15 @@ import {
 import {
   agentConfigurationDoc as piAgentConfigurationDoc,
 } from "@zephyr-nexus/adapter-pi-local";
+import {
+  execute as deepSeekExecute,
+  testEnvironment as deepSeekTestEnvironment,
+  sessionCodec as deepSeekSessionCodec,
+} from "@zephyr-nexus/adapter-deepseek-local/server";
+import {
+  agentConfigurationDoc as deepSeekAgentConfigurationDoc,
+  models as deepSeekModels,
+} from "@zephyr-nexus/adapter-deepseek-local";
 import { processAdapter } from "./process/index.js";
 import { httpAdapter } from "./http/index.js";
 
@@ -117,11 +126,23 @@ const piLocalAdapter: ServerAdapterModule = {
   maturity: "deprecated",
 };
 
+const deepSeekLocalAdapter: ServerAdapterModule = {
+  type: "deepseek_local",
+  execute: deepSeekExecute,
+  testEnvironment: deepSeekTestEnvironment,
+  sessionCodec: deepSeekSessionCodec,
+  models: deepSeekModels,
+  supportsLocalAgentJwt: true,
+  agentConfigurationDoc: deepSeekAgentConfigurationDoc,
+  maturity: "beta",
+};
+
 const adaptersByType = new Map<string, ServerAdapterModule>(
   [
     claudeLocalAdapter,
     codexLocalAdapter,
     openCodeLocalAdapter,
+    deepSeekLocalAdapter,
     piLocalAdapter,
     cursorLocalAdapter,
     openclawGatewayAdapter,

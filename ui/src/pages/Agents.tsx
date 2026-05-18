@@ -27,6 +27,7 @@ const adapterLabels: Record<string, string> = {
   claude_local: "Claude",
   codex_local: "Codex",
   opencode_local: "OpenCode",
+  deepseek_local: "DeepSeek",
   cursor: "Cursor",
   openclaw_gateway: "OpenClaw Gateway",
   process: "Process",
